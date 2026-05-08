@@ -8,8 +8,10 @@ if "%SPHINXBUILD%" == "" (
 	set SPHINXBUILD=sphinx-build
 )
 set SOURCEDIR=source
-set BUILDDIR=build
-
+set BUILDDIR=_build
+if "%SPHINXOPTS%" == "" (
+	set SPHINXOPTS=--doctree-dir %BUILDDIR%/.doctrees
+)
 %SPHINXBUILD% >NUL 2>NUL
 if errorlevel 9009 (
 	echo.
