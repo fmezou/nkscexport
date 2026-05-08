@@ -85,10 +85,10 @@ napoleon_numpy_docstring = False
 # https://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html
 autodoc_member_order = "groupwise"
 
-# -- Options "sphinx.ext.graphviz ----------------------------------------------
+# -- Options "sphinx.ext.graphviz" ---------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/extensions/graphviz.html
 graphviz_output_format = "svg"
 
-# -- Options "sphinx.ext.todo --------------------------------------------------
+# -- Options "sphinx.ext.todo"--------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/extensions/todo.html
 todo_include_todos = True
