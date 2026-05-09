@@ -5,6 +5,7 @@ This is the documentation for nkscexport |release|, last updated |today|.
 
 
 .. toctree::
-    :hidden:
 
     nkscexport
+    about_nksc.rst
+    glossary
