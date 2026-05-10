@@ -12,9 +12,11 @@
 
 Objects reference
 -----------------
-This section details the objects defined in this module. In this case, there is
-only one object which is the main entry point of the scheduler. It offers an API
-for implementing user interface.
+This section details the objects defined in this module.
+
+.. autoclass:: NikonSideCar
+    :members:
+    :show-inheritance:
 
 .. autoclass:: NkscExport
     :members:

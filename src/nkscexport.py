@@ -1,7 +1,7 @@
 """
 Convert sidecar files from Nikon NX Studio (.nksc) in sidecar files compliant
 with Darktable.
-This script may be use as a module by a third party offering a new GUI for
+This script may be used as a module by a third party offering a new GUI for
 example, or as a script with the command line interface::
 
     python -m nkscexport
@@ -32,9 +32,49 @@ Command line options
 
     run in preview mode without any sidecar writing.
 
+.. option:: -a, --all
+
+    include all the metadata or filters in the list, not only the active one or
+    not empty
+
+.. option:: --list-filters
+
+    list the active filters (or all if --all option is enabled) specified in
+    sidecar files. The transferable filters are colored in green.
+
+.. option:: --list-metadata
+
+    list the metadata specified in the sidecar files
+
 .. option:: -v, --version
 
     show program's version number and exit
+
+.. option:: file ...
+
+    files or directory to parse. For each item that name a supported image file,
+    nkscexport parse the associated Nikon sidecar file and copy metadata in the
+    darktable sidecar file. For each item that name a directory, nkscexport list
+    supported images files contained in the directory, and parse each files. If
+    no file are given, the content of the current directory is used.
+
+nkscexport ignore files that not macthing the following criteria:
+
+* a Nikon sidecar file is in a ``NKSC_PARAM`` folder
+* a Nikon sidecar is named ``<basename>.<extension>.nksc`` where
+  ``<basename>.<extension>`` is the image file name
+* a supported image file exist with the same name that the sidecar
+  file in the parent folder
+* a darktable sidecar exist with the same name that the Nikon sidecar in the
+  parent folder (this criterion is only checked when options `--list-filters`
+  or `--list-metadata` are not enabled)
+
+The script only support image files supported by NX Studio [1]_ :
+``.nef``, ``.nrw``, ``.jpg``, ``.jpeg``, ``.tif``, ``.tiff``, ``.hif``,
+``.nefx``, ``.mpo``).
+
+.. [1] Nikon, NX Studio Supported Formats,
+    https://nikonimglib.com/nxstdo/onlinehelp/en/supported_formats_4.html
 
 
 Exit code
@@ -53,17 +93,15 @@ Public function
 This module has only one public function.
 
 ===================================  ===================================
-`nkscexport`                          ..
+:function:`nkscexport`                          ..
 ===================================  ===================================
 
 .. _user manual: http://fmezou.github.io/nkscexport/
 """
 import argparse
+import pathlib
 import sys
-import os
-import glob
-from pathlib import Path
-from xml.etree import ElementTree as ET
+from xml.etree.ElementTree import ElementTree
 import datetime
 import locale
 
@@ -119,9 +157,61 @@ NIKON_LABEL_MAP = {
 """Correspondance label couleur Nikon → label XMP (texte)
 Nikon encode les labels par numéro dans nksc"""
 
+NIKON_SUPPORTED_FORMAT = [
+    ".nef", ".nrw",
+    ".jpg", ".jpeg",
+    ".tif", ".tiff",
+    ".hif",
+    ".nefx",
+    ".mpo"
+]
 # Script display name: use in logger and the console UI
 _DISPLAY_NAME = "nkscexport ({})".format(__version__)
 
+class NikonSideCar (object):
+    """
+    NIKON Side car file.
+
+    This class parses a ``.nksc`` file to extract the metadata of the image on
+    the one hand, and the image processing stack on the other.
+    The NKSC files are in XML/XMP, so we walk in the RDF tree.
+
+    Args:
+        filename (str): The full path name of the ``.nksc`` file.
+
+    **Public Methods**
+        This class has a number of public methods listed below in alphabetical
+        order.
+
+        ===================================  ===================================
+        `parse`                              ..
+        ===================================  ===================================
+
+    **Using NikonSideCar...**
+
+    """
+
+    def __init__(self, filename=None):
+        self._metadata = {}
+        self._processing = {}
+        self._data = None
+        self._tree = ElementTree.parse(filename)
+
+    def dump(self):
+        """
+        Args:
+            source (object): A file name or file object.
+            parser (object, optional): An optional parser instance that defaults
+                to XMLParser.
+
+        Raises:
+            SpecSyntaxError: Spec file is erroneous.
+            PADSyntaxError: A tag in a PAD file don't match the PAD Specs
+
+        Returns:
+            bool: `True` if the execution went well. In case of failure, an
+            error log is written on the standard error (``stderr``).
+        """
 
 class NkscExport:
     """
@@ -233,39 +323,90 @@ def main():
     # Entry point
     # Build the command line parser
     parser = argparse.ArgumentParser(
-        description="Convert sidecar files from Nikon NX Studio (.nksc) in "
-                    "sidecar files compliant with Darktable")
+        formatter_class = argparse.RawDescriptionHelpFormatter,
+        description = "%(prog)s version " + __version__ + "\n"
+                      "Convert sidecar files from Nikon NX Studio (.nksc) in "
+                      "sidecar files compliant with Darktable",
+        epilog = "nkscexport ignore files that not macthing the following "
+                 "criteria:\n"
+                 "* a Nikon sidecar file is in a 'NKSC_PARAM' folder\n"
+                 "* a Nikon sidecar is named '<basename>.<extension>.nksc' "
+                 "where '<basename>.<extension>' is the image file name\n"
+                 "* a supported image file exist with the same name that the "
+                 "sidecar file in the parent folder\n"
+                 "* a darktable sidecar exist with the same name that the "
+                 "Nikon sidecar in the parent folder (this criterion is only "
+                 "checked when options '--list-filters' or '--list-metadata' "
+                 "are not enabled)\n"
+                 "\n"
+                 "The script only support image files supported by NX "
+                 "Studio: .nef, .nrw, .jpg, .jpeg, .tif, .tiff, .hif, .nefx "
+                 ".mpo)."
+    )
     parser.add_argument(
         "-r", "--recursive",
-        action="store_true",
-        help="make a recursive search of images files in subfolders.")
+        action = "store_true",
+        help = "make a recursive search of images files in subfolders."
+    )
     parser.add_argument(
         "-f", "--force",
-        action="store_true",
-        help="overwrite existing sidecar files without prompting for "
-             "confirmation.")
+        action = "store_true",
+        help = "overwrite existing sidecar files without prompting for "
+               "confirmation."
+    )
     parser.add_argument(
         "-n", "--dry-run",
-        action="store_true",
-        help="run in preview mode without any sidecar writing.")
+        action = "store_true",
+        help = "run in preview mode without any sidecar writing."
+    )
+    parser.add_argument(
+        "-a", "--all",
+        action = "store_true",
+        help = "include all the metadata or filters in the list, not only the "
+            "active one or not empty."
+    )
+    parser.add_argument(
+        "--list-filters",
+        action = "store_true",
+        help = "list the active filters (or all if --all option is enabled) "
+               "specified in sidecar files. The transferable filters are "
+               "colored in green."
+    )
+    parser.add_argument(
+        "--list-metadata",
+        action = "store_true",
+        help = "list the metadata specified in the sidecar files"
+    )
     parser.add_argument(
         "-v", "--version",
-        action="version",
-        version="%(prog)s version " + __version__)
+        action = "version",
+        version = "%(prog)s version " + __version__
+    )
+    parser.add_argument(
+        "filename",
+        default = ".",
+        nargs = "*",
+        type = pathlib.Path,
+        help = "files or directory to parse. For each item that name a "
+               "supported image file, nkscexport parse the associated Nikon "
+               "sidecar file and copy metadata in the darktable sidecar file. "
+               "For each item that name a directory, nkscexport list supported "
+               "images files contained in the directory, and parse each files. "
+               "If no file are given, the content of the current directory is "
+               "used."
+    )
 
-    # Parse and run.
+    # Parse the command line and run.
     result = True
     args = parser.parse_args()  # the arg_parse call sys.exit in case of failure
     nkcs = NkscExport()
-    dt = datetime.datetime.now()
-    print("Starting {} on {:%c}".format(_DISPLAY_NAME, dt))
-    result = nkcs.process()
-    dt = datetime.datetime.now()
-    print("{} completed on {:%c}".format(_DISPLAY_NAME, dt))
+    print("Starting {} on {:%c}".format(_DISPLAY_NAME, datetime.datetime.now()))
+    # nkcs=NikonSideCar(filename)
+    print(args.filename)
+    print("{} completed on {:%c}".format(_DISPLAY_NAME, datetime.datetime.now()))
 
     if not result:
         sys.exit(1)
-
 
 if __name__ == "__main__":
     colorama.init()
