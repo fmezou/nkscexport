@@ -13,6 +13,7 @@ Glossary
 
     sidecar files
     sidecar
+    .nksc
         File used to save image adjustments. This file may be in a folder or
         within the same folder as the original image. Because changes are not
         applied directly to the original image data, pictures can be edited
