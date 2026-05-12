@@ -2,13 +2,11 @@
 .. default-domain:: py
 .. default-role:: any
 
-.. _background_nksc:
-
-Nikon Sidecar file (``.nksc``)
-==============================
-NX Studio (and the previous software as View-NX2, ViewNX-i, Capture NX-D) may
-save image adjustments to :term:`sidecar` files in an ``NKSC_PARAM`` folder within the
-same folder as the original image [nksc]_.
+Nikon Sidecar file
+==================
+NX Studio (and the previous software as View-NX2, ViewNX-i, Capture
+NX-D) may save image adjustments to :term:`sidecar` files in an ``NKSC_PARAM``
+folder within the same folder as the original image [nksc]_.
 
 Inside Nikon Sidecar file
 -------------------------

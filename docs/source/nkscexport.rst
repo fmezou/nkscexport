@@ -16,10 +16,29 @@ This section details the objects defined in this module.
 
 .. autoclass:: NikonSideCar
     :members:
+    :private-members:
     :show-inheritance:
 
 .. autoclass:: NkscExport
     :members:
+    :private-members:
+    :show-inheritance:
+
+Exceptions reference
+--------------------
+This section details the specific exception used in this module.
+
+.. autoexception:: NKCSError
+    :members:
+    :private-members:
+    :show-inheritance:
+.. autoexception:: NKCSMissingTagError
+    :members:
+    :private-members:
+    :show-inheritance:
+.. autoexception:: NKCSTagValueError
+    :members:
+    :private-members:
     :show-inheritance:
 
 Functions reference

@@ -2,8 +2,6 @@
 .. default-domain:: py
 .. default-role:: any
 
-.. _global-glossary:
-
 ########
 Glossary
 ########

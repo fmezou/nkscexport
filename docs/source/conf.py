@@ -28,6 +28,7 @@ version = __version__
 needs_sphinx = '8.1'
 extensions = [
     "sphinx.ext.autodoc",
+    "sphinx.ext.autosectionlabel",
     "sphinx.ext.napoleon",
     "sphinx.ext.doctest",
     "sphinx.ext.intersphinx",
@@ -68,27 +69,27 @@ html_theme_options = {
 html_static_path = ["_static"]
 html_show_sourcelink = False
 
-# Extension options ------------------------------------------------------------
-# -- Options for Sphinx extensions ---------------------------------------------
+# Extension options -----------------------------------------------------------
+# -- Options for sphinx.ext.intersphinx----------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/extensions/intersphinx.html
 # Locations and names of other projects that should be linked to in this
 # documentation.
 # Add links to modules and objects in the Python standard library documentation.
 intersphinx_mapping = {"python": ("https://docs.python.org/3", None)}
 
-# -- Options for sphinx.ext.napoleon -------------------------------------------
+# -- Options for sphinx.ext.napoleon ------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/extensions/napoleon.html
 napoleon_google_docstring = True
 napoleon_numpy_docstring = False
 
-# -- Options "sphinx.ext.autodoc" ----------------------------------------------
+# -- Options "sphinx.ext.autodoc" ---------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html
 autodoc_member_order = "groupwise"
 
-# -- Options "sphinx.ext.graphviz" ---------------------------------------------
+# -- Options "sphinx.ext.graphviz" --------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/extensions/graphviz.html
 graphviz_output_format = "svg"
 
-# -- Options "sphinx.ext.todo"--------------------------------------------------
+# -- Options "sphinx.ext.todo"-------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/extensions/todo.html
 todo_include_todos = True
