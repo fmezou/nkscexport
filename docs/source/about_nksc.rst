@@ -34,8 +34,12 @@ own namespaces [#f1]_:
 
 * **nine** (``http://ns.nikon.com/nine/1.0/``): contains the image adjustments
   history in XML format with escaped characters (&lt;..). Theses image
-  processing modules are proprietary and cannot be transfered in an other
+  processing modules are proprietary and cannot be transferred in an other
   software except for format filter as cropping.
+
+No public specifications are available from Nikon, so the attributes
+were discovered by reading ``.nsks`` files and the help of ExifTool
+by Phil Harvey [phniktag]_.
 
 Transferable filter
 -------------------
@@ -202,6 +206,8 @@ nikon::DLightingHQ
 .. rubric:: References
 .. [nksc] NX Studio Help,
     https://nikonimglib.com/nxstdo/onlinehelp/en/save_80.html
+.. [phniktag] Nikon Tags,
+    https://www.exiftool.org/TagNames/Nikon.html
 
 .. rubric:: Footnotes
 .. [#f1] namespace use URL format but they don't exist (not resolved)
