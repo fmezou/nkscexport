@@ -37,28 +37,28 @@ extensions = [
     "sphinx.ext.graphviz",
     "sphinx_rtd_theme"
 ]
-# -- Options for highlighting --------------------------------------------------
+# -- Options for highlighting -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-highlighting
 pygments_style = "sphinx"
 
-# -- Options for markup --------------------------------------------------------
+# -- Options for markup -------------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-markup
 show_authors = False
 
-# -- Options for object signatures ---------------------------------------------
+# -- Options for object signatures --------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-object-signatures
 add_function_parentheses = True
 
-# -- Options for source files --------------------------------------------------
+# -- Options for source files -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-source-files
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
-# -- Options for templating ----------------------------------------------------
+# -- Options for templating ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-templating
 templates_path = ["_templates"]
 
-# Builder options --------------------------------------------------------------
-# -- Options for HTML output -------------------------------------------------
+# Builder options -------------------------------------------------------------
+# -- Options for HTML output --------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 html_theme = "sphinx_rtd_theme"
 # -- Theme options

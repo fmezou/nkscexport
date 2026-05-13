@@ -2,9 +2,9 @@
 .. default-domain:: py
 .. default-role:: any
 
-########
+********
 Glossary
-########
+********
 
 .. glossary::
     :sorted:
