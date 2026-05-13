@@ -2,13 +2,13 @@
 .. default-domain:: py
 .. default-role:: any
 
-:mod:`nkscexport` -- Convert sidecar files from Nikon NX Studio
-===============================================================
+:mod:`sidecar.nikon` -- Handle sidecar files from Nikon
+=======================================================
 .. sectionauthor:: Frédéric MEZOU <frederic.mezou@free.fr>
 .. codeauthor:: Frédéric MEZOU <frederic.mezou@free.fr>
-.. automodule:: nkscexport
+.. automodule:: sidecar.nikon
     :platform: all
-    :synopsis: Convert sidecar files from Nikon NX Studio
+    :synopsis: Handle sidecar files from Nikon
     :members:
     :private-members:
     :show-inheritance:
