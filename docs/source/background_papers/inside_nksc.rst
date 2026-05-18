@@ -6,16 +6,22 @@ Inside Nikon Sidecar file
 =========================
 NX Studio (and the previous software as View-NX2, ViewNX-i, Capture
 NX-D) may save image adjustments to :term:`sidecar` files in an ``NKSC_PARAM``
-folder within the same folder as the original image [nksc]_.
+folder within the same folder as the original image [nksave]_.
 
 A sidecar file is a file based on the :term:`Extensible Metadata Platform`
-(:term:`XMP`) specification from Adobe. Adobe provide a free of charge SDK
-written in C++, but as the script focuses on Nikon sidecar file, I don't use
-this SDK to avoid to have additional software to install.
+(:term:`XMP`) specification from Adobe. XMP data are serialized using the
+`RDF/XML Syntax Specification <http://www.w3.org/TR/2004/
+REC-rdf-syntax-grammar-20040210/>`_ [adxmp1]_.
 
-In a nutshell, a sidecar have several sections stored in a :term:`Resource
-Description Framework` (:term:`RDF`) block, each of these sections have its
-own namespaces [#f1]_:
+.. note:: Adobe provide a free of charge SDK written in C++, but as the script
+    focuses on Nikon sidecar file, I don't use this SDK to avoid to have
+    additional software to install.
+
+In a nutshell, a sidecar file is a XMP packet with the image metadata
+serialized as XMP properties. Each property have a name and a value. A value
+may a simple value as XML text element, or a structured value (named resource).
+
+These properties are grouped per family with its namespace [#f1]_:
 
 * **sdc** (``http://ns.nikon.com/sdc/1.0/``): identify the software which
   created the image (here ``NX Studio 1.10W``) and the version of the sidecar
@@ -38,6 +44,7 @@ own namespaces [#f1]_:
 No public specifications are available from Nikon, so the attributes
 were discovered by reading ``.nsks`` files and the help of ExifTool
 by Phil Harvey [phniktag]_.
+
 
 Transferable filter
 -------------------
@@ -202,10 +209,18 @@ nikon::DLightingHQ
 ^^^^^^^^^^^^^^^^^^^^
 
 .. rubric:: References
-.. [nksc] NX Studio Help,
-    https://nikonimglib.com/nxstdo/onlinehelp/en/save_80.html
-.. [phniktag] Nikon Tags,
-    https://www.exiftool.org/TagNames/Nikon.html
+.. [nksave] Nikon, `NX Studio Help <https://nikonimglib.com/nxstdo/
+    onlinehelp/en/save_80.html>`_,
+    Options > [Save]
+
+.. [phniktag] Phil Harvey, `Nikon Tags <https://www.exiftool.org/
+    TagNames/Nikon.html>`_
+    , Tag Names > Nikon
+
+.. [adxmp1] Adobe, `XMP Specification Part 1 <https://github.com/adobe/
+    XMP-Toolkit-SDK/blob/main/docs/XMPSpecificationPart1.pdf>`_, p. 9
+
 
 .. rubric:: Footnotes
-.. [#f1] namespace use URL format but they don't exist (not resolved)
+.. [#f1] namespace use URL format but they don't exist (not resolved by
+    DNS)

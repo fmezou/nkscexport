@@ -29,8 +29,6 @@ Glossary
         stored separately [adxmp01]_.
 
         .. seealso::
-            * `Extensible Metadata Platform - Wikipedia
-              <https://en.wikipedia.org/wiki/Extensible_Metadata_Platform>`_
             * `Extensible Metadata Platform SDK - Adobe
               <https://www.adobe.com/devnet/xmp.html>`_
             * `XMP-Toolkit-SDK - GitHub
@@ -43,14 +41,14 @@ Glossary
         the World Wide Web Consortium (W3C).
 
         .. seealso::
-            * Resource Description Framework, Wikipedia,
-              https://en.wikipedia.org/wiki/Resource_Description_Framework
+            * `Resource Description Framework - Wikipedia
+              <https://en.wikipedia.org/wiki/Resource_Description_Framework>`_
 
 
 .. rubric:: References
 
-.. [adxmp01] Adobe Developer, Overview of XMP technology,
-    https://developer.adobe.com/xmp/docs/xmp-specifications/#overview-of-xmp-technology
+.. [adxmp01] Adobe Developer, `Overview of XMP technology,
+    <https://developer.adobe.com/xmp/docs/xmp-specifications/#overview-of-xmp-technology>`_
 
 .. |Invertocat| image:: images/GitHub_Invertocat_Black_Clearspace.*
     :alt: Invertocat
