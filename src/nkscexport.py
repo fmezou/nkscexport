@@ -9,8 +9,8 @@ with the command line interface::
 Synopsis
 --------
 
-``nkscexport.py [-h] [-r] [-f] [-n] [-a] [--list-filters]
-[--list-metadata] [-v] [filename ...]``
+``usage: nkscexport.py [-h] [-r] [-f] [-n] [-a] [--list-filters]
+[--list-metadata] [--log-level LOG_LEVEL] [-v] [filename ...]``
 
 Command line options
 ^^^^^^^^^^^^^^^^^^^^
@@ -47,6 +47,13 @@ Command line options
 .. option:: --list-metadata
 
     list the metadata specified in the sidecar files
+
+.. option:: --log-level LOG_LEVEL
+
+    Logging messages which are less severe than level will be ignored.
+    Level may be set to: NOTSET, DEBUG, INFO, WARNING, ERROR, CRITICAL.
+    Upper case or lower case are accepted and level is set to INFO by
+    default.
 
 .. option:: -v, --version
 
@@ -99,6 +106,7 @@ nkscexport reference manual
 import argparse
 import datetime
 import locale
+import logging
 import pathlib
 import sys
 
@@ -106,6 +114,13 @@ import colorama
 
 from sidecar import nikon
 from version import *
+
+
+# This module can be used as library or as a script, a nullHandler is
+# added to avoid output in the absence of any logging configuration.
+# https://docs.python.org/howto/logging.html#configuring-logging-for-a-library
+_logger = logging.getLogger(__name__)
+_logger.addHandler(logging.NullHandler())
 
 
 class NkscExport:
@@ -172,24 +187,6 @@ class NkscExport:
         return result
 
 
-def notify_start(verb: str):
-    """
-    Notify the user of the task starting.
-
-    The notification is displayed line on the console and in the log file. The
-    line displayed on the console uses `ANSI escape code
-    <https://en.wikipedia.org/wiki/ANSI_escape_code>`_ to control the text face
-    or the foreground color.
-
-    Args:
-        verb : The action verb of the task
-    """
-    foreground = "\x1b[1m" # set face text (bold)
-    reset = "\x1b[0m" # reset text attribute
-    msg = "**** Starting task: {} ****".format(verb)
-    print(foreground, msg, reset, sep="")
-
-
 def main():
     """
     Entry point
@@ -198,6 +195,9 @@ def main():
     the section *Exit Code* in :mod:`nkscexport`)
     """
     # Entry point
+    colorama.init()
+    locale.setlocale(locale.LC_ALL, "")
+
     # Build the command line parser
     parser = argparse.ArgumentParser(
         formatter_class = argparse.RawDescriptionHelpFormatter,
@@ -255,6 +255,15 @@ def main():
         help = "list the metadata specified in the sidecar files"
     )
     parser.add_argument(
+        "--log-level",
+        default="INFO",
+        action="store",
+        help="Logging messages which are less severe than level will be "
+             "ignored. Level may be set to: NOTSET, DEBUG, INFO, WARNING, "
+             "ERROR, CRITICAL. Upper case or lower case are accepted and "
+             "level is set to INFO by default."
+    )
+    parser.add_argument(
         "-v", "--version",
         action = "version",
         version = "%(prog)s version " + __version__
@@ -276,8 +285,15 @@ def main():
     # Parse the command line and run.
     result = True
     args = parser.parse_args()  # the arg_parse call sys.exit in case of failure
-    #nkcs = NkscExport()
-    print("Starting {} v{} on {:%c}".format(__project__, __release__,
+
+    # Set up the root logging system
+    numeric_level = getattr(logging, args.log_level.upper(), None)
+    logging.basicConfig(level=numeric_level,
+                        style="{",
+                        stream=sys.stdout,
+                        format="{levelname} {name} {funcName} {message}")
+
+    _logger.info("Starting {} v{} on {:%c}".format(__project__, __release__,
                                             datetime.datetime.now()))
     for filename in args.filename:
         path = pathlib.Path(filename).resolve()
@@ -286,13 +302,11 @@ def main():
         nkcs.parse()
         file.close()
         #print (nkcs)
-    print("{} v{} completed on {:%c}".format(__project__, __release__,
+    _logger.info("{} v{} completed on {:%c}".format(__project__, __release__,
                                              datetime.datetime.now()))
 
     if not result:
         sys.exit(1)
 
 if __name__ == "__main__":
-    colorama.init()
-    locale.setlocale(locale.LC_ALL, "")
     main()

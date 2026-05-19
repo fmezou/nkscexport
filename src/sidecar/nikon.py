@@ -12,6 +12,7 @@ sidecar.nikon reference manual
 """
 import base64
 import io
+import logging
 
 from xml.etree import ElementTree
 
@@ -76,6 +77,13 @@ NIKON_SUPPORTED_FORMAT = [
     ".mpo"
 ]
 """file extension of the supported image file"""
+
+
+# This module can be used as library or as a script, a nullHandler is
+# added to avoid output in the absence of any logging configuration.
+# https://docs.python.org/howto/logging.html#configuring-logging-for-a-library
+_logger = logging.getLogger(__name__)
+_logger.addHandler(logging.NullHandler())
 
 
 class NikonError(Exception):
@@ -321,25 +329,25 @@ class NikonXMPProperty(BaseNikon):
             match res_type:
                 case "Binary":
                     self.value = base64.b64decode(res_value)
-                    print(">>> property {}: binary resource = {}".
+                    _logger.info("property {}: binary resource = {}".
                           format(self.name, self.value))
 
                 case "Long":
                     bytes = base64.b64decode(res_value)
                     self.value = int.from_bytes(bytes, byteorder='little')
-                    print(">>> property {}: long resource = {}".
+                    _logger.info("property {}: long resource = {}".
                           format(self.name, self.value))
 
                 case "Double":
                     self.value = base64.b64decode(res_value)
-                    print(">>> property {}: double resource = ({} bits) {}".
+                    _logger.info("property {}: double resource = ({} bits) {}".
                           format(self.name,
                                  len(self.value)*8,
                                  self.value.hex(":")))
 
                 case "Ascii":
                     self.value = res_value
-                    print(">>> property {}: ascii resource = {}".
+                    _logger.info("property {}: ascii resource = {}".
                           format(self.name, self.value))
 
                 case _:
@@ -348,7 +356,7 @@ class NikonXMPProperty(BaseNikon):
         else:
             # Simple valued XMP property
             self.value = element.text
-            print(">>> property {}: xmltext = {}".
+            _logger.info("property {}: xmltext = {}".
                   format(self.name, self.value))
 
 
@@ -386,7 +394,7 @@ class NikonXMPMeta(BaseNikon):
         name = self._expand_name("x:xmptk")
         if name in self._element.attrib:
             self.xmptk = element.attrib[name]
-            print(">>> {} = {}".format(name, element.attrib[name]))
+            _logger.info("{} = {}".format(name, element.attrib[name]))
 
 
 class NikonRDF(BaseNikon):
@@ -506,7 +514,7 @@ class NikonSDC(BaseNikon):
                         self.app_name = xmp_property.value
 
                     case _:
-                        print("[warning] property '{}' is not known - "
+                        _logger.warning("property '{}' is not known - "
                               "ignored".format(xmp_property.name))
 
 
@@ -604,7 +612,7 @@ class NikonAsteroid(BaseNikon):
                         self.iptc = xmp_property.value
 
                     case _:
-                        print("[warning] property '{}' is not known - "
+                        _logger.warning("property '{}' is not known - "
                               "ignored".format(xmp_property.name))
 
 
@@ -678,7 +686,7 @@ class NikonNine(BaseNikon):
                         self.trim = xmp_property.value
 
                     case _:
-                        print("[warning] property '{}' is not known - "
+                        _logger.warning("property '{}' is not known - "
                               "ignored".format(xmp_property.name))
 
 
@@ -733,7 +741,7 @@ class NikonSideCar(object):
 
         # Check the document header (x:xmptk)
         xmp_meta = NikonXMPMeta(self._tree.getroot())
-        print("> {}".format(xmp_meta.xmptk))
+        _logger.info("XMPTK : {}".format(xmp_meta.xmptk))
         if xmp_meta.xmptk != "XMP Core 5.5.0":
             raise NikonTagValueError("x:xmptk", xmp_meta.xmptk)
 
@@ -747,21 +755,3 @@ class NikonSideCar(object):
                 sdc = NikonSDC(description_item)
                 asteroid = NikonAsteroid(description_item)
                 nine = NikonNine(description_item)
-
-
-    def dump(self) -> bool:
-        """
-        Args:
-            source : A file name or file object.
-            parser (optional): An optional parser instance that defaults
-                to XMLParser.
-
-        Raises:
-            NikonMissingTagError: a tag value is not expected.
-            NikonTagValueError: an expected tag is missing
-
-        Returns:
-            `True` if the execution went well. In case of failure,
-            an error log is written on the standard error
-            (``stderr``).
-        """
