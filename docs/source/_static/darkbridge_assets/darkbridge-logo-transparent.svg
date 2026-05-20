@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  DarkBridge — Full Logo (transparent background)
+  Font: Inter — https://fonts.google.com/specimen/Inter
+  License: MIT (see LICENSE)
+-->
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="520" height="160"
+     viewBox="0 0 520 160"
+     role="img">
+  <title>DarkBridge</title>
+  <desc>DarkBridge logo with transparent background — stylised three-arch bridge icon with wordmark.</desc>
+
+  <!-- No background fill — fully transparent -->
+
+  <!-- Ground bar -->
+  <line x1="14"  y1="107" x2="176" y2="107"
+        stroke="#2d4a6e" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Deck / roadway -->
+  <line x1="20"  y1="95"  x2="170" y2="95"
+        stroke="#4a9eff" stroke-width="3.5" stroke-linecap="round"/>
+
+  <!-- Left half-arch -->
+  <path d="M20,95 C20,70 68,64 68,95"
+        fill="none" stroke="#2d7dd2" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Centre arch -->
+  <path d="M68,95 C68,38 122,38 122,95"
+        fill="none" stroke="#2d7dd2" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Right half-arch -->
+  <path d="M122,95 C122,64 170,70 170,95"
+        fill="none" stroke="#2d7dd2" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Suspenders — centre arch -->
+  <line x1="83"  y1="55" x2="83"  y2="93"
+        stroke="#2d7dd2" stroke-width="1.5" stroke-dasharray="4 3" opacity="0.85" stroke-linecap="round"/>
+  <line x1="95"  y1="38" x2="95"  y2="93"
+        stroke="#2d7dd2" stroke-width="1.5" stroke-dasharray="4 3" opacity="0.85" stroke-linecap="round"/>
+  <line x1="107" y1="55" x2="107" y2="93"
+        stroke="#2d7dd2" stroke-width="1.5" stroke-dasharray="4 3" opacity="0.85" stroke-linecap="round"/>
+
+  <!-- Suspenders — side arches -->
+  <line x1="44"  y1="68" x2="44"  y2="93"
+        stroke="#2d7dd2" stroke-width="1.2" stroke-dasharray="3.5 2.5" opacity="0.65" stroke-linecap="round"/>
+  <line x1="146" y1="68" x2="146" y2="93"
+        stroke="#2d7dd2" stroke-width="1.2" stroke-dasharray="3.5 2.5" opacity="0.65" stroke-linecap="round"/>
+
+  <!-- Pylons -->
+  <line x1="20"  y1="95" x2="20"  y2="107"
+        stroke="#4a9eff" stroke-width="3.5" stroke-linecap="round"/>
+  <line x1="68"  y1="95" x2="68"  y2="107"
+        stroke="#2d7dd2" stroke-width="3"   stroke-linecap="round"/>
+  <line x1="122" y1="95" x2="122" y2="107"
+        stroke="#2d7dd2" stroke-width="3"   stroke-linecap="round"/>
+  <line x1="170" y1="95" x2="170" y2="107"
+        stroke="#4a9eff" stroke-width="3.5" stroke-linecap="round"/>
+
+  <!-- Endpoint dots -->
+  <circle cx="20"  cy="95" r="8.5" fill="none" stroke="#4a9eff" stroke-width="1" opacity="0.4"/>
+  <circle cx="20"  cy="95" r="5.5" fill="#4a9eff"/>
+  <circle cx="170" cy="95" r="8.5" fill="none" stroke="#4a9eff" stroke-width="1" opacity="0.4"/>
+  <circle cx="170" cy="95" r="5.5" fill="#4a9eff"/>
+
+  <!-- Wordmark -->
+  <text x="197" y="92"
+        font-family="Inter, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif"
+        font-size="44" font-weight="800" fill="#e8f0fe" letter-spacing="-1.5">Dark</text>
+  <text x="310" y="92"
+        font-family="Inter, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif"
+        font-size="44" font-weight="300" fill="#4a9eff" letter-spacing="-1.5">Bridge</text>
+
+  <!-- Sub-label -->
+  <text x="197" y="114"
+        font-family="Inter, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif"
+        font-size="10" font-weight="400" fill="#4a7a9b" letter-spacing="2.8">NIKON · DARKTABLE · MIGRATION</text>
+</svg>

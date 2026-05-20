@@ -1,0 +1,41 @@
+DarkBridge — Font Specification
+================================
+
+All text elements in the DarkBridge visual identity use a single typeface:
+
+  NAME    : Inter
+  DESIGNER: Rasmus Andersson
+  URL     : https://fonts.google.com/specimen/Inter
+            https://github.com/rsms/inter
+  LICENSE : SIL Open Font License 1.1
+            https://scripts.sil.org/OFL
+  FORMAT  : Variable font (TrueType/OpenType), also available as static
+            weights from Google Fonts or the GitHub releases page.
+
+
+Usage by element
+────────────────
+
+  Wordmark "Dark"         → Inter, weight 800 (ExtraBold), letter-spacing −1.5
+  Wordmark "Bridge"       → Inter, weight 300 (Light),     letter-spacing −1.5
+  Tagline (caps spaced)   → Inter, weight 400 (Regular),   letter-spacing  2.8
+  DB monogram pill        → Inter, weight 700 (Bold),      letter-spacing  1.5
+  Sphinx / HTML body text → Inter, weight 400 (Regular)
+
+Two-tone wordmark rationale
+───────────────────────────
+"Dark" is rendered in ExtraBold (800) in near-white (#e8f0fe) to anchor the
+name visually. "Bridge" uses Light (300) in RTD-theme blue (#4a9eff) to create
+contrast and reinforce the tool's bridging metaphor. Together they balance
+weight without needing a separate display font.
+
+CSS / web font snippet
+──────────────────────
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700;800&display=swap');
+
+  .darkbridge-wordmark-dark   { font-family: Inter, sans-serif; font-weight: 800; }
+  .darkbridge-wordmark-bridge { font-family: Inter, sans-serif; font-weight: 300; }
+
+SVG fallback stack
+──────────────────
+  font-family: Inter, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif

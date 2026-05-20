@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  DarkBridge — Icon only (no wordmark, dark background)
+  Square format — optimised for GitHub avatar and favicons
+  License: MIT (see LICENSE)
+-->
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="200" height="200"
+     viewBox="0 0 200 200"
+     role="img">
+  <title>DarkBridge icon</title>
+  <desc>DarkBridge icon mark — a stylised three-arch bridge symbolising migration between Nikon and Darktable photographic workflows.</desc>
+
+  <!-- Background -->
+  <rect width="200" height="200" rx="32" fill="#1a2332"/>
+  <rect x="0.5" y="0.5" width="199" height="199" rx="31.5" fill="none" stroke="#2d4a6e" stroke-width="1"/>
+
+  <!-- ═══════════════════════════════════════════════
+       BRIDGE MARK — centred on 200×200 canvas
+       Design grid scaled to fill square nicely.
+       Deck y=116, ground y=132
+       Left  half-arch  x=24..82   apex y=88
+       Centre arch      x=82..136  apex y=52
+       Right half-arch  x=136..176 apex y=88
+  ════════════════════════════════════════════════ -->
+
+  <!-- Ground bar -->
+  <line x1="16"  y1="133" x2="184" y2="133"
+        stroke="#243447" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- Deck / roadway -->
+  <line x1="24"  y1="116" x2="176" y2="116"
+        stroke="#4a9eff" stroke-width="5" stroke-linecap="round"/>
+
+  <!-- Left half-arch -->
+  <path d="M24,116 C24,82 82,74 82,116"
+        fill="none" stroke="#2d7dd2" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Centre arch (tallest, boldest) -->
+  <path d="M82,116 C82,42 136,42 136,116"
+        fill="none" stroke="#2d7dd2" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Right half-arch -->
+  <path d="M136,116 C136,74 176,82 176,116"
+        fill="none" stroke="#2d7dd2" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Suspenders — centre arch (3 hangers) -->
+  <line x1="96"  y1="64"  x2="96"  y2="113"
+        stroke="#2d7dd2" stroke-width="2" stroke-dasharray="5 3.5" opacity="0.85" stroke-linecap="round"/>
+  <line x1="109" y1="43"  x2="109" y2="113"
+        stroke="#2d7dd2" stroke-width="2" stroke-dasharray="5 3.5" opacity="0.85" stroke-linecap="round"/>
+  <line x1="122" y1="64"  x2="122" y2="113"
+        stroke="#2d7dd2" stroke-width="2" stroke-dasharray="5 3.5" opacity="0.85" stroke-linecap="round"/>
+
+  <!-- Suspenders — side arches (1 each) -->
+  <line x1="53"  y1="82"  x2="53"  y2="113"
+        stroke="#2d7dd2" stroke-width="1.8" stroke-dasharray="4.5 3" opacity="0.65" stroke-linecap="round"/>
+  <line x1="156" y1="82"  x2="156" y2="113"
+        stroke="#2d7dd2" stroke-width="1.8" stroke-dasharray="4.5 3" opacity="0.65" stroke-linecap="round"/>
+
+  <!-- Pylons -->
+  <line x1="24"  y1="116" x2="24"  y2="133"
+        stroke="#4a9eff" stroke-width="5" stroke-linecap="round"/>
+  <line x1="82"  y1="116" x2="82"  y2="133"
+        stroke="#2d7dd2" stroke-width="4.5" stroke-linecap="round"/>
+  <line x1="136" y1="116" x2="136" y2="133"
+        stroke="#2d7dd2" stroke-width="4.5" stroke-linecap="round"/>
+  <line x1="176" y1="116" x2="176" y2="133"
+        stroke="#4a9eff" stroke-width="5" stroke-linecap="round"/>
+
+  <!-- Endpoint dots with outer rings -->
+  <circle cx="24"  cy="116" r="11" fill="none" stroke="#4a9eff" stroke-width="1.5" opacity="0.35"/>
+  <circle cx="24"  cy="116" r="7"  fill="#4a9eff"/>
+  <circle cx="176" cy="116" r="11" fill="none" stroke="#4a9eff" stroke-width="1.5" opacity="0.35"/>
+  <circle cx="176" cy="116" r="7"  fill="#4a9eff"/>
+
+  <!-- DB monogram pill at bottom -->
+  <rect x="80" y="150" width="40" height="20" rx="5" fill="#1e3a5f"/>
+  <text x="100" y="164"
+        text-anchor="middle"
+        font-family="Inter, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif"
+        font-size="12" font-weight="700" fill="#4a9eff" letter-spacing="1.5">DB</text>
+</svg>

@@ -61,13 +61,15 @@ templates_path = ["_templates"]
 # -- Options for HTML output --------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 html_theme = "sphinx_rtd_theme"
+html_logo = "_static/darkbridge_assets/darkbridge-logo.svg"
+html_favicon = "_static/darkbridge_assets/favicon.ico"
+html_static_path = ["_static"]
+html_show_sourcelink = False
 # -- Theme options
 #  https://pypi.org/project/sphinx-rtd-theme/
 html_theme_options = {
 #    "github_url" : "https://github.com/fmezou/nkscexport"
 }
-html_static_path = ["_static"]
-html_show_sourcelink = False
 
 # Extension options -----------------------------------------------------------
 # -- Options for sphinx.ext.intersphinx----------------------------------------

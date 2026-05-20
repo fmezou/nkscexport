@@ -50,7 +50,7 @@ Glossary
 .. [adxmp01] Adobe Developer, `Overview of XMP technology,
     <https://developer.adobe.com/xmp/docs/xmp-specifications/#overview-of-xmp-technology>`_
 
-.. |Invertocat| image:: images/GitHub_Invertocat_Black_Clearspace.*
+.. |Invertocat| image:: _static/github/GitHub_Invertocat_Black_Clearspace.*
     :alt: Invertocat
     :align: top
     :width: 20
