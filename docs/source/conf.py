@@ -12,11 +12,11 @@ sys.path.insert(0, str(Path('..', '..', 'src').resolve()))
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 # Import project information from the main script
-from nkscexport import __project__
-from nkscexport import __copyright__
-from nkscexport import __author__
-from nkscexport import __version__
-from nkscexport import __release__
+from darkbridge import __project__
+from darkbridge import __copyright__
+from darkbridge import __author__
+from darkbridge import __version__
+from darkbridge import __release__
 project = __project__
 copyright = __copyright__
 author = __author__

@@ -1,10 +1,17 @@
-NkscExport 
+![DarkBridge][logo] 
+
+DarkBridge
 ==========
+
 [![ReadTheDocs Status][rtds]][rtdp] ![GitHub License][lic] 
 ![GitHub Release][pkg] ![GitHub Tag][tag]
 
-Convert sidecar files from Nikon NX Studio (`.nksc`) in sidecar files compliant 
-with Darktable.
+**Bridge Nikon sidecars to Darktable, seamlessly.**
+
+DarkBridge is a utility that converts Nikon NX Studio `.nksc` sidecar 
+files into sidecar files compatible with Darktable.
+It helps photographers migrate adjustment data from Nikon’s workflow to 
+Darktable without manually recreating edits.
 
 [NX Studio][nxst] (and the previous software as View-NX2, ViewNX-i, Capture NX-D) may
 save image adjustments to "sidecar" files in an `NKSC_PARAM` folder within the
@@ -25,9 +32,10 @@ See also
 * [Nikon Software](https://downloadcenter.nikonimglib.com/en/index.html)
 
 
-[rtds]: https://app.readthedocs.org/projects/nkscexport/badge/?version=develop
+[logo]: https://raw.githubusercontent.com/fmezou/darkbridge/refs/heads/develop/docs/source/_static/darkbridge_assets/darkbridge-logo.svg
+[rtds]: https://app.readthedocs.org/projects/darkbridge/badge/?version=develop
 [rtdp]: https://nkscexport.readthedocs.io/en/develop/
-[lic]: https://img.shields.io/github/license/fmezou/nkscexport
-[pkg]: https://img.shields.io/github/v/release/fmezou/lappdeploy
-[tag]: https://img.shields.io/github/v/tag/fmezou/nkscexport
+[lic]: https://img.shields.io/github/license/fmezou/darkbridge
+[pkg]: https://img.shields.io/github/v/release/fmezou/darkbridge
+[tag]: https://img.shields.io/github/v/tag/fmezou/darkbridge
 [nxst]: https://downloadcenter.nikonimglib.com/en/products/564/NX_Studio.html

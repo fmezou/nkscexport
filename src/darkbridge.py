@@ -1,21 +1,23 @@
 """
-``nkcsexport`` convert sidecar files from Nikon NX Studio (``.nksc``) in
-sidecar files compliant with Darktable. This script may be used as a
-module by a third party offering a new GUI for example, or as a script
-with the command line interface::
+``darkbridge`` is a utility that converts Nikon NX Studio `.nksc`
+sidecar files into sidecar files compatible with Darktable. It helps
+photographers migrate adjustment data from Nikon’s workflow to Darktable
+without manually recreating edits. This script may be used as a module
+by a third party offering a new GUI for example, or as a script with the
+command line interface::
 
-    python -m nkscexport
+    python -m darkbridge
 
 Synopsis
 --------
 
-``usage: nkscexport.py [-h] [-r] [-f] [-n] [-a] [--list-filters]
+``usage: darkbridge.py [-h] [-r] [-f] [-n] [-a] [--list-filters]
 [--list-metadata] [--log-level LOG_LEVEL] [-v] [filename ...]``
 
 Command line options
 ^^^^^^^^^^^^^^^^^^^^
 
-.. program:: nkscexport
+.. program:: darkbridge
 
 .. option:: -h, --help
 
@@ -62,13 +64,13 @@ Command line options
 .. option:: file ...
 
     files or directory to parse. For each item that name a supported
-    image file, nkscexport parse the associated Nikon sidecar file and
+    image file, darkbridge parse the associated Nikon sidecar file and
     copy metadata in the darktable sidecar file. For each item that
-    name a directory, nkscexport list supported images files contained
+    name a directory, darkbridge list supported images files contained
     in the directory, and parse each files. If no file are given, the
     content of the current directory is used.
 
-nkscexport ignore files that not macthing the following criteria:
+darkbridge ignore files that not macthing the following criteria:
 
 * a Nikon sidecar file is in a ``NKSC_PARAM`` folder
 * a Nikon sidecar is named ``<basename>.<extension>.nksc`` where
@@ -98,9 +100,9 @@ Exit code
     (see Usage).
 ==  ====================================================================
 
-.. _user manual: http://fmezou.github.io/nkscexport/
+.. _user manual: http://fmezou.github.io/darkbridge/
 
-nkscexport reference manual
+darkbridge reference manual
 ---------------------------
 """
 import argparse
@@ -123,12 +125,12 @@ _logger = logging.getLogger(__name__)
 _logger.addHandler(logging.NullHandler())
 
 
-class NkscExport:
+class darkbridge:
     """
     Convert sidecar files from Nikon NX Studio (.nksc) in sidecar files
     compliant with Darktable.
 
-    Using nkscexport
+    Using darkbridge
     ----------------
 
     This class is the scheduler and handles elementary operations to
@@ -152,7 +154,7 @@ class NkscExport:
 
     def process(self) -> bool:
         """
-        Run the nkscexport application.
+        Run the darkbridge application.
 
         Returns:
             `True` if the execution went well. In case of failure, an
@@ -164,7 +166,7 @@ class NkscExport:
 
     def build_xmp(self) -> bool:
         """
-        Run the nkscexport application.
+        Run the darkbridge application.
 
         Returns:
             `True` if the execution went well. In case of failure, an
@@ -176,7 +178,7 @@ class NkscExport:
 
     def parse(self) -> bool:
         """
-        Run the nkscexport application.
+        Run the darkbridge application.
 
         Returns:
             `True` if the execution went well. In case of failure, an
@@ -192,7 +194,7 @@ def main():
     Entry point
 
     This function call the sys.exit with the appropriate exit code (see
-    the section *Exit Code* in :mod:`nkscexport`)
+    the section *Exit Code* in :mod:`darkbridge`)
     """
     # Entry point
     colorama.init()
@@ -202,23 +204,23 @@ def main():
     parser = argparse.ArgumentParser(
         formatter_class = argparse.RawDescriptionHelpFormatter,
         description = "%(prog)s version " + __version__ + "\n"
-                      "Convert sidecar files from Nikon NX Studio (.nksc) in "
-                      "sidecar files compliant with Darktable",
-        epilog = "nkscexport ignore files that not macthing the following "
-                 "criteria:\n"
-                 "* a Nikon sidecar file is in a 'NKSC_PARAM' folder\n"
-                 "* a Nikon sidecar is named '<basename>.<extension>.nksc' "
-                 "where '<basename>.<extension>' is the image file name\n"
-                 "* a supported image file exist with the same name that the "
-                 "sidecar file in the parent folder\n"
-                 "* a darktable sidecar exist with the same name that the "
-                 "Nikon sidecar in the parent folder (this criterion is only "
-                 "checked when options '--list-filters' or '--list-metadata' "
-                 "are not enabled)\n"
-                 "\n"
-                 "The script only support image files supported by NX "
-                 "Studio: .nef, .nrw, .jpg, .jpeg, .tif, .tiff, .hif, .nefx "
-                 ".mpo)."
+            "converts Nikon `.nksc` sidecar files into "
+            "Darktable-compatible sidecars.",
+        epilog = "darkbridge ignore files that not macthing the following "
+            "criteria:\n"
+            "* a Nikon sidecar file is in a 'NKSC_PARAM' folder\n"
+            "* a Nikon sidecar is named '<basename>.<extension>.nksc' "
+            "where '<basename>.<extension>' is the image file name\n"
+            "* a supported image file exist with the same name that the "
+            "sidecar file in the parent folder\n"
+            "* a darktable sidecar exist with the same name that the "
+            "Nikon sidecar in the parent folder (this criterion is only "
+            "checked when options '--list-filters' or '--list-metadata' "
+            "are not enabled)\n"
+            "\n"
+            "The script only support image files supported by NX "
+            "Studio: .nef, .nrw, .jpg, .jpeg, .tif, .tiff, .hif, .nefx "
+            ".mpo)."
     )
     parser.add_argument(
         "-r", "--recursive",
@@ -274,9 +276,9 @@ def main():
         nargs = "*",
         type = pathlib.Path,
         help = "files or directory to parse. For each item that name a "
-               "supported image file, nkscexport parse the associated Nikon "
+               "supported image file, darkbridge parse the associated Nikon "
                "sidecar file and copy metadata in the darktable sidecar file. "
-               "For each item that name a directory, nkscexport list supported "
+               "For each item that name a directory, darkbridge list supported "
                "images files contained in the directory, and parse each files. "
                "If no file are given, the content of the current directory is "
                "used."
