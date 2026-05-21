@@ -13,7 +13,6 @@ sidecar.nikon reference manual
 import base64
 import io
 import logging
-
 from xml.etree import ElementTree
 
 
@@ -48,7 +47,7 @@ NIKON_RATING_MAP = {
     "4":"4", # ****
     "5":"5", # *****
 }
-"""Correspondance note Nikon → note XMP (0-5)
+"""Correspondence note Nikon → note XMP (0-5)
 Nikon stocke la note sous forme entière 0–5 directement compatible XMP"""
 
 
@@ -64,7 +63,7 @@ NIKON_LABEL_MAP = {
     "9":"Rose",
     "0":"(Aucune)",
 }
-"""Correspondance label couleur Nikon → label XMP (texte)
+"""Correspondence label couleur Nikon → label XMP (texte)
 Nikon encode les labels par numéro dans nksc"""
 
 
@@ -428,7 +427,7 @@ class NikonRDF(BaseNikon):
 
 class NikonRDFDescription(BaseNikon):
     """
-    Nikon RDF Description container. (NOT USEFULE)
+    Nikon RDF Description container. (NOT USEFUL)
 
     This class parse a sidecar file and extract ``rdf:Description`` tags.
 
@@ -701,10 +700,17 @@ class NikonSideCar(object):
     The article named ":ref:`Inside Nikon Sidecar file`" details the data
     structure and tags used by Nikon.
 
+    This class parse a sidecar file and extract ``xmpmeta`` tags.
+
+    The article named ":ref:`Inside Nikon Sidecar file`" details the data
+    structure and tags used by Nikon.
+
     Args:
-        file: a file object of the ``.nksc`` file.
+        element: XML element containing the XMP Packet element.
 
     Raises:
+        NikonError: generic error, the :attr:`NikonError.message` details
+            the error.
         NikonMissingTagError: a tag value is not expected.
         NikonTagValueError: an expected tag is missing
 
@@ -717,14 +723,12 @@ class NikonSideCar(object):
         ===================================  ===================================
 
     **Using NikonSideCar...**
-
     """
-    def __init__(self, file: io.TextIOWrapper):
+    def __init__(self, element: ElementTree.Element):
         self._metadata = {}
         self._processing = {}
         self._data = None
-
-        self._tree = ElementTree.parse(file)
+        self._element = element
 
     def parse(self):
         """
@@ -740,15 +744,15 @@ class NikonSideCar(object):
         """
 
         # Check the document header (x:xmptk)
-        xmp_meta = NikonXMPMeta(self._tree.getroot())
+        xmp_meta = NikonXMPMeta(self._element)
         _logger.info("XMPTK : {}".format(xmp_meta.xmptk))
         if xmp_meta.xmptk != "XMP Core 5.5.0":
             raise NikonTagValueError("x:xmptk", xmp_meta.xmptk)
 
         # Check RDF blocs (rdf:RDF)
-        if len(self._tree.getroot()) != 1:
+        if len(self._element) != 1:
             raise NikonError("No or more than one child in 'x:xmpmeta'")
-        for rdf_item in self._tree.getroot():
+        for rdf_item in self._element:
             rdf = NikonRDF(rdf_item)
             # list
             for description_item in rdf_item:

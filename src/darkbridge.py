@@ -100,7 +100,7 @@ Exit code
     (see Usage).
 ==  ====================================================================
 
-.. _user manual: http://fmezou.github.io/darkbridge/
+.. _user manual: https://darkbridge.readthedocs.io/
 
 darkbridge reference manual
 ---------------------------
@@ -111,6 +111,8 @@ import locale
 import logging
 import pathlib
 import sys
+from xml.etree import ElementTree
+
 
 import colorama
 
@@ -125,7 +127,7 @@ _logger = logging.getLogger(__name__)
 _logger.addHandler(logging.NullHandler())
 
 
-class darkbridge:
+class DarkBridge:
     """
     Convert sidecar files from Nikon NX Studio (.nksc) in sidecar files
     compliant with Darktable.
@@ -160,7 +162,6 @@ class darkbridge:
             `True` if the execution went well. In case of failure, an
                 error is written on console.
         """
-        notify_start("process")
         result = True
         return result
 
@@ -172,7 +173,6 @@ class darkbridge:
             `True` if the execution went well. In case of failure, an
                 error is written on console.
         """
-        notify_start("build_xmp")
         result = True
         return result
 
@@ -184,7 +184,6 @@ class darkbridge:
             `True` if the execution went well. In case of failure, an
                 error is written on console.
         """
-        notify_start("parse")
         result = True
         return result
 
@@ -300,7 +299,8 @@ def main():
     for filename in args.filename:
         path = pathlib.Path(filename).resolve()
         file = path.open()
-        nkcs = nikon.NikonSideCar(file)
+        tree = ElementTree.parse(file)
+        nkcs = nikon.NikonSideCar(tree.getroot())
         nkcs.parse()
         file.close()
         #print (nkcs)
