@@ -23,14 +23,14 @@ __all__ = [
     "NikonResourceError",
     "NikonResourceTypeError",
     "NikonSideCar",
-    "BaseNikon",
+    "NikonBaseProperties",
     "NikonXMPProperty",
     "NikonXMPMeta",
     "NikonRDF",
     "NikonRDFDescription",
-    "NikonSDC",
-    "NikonAsteroid",
-    "NikonNine",
+    "NikonSDCProperties",
+    "NikonAsteroidProperties",
+    "NikonNineProperties",
     "NikonSideCar",
     "NIKON_RATING_MAP",
     "NIKON_LABEL_MAP",
@@ -184,14 +184,13 @@ class NikonResourceTypeError(NikonError):
     def __init__(self, prop_name: str | None, type_name: str | None):
         self.prop_name = prop_name
         self.type_name = type_name
-        msg = f"Unknown type '{type_name}' used for the resource value of "\
-              "{prop_name} property"
+        msg = f"Unknown type '{type_name}' used for the resource value of {prop_name} property"
         NikonError.__init__(self, msg)
 
 
-class BaseNikon(object):
+class NikonBaseProperties(object):
     """
-    Base class for Nikon concrete class.
+    Base class for Nikon Properties class.
 
     Args:
         element: XML element containing the metadata.
@@ -202,16 +201,8 @@ class BaseNikon(object):
         NikonMissingTagError: a tag value is not expected.
         NikonTagValueError: an expected tag is missing
 
-    Attributes:
-        about: identifier of the sidecar file format.
-        version: version identifier of the sidecar format
     """
-    about: str | None
-    version: str | None
-
     def __init__(self, element: ElementTree.Element):
-        self.about = None
-        self.version = None
         self._element = element
 
         # Namespaces used in sidecar file
@@ -223,11 +214,10 @@ class BaseNikon(object):
             "astype": "http://ns.nikon.com/asteroid/Types/1.0/",
             "nine": "http://ns.nikon.com/nine/1.0/"
         }
+        # build the reverse namespace table
         self._reverse_namespaces = {}
-        # build the reverse namespace table if not exist
-        if len(self._reverse_namespaces) == 0:
-            for prefix, uri in self._namespaces.items():
-                self._reverse_namespaces[uri] = prefix
+        for prefix, uri in self._namespaces.items():
+            self._reverse_namespaces[uri] = prefix
 
     def _shorten_name(self, expanded_name: str) -> str:
         """
@@ -275,7 +265,7 @@ class BaseNikon(object):
         return expanded_name
 
 
-class NikonXMPProperty(BaseNikon):
+class NikonXMPProperty(NikonBaseProperties):
     """
     Nikon XMP property.
 
@@ -294,8 +284,9 @@ class NikonXMPProperty(BaseNikon):
         NikonResourceTypeError: a resource is erroneous (unknown type)
 
     Attributes:
-        about: not relevant here.
-        version: not relevant here.
+        name: not relevant here.
+        value: property's value, the type of the attribute depends on the
+            resource type (binary, double,...).
     """
     name: str
     value: None | str | float | int | bytes
@@ -326,27 +317,27 @@ class NikonXMPProperty(BaseNikon):
                     raise NikonResourceError(self.name, element.attrib[type_name])
 
             match res_type:
-                case "Binary":
+                case "Binary": # Binary buffer
                     self.value = base64.b64decode(res_value)
-                    _logger.info("property {}: binary resource = {}".
+                    _logger.debug("property {}: binary resource = {}".
                           format(self.name, self.value))
 
-                case "Long":
+                case "Long": # Integer
                     bytes = base64.b64decode(res_value)
                     self.value = int.from_bytes(bytes, byteorder='little')
-                    _logger.info("property {}: long resource = {}".
+                    _logger.debug("property {}: long resource = {}".
                           format(self.name, self.value))
 
-                case "Double":
+                case "Double": # List of float number
                     self.value = base64.b64decode(res_value)
-                    _logger.info("property {}: double resource = ({} bits) {}".
+                    _logger.debug("property {}: double resource = ({} bits) {}".
                           format(self.name,
                                  len(self.value)*8,
                                  self.value.hex(":")))
 
-                case "Ascii":
+                case "Ascii": # ASCII string
                     self.value = res_value
-                    _logger.info("property {}: ascii resource = {}".
+                    _logger.debug("property {}: ascii resource = {}".
                           format(self.name, self.value))
 
                 case _:
@@ -355,11 +346,11 @@ class NikonXMPProperty(BaseNikon):
         else:
             # Simple valued XMP property
             self.value = element.text
-            _logger.info("property {}: xmltext = {}".
+            _logger.debug("property {}: xmltext = {}".
                   format(self.name, self.value))
 
 
-class NikonXMPMeta(BaseNikon):
+class NikonXMPMeta(NikonBaseProperties):
     """
     Nikon XMP Meta container.
 
@@ -393,10 +384,10 @@ class NikonXMPMeta(BaseNikon):
         name = self._expand_name("x:xmptk")
         if name in self._element.attrib:
             self.xmptk = element.attrib[name]
-            _logger.info("{} = {}".format(name, element.attrib[name]))
+            _logger.debug("{} = {}".format(name, element.attrib[name]))
 
 
-class NikonRDF(BaseNikon):
+class NikonRDF(NikonBaseProperties):
     """
     Nikon RDF container.
 
@@ -425,7 +416,7 @@ class NikonRDF(BaseNikon):
             raise NikonMissingTagError("rdf:RDF")
 
 
-class NikonRDFDescription(BaseNikon):
+class NikonRDFDescription(NikonBaseProperties):
     """
     Nikon RDF Description container. (NOT USEFUL)
 
@@ -454,11 +445,12 @@ class NikonRDFDescription(BaseNikon):
             raise NikonMissingTagError("rdf:Description")
 
 
-class NikonSDC(BaseNikon):
+class NikonSDCProperties(NikonBaseProperties):
     """
-    Nikon SDC container.
+    Nikon SDC properties container.
 
-    This class parse a sidecar file and extract ``sdc`` tags.
+    This class parse a sidecar file and extract ``sdc`` tags (namespace
+    'http://ns.nikon.com/sdc/1.0/').
 
     The article named ":ref:`Inside Nikon Sidecar file`" details the data
     structure and tags used by Nikon.
@@ -481,11 +473,15 @@ class NikonSDC(BaseNikon):
             file.
     """
     _ID = "nikon sidecar/1.0"
+    about: str | None
+    version: str | None
     app_name: str | None
     app_version: str | None
 
     def __init__(self, element: ElementTree.Element):
         super().__init__(element)
+        self.about = None
+        self.version= None
         self.app_name = None
         self.version = None
 
@@ -517,11 +513,12 @@ class NikonSDC(BaseNikon):
                               "ignored".format(xmp_property.name))
 
 
-class NikonAsteroid(BaseNikon):
+class NikonAsteroidProperties(NikonBaseProperties):
     """
-    Nikon Asteroid container.
+    Nikon Asteroid properties container.
 
-    This class parse a sidecar file and extract ``ast`` tags.
+    This class parse a sidecar file and extract ``ast`` tags (namespace
+    'http://ns.nikon.com/asteroid/1.0/').
 
     The article named ":ref:`Inside Nikon Sidecar file`" details the data
     structure and tags used by Nikon.
@@ -550,6 +547,8 @@ class NikonAsteroid(BaseNikon):
         iptc: `<https://www.exiftool.org/TagNames/IPTC.html>`_
     """
     _ID = "core-asteroid-tags"
+    about: str | None
+    version: str | None
     xml_packets: str | None
     gps_version_id: str | None
     gps_latitude_ref: str | None
@@ -561,6 +560,8 @@ class NikonAsteroid(BaseNikon):
 
     def __init__(self, element: ElementTree.Element):
         super().__init__(element)
+        self.about = None
+        self.version= None
         self.xml_packets = None
         self.gps_version_id = None
         self.gps_latitude_ref = 0
@@ -615,11 +616,12 @@ class NikonAsteroid(BaseNikon):
                               "ignored".format(xmp_property.name))
 
 
-class NikonNine(BaseNikon):
+class NikonNineProperties(NikonBaseProperties):
     """
-    Nikon Nine container.
+    Nikon Nine properties container.
 
-    This class parse a sidecar file and extract ``nine`` tags.
+    This class parse a sidecar file and extract ``nine`` tags (namespace
+    'http://ns.nikon.com/nine/1.0/').
 
     The article named ":ref:`Inside Nikon Sidecar file`" details the data
     structure and tags used by Nikon.
@@ -643,6 +645,8 @@ class NikonNine(BaseNikon):
         rating:
     """
     _ID = "nine-tags"
+    about: str | None
+    version: str | None
     nine_edits: str | None
     label: str | None
     rating: str | None
@@ -650,6 +654,8 @@ class NikonNine(BaseNikon):
 
     def __init__(self, element: ElementTree.Element):
         super().__init__(element)
+        self.about = None
+        self.version= None
         self.nine_edits = None
         self.label = None
         self.rating = None
@@ -745,7 +751,7 @@ class NikonSideCar(object):
 
         # Check the document header (x:xmptk)
         xmp_meta = NikonXMPMeta(self._element)
-        _logger.info("XMPTK : {}".format(xmp_meta.xmptk))
+        _logger.debug("XMPTK : {}".format(xmp_meta.xmptk))
         if xmp_meta.xmptk != "XMP Core 5.5.0":
             raise NikonTagValueError("x:xmptk", xmp_meta.xmptk)
 
@@ -756,6 +762,6 @@ class NikonSideCar(object):
             rdf = NikonRDF(rdf_item)
             # list
             for description_item in rdf_item:
-                sdc = NikonSDC(description_item)
-                asteroid = NikonAsteroid(description_item)
-                nine = NikonNine(description_item)
+                sdc = NikonSDCProperties(description_item)
+                asteroid = NikonAsteroidProperties(description_item)
+                nine = NikonNineProperties(description_item)

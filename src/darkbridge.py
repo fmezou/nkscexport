@@ -107,6 +107,7 @@ darkbridge reference manual
 """
 import argparse
 import datetime
+import glob
 import locale
 import logging
 import pathlib
@@ -127,7 +128,7 @@ _logger = logging.getLogger(__name__)
 _logger.addHandler(logging.NullHandler())
 
 
-class DarkBridge:
+class DarkBridge(object):
     """
     Convert sidecar files from Nikon NX Studio (.nksc) in sidecar files
     compliant with Darktable.
@@ -138,54 +139,119 @@ class DarkBridge:
     This class is the scheduler and handles elementary operations to
     complete the expected task.
 
-    The easiest way of using this class is to call the `process` method.
+    The easiest way of using this class is to call the `run` method.
     This all-in-one method searches sidecar files in the required
     folders (and subfolders if required), reads the metadata and create
-    or modify the sidecar files in XMP format at the same level than the
+    or modify the sidecar files in XMP format at the same level as the
     original image file.
 
     To have more control, you must call individually each method. A
-    typical use case is to read the metadata by calling the `parse`
-    method then the `build_xmp` method.
+    typical use case is to build the images files list by calling
+    `parse` method and run the conversion by calling `convert`
 
     Reference
     ---------
     """
-    def __init__(self):
-        result = True
+    _filenames: list[str]
 
-    def process(self) -> bool:
-        """
-        Run the darkbridge application.
+    def __init__(self, filenames: list[str]):
+        self._filenames = filenames
 
-        Returns:
-            `True` if the execution went well. In case of failure, an
-                error is written on console.
+    def list_filters(self, all: bool) -> bool:
         """
-        result = True
-        return result
+        list the image adjustment filters.
 
-    def build_xmp(self) -> bool:
-        """
-        Run the darkbridge application.
+        Args:
+            all: `True` includes all filters in the list, `False` limits the
+                list to only active filters.
 
         Returns:
             `True` if the execution went well. In case of failure, an
-                error is written on console.
+            error is written on console.
         """
-        result = True
-        return result
+        raise NotImplementedError
 
-    def parse(self) -> bool:
+    def list_metadata(self) -> bool:
         """
-        Run the darkbridge application.
+        list the metadata specified in the sidecar files.
 
         Returns:
             `True` if the execution went well. In case of failure, an
-                error is written on console.
+            error is written on console.
         """
-        result = True
-        return result
+        raise NotImplementedError
+
+    def convert(self, dry_run: bool, force: bool, recursive:bool) -> bool:
+        """
+        Run the conversion.
+
+        Args:
+            dry_run: `True` runs in preview mode without any sidecar
+                writing.
+            force: `True` overwrites existing sidecar files without
+                prompting for confirmation.
+            recursive: `True` make a recursive search of images files in
+                subfolders.
+
+        Returns:
+            `True` if the execution went well. In case of failure, an
+            error is written on console.
+        """
+        raise NotImplementedError
+
+    def filter(self) -> bool:
+        """
+        Filter the file list by removing no supported images files or
+        images files without sidecar files.
+
+        Returns:
+            `True` if the execution went well. In case of failure, an
+            error is written on console.
+        """
+        raise NotImplementedError
+
+    def parse(self, recursive: bool) -> bool:
+        """
+        Build the images files list based on patterns as defined in
+        `glob.glob` functions.
+
+        Returns:
+            `True` if the execution went well. In case of failure, an
+            error is written on console.
+        """
+        raise NotImplementedError
+
+    def run(self, dry_run: bool, force: bool, recursive:bool) -> bool:
+        """
+        All-in-one entry point to run the conversion
+
+        Args:
+            dry_run: `True` runs in preview mode without any sidecar
+                writing.
+            force: `True` overwrites existing sidecar files without
+                prompting for confirmation.
+            recursive: `True` make a recursive search of images files in
+                subfolders.
+
+        Returns:
+            `True` if the execution went well. In case of failure, an
+            error is written on console.
+        """
+        paths: list[str] = []
+        for filename in self._filenames:
+            names = glob.glob(filename,recursive=True)
+            for name in names:
+                path = pathlib.Path(name).resolve()
+                paths.append(path)
+                _logger.debug(f"{path=}")
+
+        for path in paths:
+            _logger.info(f"******* {path=}")
+            file = path.open()
+            tree = ElementTree.parse(file)
+            nkcs = nikon.NikonSideCar(tree.getroot())
+            nkcs.parse()
+            file.close()
 
 
 def main():
@@ -273,7 +339,7 @@ def main():
         "filename",
         default = ".",
         nargs = "*",
-        type = pathlib.Path,
+        type = str, #pathlib.Path,
         help = "files or directory to parse. For each item that name a "
                "supported image file, darkbridge parse the associated Nikon "
                "sidecar file and copy metadata in the darktable sidecar file. "
@@ -296,17 +362,21 @@ def main():
 
     _logger.info("Starting {} v{} on {:%c}".format(__project__, __release__,
                                             datetime.datetime.now()))
-    for filename in args.filename:
-        path = pathlib.Path(filename).resolve()
-        file = path.open()
-        tree = ElementTree.parse(file)
-        nkcs = nikon.NikonSideCar(tree.getroot())
-        nkcs.parse()
-        file.close()
-        #print (nkcs)
+
+    bridge = DarkBridge(args.filename)
+    if args.list_filters:
+        result = bridge.parse(args.recursive)
+        if result:
+            result = bridge.list_filters(args.all)
+    if args.list_metadata:
+        result = bridge.parse()
+        if result:
+            result = bridge.list_metadata()
+    if not args.list_filters and not args.list_metadata:
+        result = bridge.run(args.dry_run, args.force, args.recursive)
+
     _logger.info("{} v{} completed on {:%c}".format(__project__, __release__,
                                              datetime.datetime.now()))
-
     if not result:
         sys.exit(1)
 

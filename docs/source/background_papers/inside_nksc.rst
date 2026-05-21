@@ -21,7 +21,8 @@ In a nutshell, a sidecar file is a XMP packet with the image metadata
 serialized as XMP properties. Each property have a name and a value. A value
 may a simple value as XML text element, or a structured value (named resource).
 
-These properties are grouped per family with its namespace [#f1]_:
+These properties are grouped per set identified by a namespace [adxmp1]_, a
+Nikon sidecar file contains the following sets:
 
 * **sdc** (``http://ns.nikon.com/sdc/1.0/``): identify the software which
   created the image (here ``NX Studio 1.10W``) and the version of the sidecar
@@ -218,7 +219,7 @@ nikon::DLightingHQ
     , Tag Names > Nikon
 
 .. [adxmp1] Adobe, `XMP Specification Part 1 <https://github.com/adobe/
-    XMP-Toolkit-SDK/blob/main/docs/XMPSpecificationPart1.pdf>`_, p. 9
+    XMP-Toolkit-SDK/blob/main/docs/XMPSpecificationPart1.pdf>`_, pp. 5-9
 
 
 .. rubric:: Footnotes
