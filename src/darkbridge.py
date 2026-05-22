@@ -83,7 +83,7 @@ darkbridge ignore files that not macthing the following criteria:
 
 The script only support image files supported by NX Studio [1]_ :
 ``.nef``, ``.nrw``, ``.jpg``, ``.jpeg``, ``.tif``, ``.tiff``, ``.hif``,
-``.nefx``, ``.mpo``).
+``.nefx``, ``.mpo``.
 
 .. [1] Nikon, NX Studio Supported Formats,
     https://nikonimglib.com/nxstdo/onlinehelp/en/supported_formats_4.html
@@ -152,10 +152,12 @@ class DarkBridge(object):
     Reference
     ---------
     """
-    _filenames: list[str]
+    _pathname: list[str]
+    _paths: list [pathlib.Path]
 
-    def __init__(self, filenames: list[str]):
-        self._filenames = filenames
+    def __init__(self, pathname: list[str]):
+        self._pathname = pathname
+        self._paths = []
 
     def list_filters(self, all: bool) -> bool:
         """
@@ -219,9 +221,13 @@ class DarkBridge(object):
             `True` if the execution went well. In case of failure, an
             error is written on console.
         """
-        raise NotImplementedError
+        for pathname in self._pathname:
+            names = glob.glob(pathname, recursive=recursive)
+            for name in names:
+                self._paths.append(pathlib.Path(name).resolve())
+        return True
 
-    def run(self, dry_run: bool, force: bool, recursive:bool) -> bool:
+    def run(self, dry_run: bool, force: bool, recursive: bool) -> bool:
         """
         All-in-one entry point to run the conversion
 
@@ -237,21 +243,15 @@ class DarkBridge(object):
             `True` if the execution went well. In case of failure, an
             error is written on console.
         """
-        paths: list[str] = []
-        for filename in self._filenames:
-            names = glob.glob(filename,recursive=True)
-            for name in names:
-                path = pathlib.Path(name).resolve()
-                paths.append(path)
-                _logger.debug(f"{path=}")
-
-        for path in paths:
-            _logger.info(f"******* {path=}")
+        self.parse(recursive)
+        for path in self._paths:
+            _logger.info(f"Parse '{path.name}'...")
             file = path.open()
             tree = ElementTree.parse(file)
             nkcs = nikon.NikonSideCar(tree.getroot())
             nkcs.parse()
             file.close()
+        return True
 
 
 def main():
@@ -369,7 +369,7 @@ def main():
         if result:
             result = bridge.list_filters(args.all)
     if args.list_metadata:
-        result = bridge.parse()
+        result = bridge.parse(args.recursive)
         if result:
             result = bridge.list_metadata()
     if not args.list_filters and not args.list_metadata:
