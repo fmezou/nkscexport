@@ -23,7 +23,7 @@ files are also used to store labels, ratings, XMP/IPTC metadata, and other data
 in addition to image adjustments.
 
 > ***warning:** Image adjustments may be saved in the original image file, this 
-> script don't support this mode. If an image file have not a side car file, the
+> script do not support this mode. If an image file has not a side car file, the
 > script will ignore it. Same for orphan sidecar files.*
 
 See also
