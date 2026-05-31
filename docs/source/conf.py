@@ -12,16 +12,13 @@ sys.path.insert(0, str(Path('..', '..', 'src').resolve()))
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 # Import project information from the main script
-from darkbridge import __project__
-from darkbridge import __copyright__
-from darkbridge import __author__
-from darkbridge import __version__
-from darkbridge import __release__
-project = __project__
-copyright = __copyright__
-author = __author__
-release = __release__
-version = __version__
+from darkbridge.version import version as project_version
+from darkbridge.version import name as project_name
+project = project_name
+author = "Frederic MEZOU"
+copyright = f"2026-%Y, {author}"
+release = project_version
+version = f"{release.split(".")[0]}.{release.split(".")[1]}"
 
 # General configuration --------------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -44,6 +41,7 @@ pygments_style = "sphinx"
 # -- Options for markup -------------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-markup
 show_authors = False
+option_emphasise_placeholders = True
 
 # -- Options for object signatures --------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-object-signatures

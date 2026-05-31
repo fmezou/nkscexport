@@ -9,3 +9,5 @@ User Guide
 .. toctree::
     :maxdepth: 1
 
+    main_cli
+

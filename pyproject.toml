@@ -1,0 +1,52 @@
+[build-system]
+requires = ["hatchling >= 1.26"]
+build-backend = "hatchling.build"
+
+[project]
+name = "DarkBridge"
+dynamic = ["version"]
+description = "Bridge Nikon sidecars to Darktable, seamlessly."
+readme = "README.md"
+requires-python = ">=3.9"
+license = "GPL-3.0-or-later"
+license-files = ["LICEN[CS]E*"]
+authors = [
+  { name="fmezou", email="frederic.mezou@orange.fr" },
+]
+Keywords = [
+    "nef",
+    "nksc",
+    "darktable",
+    "sidecar",
+    "nikon",
+    "digital camera"
+]
+# Trove classifiers which apply to the project
+# https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#classifiers
+classifiers = [
+    "Development Status :: 1 - Planning",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+    "Topic :: Multimedia :: Graphics :: Capture :: Digital Camera",
+]
+
+[project.urls]
+# URLs associated with your project, displayed on the left sidebar of
+# PyPI project page.
+# https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#urls
+homepage = "https://pypi.org/project/darkbridge/"
+source = "https://github.com/fmezou/darkbridge"
+download = "https://github.com/fmezou/darkbridge/releases"
+changelog = "https://github.com/fmezou/darkbridge/compare/"
+documentation = "https://darkbridge.readthedocs.io/en/develop/"
+issues = "https://github.com/fmezou/darkbridge/issues"
+
+[project.scripts]
+darkbridge = "darkbridge.main_cli:main"
+
+[tool.hatch.version]
+source = "code"
+path = "src/darkbridge/version.py"
+expression = "version"

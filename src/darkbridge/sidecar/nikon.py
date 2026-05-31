@@ -1,7 +1,48 @@
-"""
+"""Handle Nikon sidecar files (read only)
+
 The `sidecar.nikon` module implements handlers for the Nikon sidecar
 file. The article named ":ref:`Inside Nikon Sidecar file`" details the
 data structure and tags used by Nikon.
+
+The exported classes, exceptions and functions (and any other objects)
+are as follows:
+
+sidecar.nikon exceptions
+------------------------
+.. hlist::
+    :columns: 2
+
+    * :exc:`NikonError` - Base class for sidecar parser exceptions
+    * :exc:`NikonTagValueError` - Raised when a resource is erroneous (unknown tag)
+    * :exc:`NikonMissingTagError` - Raised when an expected tag is missing
+    * :exc:`NikonResourceError` - Raised when a tag value is not expected
+    * :exc:`NikonResourceTypeError` - Raised when a resource is erroneous (unknown type)
+
+sidecar.nikon classes
+---------------------
+.. hlist::
+    :columns: 2
+
+    * :class:`NikonBaseProperties`- Base class for Nikon Properties class
+    * :class:`NikonXMPProperty` - Nikon XMP property
+    * :class:`NikonXMPMeta`- Nikon XMP Meta container
+    * :class:`NikonRDF`- Nikon RDF container
+    * :class:`NikonRDFDescription`- Nikon RDF Description container. (NOT USEFUL)
+    * :class:`NikonSDCProperties`- Nikon SDC properties container
+    * :class:`NikonAsteroidProperties`- Nikon Asteroid properties container
+    * :class:`NikonNineProperties`- Nikon Nine properties container
+    * :class:`NikonSideCar`- Nikon sidecar file.
+
+sidecar.nikon constants
+-----------------------
+.. todo:: review the list after the completion of implement
+
+.. hlist::
+    :columns: 2
+
+    * :const:`NIKON_RATING_MAP` - Correspondence note Nikon → note XMP
+    * :const:`NIKON_LABEL_MAP` - Correspondence note Nikon → note XMP"
+    * :const:`NIKON_SUPPORTED_FORMAT` - file extension of the supported image file
 
 Using sidecar.nikon
 -------------------
@@ -22,7 +63,6 @@ __all__ = [
     "NikonTagValueError",
     "NikonResourceError",
     "NikonResourceTypeError",
-    "NikonSideCar",
     "NikonBaseProperties",
     "NikonXMPProperty",
     "NikonXMPMeta",

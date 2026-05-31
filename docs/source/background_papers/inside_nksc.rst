@@ -221,7 +221,3 @@ nikon::DLightingHQ
 .. [adxmp1] Adobe, `XMP Specification Part 1 <https://github.com/adobe/
     XMP-Toolkit-SDK/blob/main/docs/XMPSpecificationPart1.pdf>`_, pp. 5-9
 
-
-.. rubric:: Footnotes
-.. [#f1] namespace use URL format but they don't exist (not resolved by
-    DNS)
