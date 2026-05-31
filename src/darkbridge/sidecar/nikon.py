@@ -13,10 +13,12 @@ sidecar.nikon exceptions
     :columns: 2
 
     * :exc:`NikonError` - Base class for sidecar parser exceptions
-    * :exc:`NikonTagValueError` - Raised when a resource is erroneous (unknown tag)
+    * :exc:`NikonTagValueError` - Raised when a resource is erroneous
+      (unknown tag)
     * :exc:`NikonMissingTagError` - Raised when an expected tag is missing
     * :exc:`NikonResourceError` - Raised when a tag value is not expected
-    * :exc:`NikonResourceTypeError` - Raised when a resource is erroneous (unknown type)
+    * :exc:`NikonResourceTypeError` - Raised when a resource is erroneous
+      (unknown type)
 
 sidecar.nikon classes
 ---------------------
@@ -27,7 +29,8 @@ sidecar.nikon classes
     * :class:`NikonXMPProperty` - Nikon XMP property
     * :class:`NikonXMPMeta`- Nikon XMP Meta container
     * :class:`NikonRDF`- Nikon RDF container
-    * :class:`NikonRDFDescription`- Nikon RDF Description container. (NOT USEFUL)
+    * :class:`NikonRDFDescription`- Nikon RDF Description container.
+      (NOT USEFUL)
     * :class:`NikonSDCProperties`- Nikon SDC properties container
     * :class:`NikonAsteroidProperties`- Nikon Asteroid properties container
     * :class:`NikonNineProperties`- Nikon Nine properties container
@@ -42,7 +45,11 @@ sidecar.nikon constants
 
     * :const:`NIKON_RATING_MAP` - Correspondence note Nikon → note XMP
     * :const:`NIKON_LABEL_MAP` - Correspondence note Nikon → note XMP"
-    * :const:`NIKON_SUPPORTED_FORMAT` - file extension of the supported image file
+    * :const:`NIKON_SUPPORTED_FORMAT` - file extension of the supported
+      image file
+    * :const:`NIKON_NKSC_SUBFOLDER`- subfolder storing the Nikon sidecar
+      file
+    * :const:`NIKON_NKSC_EXT`- file extension of Nikon sidecar files
 
 Using sidecar.nikon
 -------------------
@@ -74,7 +81,9 @@ __all__ = [
     "NikonSideCar",
     "NIKON_RATING_MAP",
     "NIKON_LABEL_MAP",
-    "NIKON_SUPPORTED_FORMAT"
+    "NIKON_SUPPORTED_FORMAT",
+    "NIKON_NKSC_SUBFOLDER",
+    "NIKON_NKSC_EXT"
 ]
 
 
@@ -117,6 +126,11 @@ NIKON_SUPPORTED_FORMAT = [
 ]
 """file extension of the supported image file"""
 
+NIKON_NKSC_SUBFOLDER = "NKSC_PARAM"
+"""subfolder storing the Nikon sidecar files"""
+
+NIKON_NKSC_EXT = ".nksc"
+"""file extension of Nikon sidecar files"""
 
 # This module can be used as library or as a script, a nullHandler is
 # added to avoid output in the absence of any logging configuration.

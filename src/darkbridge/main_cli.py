@@ -19,8 +19,6 @@ Darkbridge ignores files that not matching following criteria:
 * a Nikon sidecar file is in a :file:`NKSC_PARAM` folder
 * a Nikon sidecar is named :file:`{basename}.{extension}.nksc` where
   :file:`{basename}.{extension}` is the image file name
-* a supported image file exists with the same name that the sidecar
-  file in the parent folder
 * a darktable sidecar exists with the same name that the Nikon sidecar
   in the parent folder (this criterion is only checked when options
   :option:`--list-filters` or :option:`--list-metadata` are not enabled)
@@ -87,6 +85,9 @@ The options are as follows:
 .. [1] Nikon, NX Studio Supported Formats,
     https://nikonimglib.com/nxstdo/onlinehelp/en/supported_formats_4.html
 
+* a darktable sidecar exists with the same name that the Nikon sidecar
+  in the parent folder (this criterion is only checked when options
+  :option:`--list-filters` or :option:`--list-metadata` are not enabled)
 
 Exit status
 -----------
@@ -150,8 +151,6 @@ def main():
             "* a Nikon sidecar file is in a 'NKSC_PARAM' folder\n"
             "* a Nikon sidecar is named '<basename>.<extension>.nksc' "
             "where '<basename>.<extension>' is the image file name\n"
-            "* a supported image file exists with the same name that the "
-            "sidecar file in the parent folder\n"
             "* a darktable sidecar exists with the same name that the "
             "Nikon sidecar in the parent folder (this criterion is only "
             "checked when options '--list-filters' or '--list-metadata' "
@@ -211,7 +210,7 @@ def main():
     )
     parser.add_argument(
         "filename",
-        default = ".",
+        default = "./*",
         nargs = "*",
         type = str, #pathlib.Path,
         help = "files or directory to parse. For each item that name a "

@@ -37,6 +37,7 @@ import locale
 import logging
 import pathlib
 import sys
+from pathlib import Path
 from xml.etree import ElementTree
 
 import colorama
@@ -76,7 +77,7 @@ class DarkBridge(object):
     ---------
     """
     _pathname: list[str]
-    _paths: list [pathlib.Path]
+    _paths: list[list[Path]]
 
     def __init__(self, pathname: list[str]):
         self._pathname = pathname
@@ -124,16 +125,41 @@ class DarkBridge(object):
         """
         raise NotImplementedError
 
-    def filter(self) -> bool:
+    def filter(self, path: Path) -> None | list[Path]:
         """
         Filter the file list by removing no supported images files or
         images files without sidecar files.
 
+        Args:
+            path: path of an image file.
+
         Returns:
-            `True` if the execution went well. In case of failure, an
-            error is written on console.
+            a list of two path: the path of the image file and the path
+            of the Nikon sidecar file. `None` if the image file is not
+            supported or without sidecar
         """
-        raise NotImplementedError
+        paths_set = None
+        # check the suffix (may be lower case or upper case)
+        if path.is_file():
+            if path.suffix.lower() in nikon.NIKON_SUPPORTED_FORMAT:
+                # build the sidecar name
+                name = path.name + nikon.NIKON_NKSC_EXT
+                nksc_path = (path.parent / nikon.NIKON_NKSC_SUBFOLDER / name)
+                if nksc_path.exists():
+                    paths_set = [path, nksc_path]
+                else:
+                    _logger.info(
+                        f"Sidecar image file '{nksc_path.name}' not exist. "
+                        f"Image file '{path.name}' ignored")
+            else:
+                _logger.warning(
+                    f"Image file not supported. "
+                    f"Image file '{path.name}' ignored")
+        else:
+            _logger.info(
+                f"Not a file. '{path.name}' ignored")
+
+        return paths_set
 
     def parse(self, recursive: bool) -> bool:
         """
@@ -144,10 +170,13 @@ class DarkBridge(object):
             `True` if the execution went well. In case of failure, an
             error is written on console.
         """
+        self._paths = []
         for pathname in self._pathname:
             names = glob.glob(pathname, recursive=recursive)
             for name in names:
-                self._paths.append(pathlib.Path(name).resolve())
+                paths = self.filter(pathlib.Path(name).resolve())
+                if paths is not None:
+                    self._paths.append(paths)
         return True
 
     def run(self, dry_run: bool, force: bool, recursive: bool) -> bool:
@@ -168,8 +197,8 @@ class DarkBridge(object):
         """
         self.parse(recursive)
         for path in self._paths:
-            _logger.info(f"Parse '{path.name}'...")
-            file = path.open()
+            _logger.info(f"Parse '{path[1].name}'...")
+            file = path[1].open()
             tree = ElementTree.parse(file)
             nkcs = nikon.NikonSideCar(tree.getroot())
             nkcs.parse()
