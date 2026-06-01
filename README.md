@@ -1,11 +1,11 @@
 ![DarkBridge][logo] 
 
+> ![GitHub License][lic] [![ReadTheDocs Status][rtds]][rtdp]\
+> ![GitHub Release][pkg] ![GitHub Tag][tag]\
+> ![PyPI - Version][pyv] ![PyPI - Status][pyst] ![PyPI - Format][pyfm]
+
 DarkBridge
 ==========
-
-[![ReadTheDocs Status][rtds]][rtdp] ![GitHub License][lic] 
-![GitHub Release][pkg] ![GitHub Tag][tag]
-
 **Bridge Nikon sidecars to Darktable, seamlessly.**
 
 DarkBridge is a utility that converts Nikon NX Studio `.nksc` sidecar 
@@ -13,17 +13,17 @@ files into sidecar files compatible with Darktable.
 It helps photographers migrate adjustment data from Nikon’s workflow to 
 Darktable without manually recreating edits.
 
-[NX Studio][nxst] (and the previous software as View-NX2, ViewNX-i, Capture NX-D) may
-save image adjustments to "sidecar" files in an `NKSC_PARAM` folder within the
-same folder as the original image. In this case, any changes to pictures will be
-saved in image adjustment (sidecar) files (extension `.nksc`) separate from the
-original image data. Because changes are not applied directly to the original
-image data, pictures can be edited repeatedly with no loss in quality. Sidecar
-files are also used to store labels, ratings, XMP/IPTC metadata, and other data
-in addition to image adjustments.
+[NX Studio][nxst] (and the previous software as View-NX2, ViewNX-i, Capture 
+NX-D) may save image adjustments to "sidecar" files in an `NKSC_PARAM` folder 
+within the same folder as the original image. In this case, any changes to 
+pictures will be saved in image adjustment (sidecar) files (extension `.nksc`)
+separate from the original image data. Because changes are not applied directly
+to the original image data, pictures can be edited repeatedly with no loss 
+in quality. Sidecar files are also used to store labels, ratings, XMP/IPTC 
+metadata, and other data in addition to image adjustments.
 
-> ***warning:** Image adjustments may be saved in the original image file, this 
-> script do not support this mode. If an image file has not a side car file, the
+> ***Warning:** Image adjustments may be saved in the original image file, this 
+> script do not support this mode. If an image file has not a sidecar file, the
 > script will ignore it. Same for orphan sidecar files.*
 
 See also
@@ -34,8 +34,11 @@ See also
 
 [logo]: https://raw.githubusercontent.com/fmezou/darkbridge/refs/heads/develop/docs/source/_static/darkbridge_assets/darkbridge-logo.svg
 [rtds]: https://app.readthedocs.org/projects/darkbridge/badge/?version=develop
-[rtdp]: https://nkscexport.readthedocs.io/en/develop/
+[rtdp]: https://darkbridge.readthedocs.io/en/develop/
 [lic]: https://img.shields.io/github/license/fmezou/darkbridge
 [pkg]: https://img.shields.io/github/v/release/fmezou/darkbridge
 [tag]: https://img.shields.io/github/v/tag/fmezou/darkbridge
+[pyv]: https://img.shields.io/pypi/v/darkbridge
+[pyfm]: https://img.shields.io/pypi/format/darkbridge
+[pyst]: https://img.shields.io/pypi/status/darkbridge
 [nxst]: https://downloadcenter.nikonimglib.com/en/products/564/NX_Studio.html
