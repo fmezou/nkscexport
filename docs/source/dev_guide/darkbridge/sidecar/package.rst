@@ -2,14 +2,15 @@
 .. default-domain:: py
 .. default-role:: any
 
-:mod:`darkbridge.sidecar` -- Handle the sidecar files
-=====================================================
+``sidecar`` -- Handle sidecar files
+===================================
 .. automodule:: darkbridge.sidecar
     :platform: all
-    :synopsis: Handle the sidecar files.
+    :synopsis: Handle sidecar files.
 
 .. toctree::
     :hidden:
     :maxdepth: 1
 
     nikon
+    ieee754

@@ -1,34 +1,34 @@
-"""Convert Nikon sidecar files
+"""Darkbridge core module
 
-The :mod:`core` module schedules operations to convert the sidecar files.
-Main task are filtering/checking the supported image files, parsing the
-Nikon sidecar files, transforming the metadata and wrinting the result
-in a XMP sidecar file compliant with Darktable.
+The :mod:`darkbridge.core` module schedules operations to convert the
+sidecar files. Main task are filtering/checking the supported image
+files, parsing the Nikon sidecar files, transforming the metadata and
+wrinting the result in a XMP sidecar file compliant with Darktable.
 
 The exported classes, exceptions and functions (and any other objects)
 are as follows:
 
-darkbridge.core exceptions
---------------------------
-.. todo:: review the list after completing
+``core`` exceptions
+-------------------
+.. todo:: Review the list after completing
 
-darkbridge.core classes
------------------------
+``core``  classes
+-----------------
 .. hlist::
     :columns: 2
 
     * :class:`DarkBridge`- Convert sidecar files
 
-darkbridge.core constants
+``core`` constants
+------------------
+.. todo:: Review the list after completing
+
+Using ``core``
+--------------
+.. todo:: Describe how using the module
+
+``core`` reference manual
 -------------------------
-.. todo:: review the list after completing
-
-Using darkbridge.core
----------------------
-.. todo:: describe how using the module
-
-darkbridge.core reference manual
---------------------------------
 """
 import argparse
 import datetime
@@ -53,8 +53,7 @@ _logger.addHandler(logging.NullHandler())
 
 
 class DarkBridge(object):
-    """
-    Convert sidecar files from Nikon NX Studio (.nksc) in sidecar files
+    """Convert sidecar files from Nikon NX Studio (.nksc) in sidecar files
     compliant with Darktable.
 
     Using darkbridge
@@ -84,8 +83,7 @@ class DarkBridge(object):
         self._paths = []
 
     def list_filters(self, all: bool) -> bool:
-        """
-        list the image adjustment filters.
+        """list the image adjustment filters.
 
         Args:
             all: `True` includes all filters in the list, `False` limits the
@@ -98,8 +96,7 @@ class DarkBridge(object):
         raise NotImplementedError
 
     def list_metadata(self) -> bool:
-        """
-        list the metadata specified in the sidecar files.
+        """list the metadata specified in the sidecar files.
 
         Returns:
             `True` if the execution went well. In case of failure, an
@@ -108,8 +105,7 @@ class DarkBridge(object):
         raise NotImplementedError
 
     def convert(self, dry_run: bool, force: bool, recursive:bool) -> bool:
-        """
-        Run the conversion.
+        """Run the conversion.
 
         Args:
             dry_run: `True` runs in preview mode without any sidecar
@@ -126,20 +122,19 @@ class DarkBridge(object):
         raise NotImplementedError
 
     def filter(self, path: Path) -> None | list[Path]:
-        """
-        Filter the file list by removing no supported images files or
+        """ Filter the file list by removing no supported images files or
         images files without sidecar files.
 
         Args:
-            path: path of an image file.
+            path: Path of the image file.
 
         Returns:
-            a list of two path: the path of the image file and the path
+            A list of two paths: the path of the image file and the path
             of the Nikon sidecar file. `None` if the image file is not
-            supported or without sidecar
+            supported or without sidecar file.
         """
         paths_set = None
-        # check the suffix (may be lower case or upper case)
+        # check the suffix (maybe lower case or upper case)
         if path.is_file():
             if path.suffix.lower() in nikon.NIKON_SUPPORTED_FORMAT:
                 # build the sidecar name
@@ -162,8 +157,7 @@ class DarkBridge(object):
         return paths_set
 
     def parse(self, recursive: bool) -> bool:
-        """
-        Build the images files list based on patterns as defined in
+        """ Build the images files list based on patterns as defined in
         `glob.glob` functions.
 
         Returns:
@@ -180,8 +174,7 @@ class DarkBridge(object):
         return True
 
     def run(self, dry_run: bool, force: bool, recursive: bool) -> bool:
-        """
-        All-in-one entry point to run the conversion
+        """All-in-one entry point to run the conversion
 
         Args:
             dry_run: `True` runs in preview mode without any sidecar

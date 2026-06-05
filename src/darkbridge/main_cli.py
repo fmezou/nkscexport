@@ -20,8 +20,7 @@ Darkbridge ignores files that not matching following criteria:
 * a Nikon sidecar is named :file:`{basename}.{extension}.nksc` where
   :file:`{basename}.{extension}` is the image file name
 * a darktable sidecar exists with the same name that the Nikon sidecar
-  in the parent folder (this criterion is only checked when options
-  :option:`--list-filters` or :option:`--list-metadata` are not enabled)
+  in the parent folder.
 
 The script only supports image files supported by NX Studio [1]_ :
 :file:`.nef`, :file:`.nrw`, :file:`.jpg`, :file:`.jpeg`, :file:`.tif`,
@@ -33,34 +32,36 @@ The options are as follows:
 
 .. option:: -h, --help
 
-    show this help message and exit
+    Show this help message and exit.
 
 .. option:: -r, --recursive
 
-    make a recursive search of images files in subfolders.
+    Make a recursive search of images files in subfolders.
 
 .. option:: -f, --force
 
-    overwrite existing sidecar files without prompting for confirmation.
+    Overwrite existing sidecar files without prompting for confirmation.
 
 .. option:: -n, --dry-run
 
-    run in preview mode without any sidecar writing.
+    Run in preview mode without any sidecar writing.
 
 .. option:: -a, --all
 
-    include all the metadata or filters in the list, not only the
-    active one or not empty
+    Include all the metadata or filters in the list, not only the
+    active one or not empty.
 
 .. option:: --list-filters
 
-    list the active filters (or all if --all option is enabled)
+    List the active filters (or all if --all option is enabled)
     specified in sidecar files. The transferable filters are colored
-    in green.
+    in green. Existance of darktable sidecar file is ignored when this
+    option is used.
 
 .. option:: --list-metadata
 
-    list the metadata specified in the sidecar files
+    List the metadata specified in the sidecar files. Existance of
+    darktable sidecar file is ignored when this option is used.
 
 .. option:: --log-level LOG_LEVEL
 
@@ -71,11 +72,11 @@ The options are as follows:
 
 .. option:: -v, --version
 
-    show program's version number and exit
+    Show program's version number and exit.
 
 .. option:: file ...
 
-    files or directory to parse. For each item that name a supported
+    Files or directory to parse. For each item that name a supported
     image file, darkbridge parse the associated Nikon sidecar file and
     copy metadata in the darktable sidecar file. For each item that
     name a directory, darkbridge lists supported images files contained
@@ -85,18 +86,14 @@ The options are as follows:
 .. [1] Nikon, NX Studio Supported Formats,
     https://nikonimglib.com/nxstdo/onlinehelp/en/supported_formats_4.html
 
-* a darktable sidecar exists with the same name that the Nikon sidecar
-  in the parent folder (this criterion is only checked when options
-  :option:`--list-filters` or :option:`--list-metadata` are not enabled)
-
 Exit status
 -----------
 
 ==  ====================================================================
-0   no error
-1   an error occurred (error messages are print on stderr stream
+0   No error
+1   An error occurred (error messages are print on stderr stream
     console).
-2   invalid argument. An argument of the command line isn't valid
+2   Invalid argument. An argument of the command line isn't valid
     (see Usage).
 ==  ====================================================================
 
@@ -152,9 +149,7 @@ def main():
             "* a Nikon sidecar is named '<basename>.<extension>.nksc' "
             "where '<basename>.<extension>' is the image file name\n"
             "* a darktable sidecar exists with the same name that the "
-            "Nikon sidecar in the parent folder (this criterion is only "
-            "checked when options '--list-filters' or '--list-metadata' "
-            "are not enabled)\n"
+            "Nikon sidecar in the parent folder\n"
             "\n"
             "The script only supports image files supported by NX "
             "Studio: .nef, .nrw, .jpg, .jpeg, .tif, .tiff, .hif, .nefx "
@@ -163,36 +158,38 @@ def main():
     parser.add_argument(
         "-r", "--recursive",
         action = "store_true",
-        help = "make a recursive search of images files in subfolders."
+        help = "Make a recursive search of images files in subfolders."
     )
     parser.add_argument(
         "-f", "--force",
         action = "store_true",
-        help = "overwrite existing sidecar files without prompting for "
+        help = "Overwrite existing sidecar files without prompting for "
                "confirmation."
     )
     parser.add_argument(
         "-n", "--dry-run",
         action = "store_true",
-        help = "run in preview mode without any sidecar writing."
+        help = "Run in preview mode without any sidecar writing."
     )
     parser.add_argument(
         "-a", "--all",
         action = "store_true",
-        help = "include all the metadata or filters in the list, not only the "
+        help = "Include all the metadata or filters in the list, not only the "
             "active one or not empty."
     )
     parser.add_argument(
         "--list-filters",
         action = "store_true",
-        help = "list the active filters (or all if --all option is enabled) "
+        help = "List the active filters (or all if --all option is enabled) "
                "specified in sidecar files. The transferable filters are "
-               "colored in green."
+               "colored in green. Existance of darktable sidecar file is "
+               "ignored when this option is used."
     )
     parser.add_argument(
         "--list-metadata",
         action = "store_true",
-        help = "list the metadata specified in the sidecar files"
+        help = "List the metadata specified in the sidecar files. Existance "
+               "of darktable sidecar file is ignored when this option is used."
     )
     parser.add_argument(
         "--log-level",
@@ -213,7 +210,7 @@ def main():
         default = "./*",
         nargs = "*",
         type = str, #pathlib.Path,
-        help = "files or directory to parse. For each item that name a "
+        help = "Files or directories to parse. For each item that name a "
                "supported image file, darkbridge parses the associated Nikon "
                "sidecar file and copy metadata in the darktable sidecar file. "
                "For each item that name a directory, darkbridge list supported "
@@ -235,8 +232,7 @@ def main():
         format="{levelname} {name} {funcName} {message}")
 
     _logger.info(
-        "Starting {} v{} on {:%c}".format(
-            name, version, datetime.datetime.now()))
+        f"Starting {name} v{version} on {datetime.datetime.now():%c}")
 
     bridge = DarkBridge(args.filename)
     if args.list_filters:
@@ -251,8 +247,7 @@ def main():
         result = bridge.run(args.dry_run, args.force, args.recursive)
 
     _logger.info(
-        "{} v{} completed on {:%c}".format(
-                name, version, datetime.datetime.now()))
+        f"{name} v{version} completed on {datetime.datetime.now():%c}")
     if not result:
         sys.exit(1)
 
