@@ -2,8 +2,8 @@
 .. default-domain:: py
 .. default-role:: any
 
-:mod:`darkbridge.main_cli`
-==========================
+``main_cli`` -- Command line interface
+======================================
 .. automodule:: darkbridge.main_cli
     :platform: all
-    :synopsis: Converts Nikon sidecar files into Darktable sidecars.
+    :synopsis: Command line interface

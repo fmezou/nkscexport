@@ -2,8 +2,8 @@
 .. default-domain:: py
 .. default-role:: any
 
-:mod:`darkbridge.version` -- Store project metadata
-===================================================
+``version`` -- Store project metadata
+=====================================
 .. automodule:: darkbridge.version
     :platform: all
     :synopsis: Store project metadata

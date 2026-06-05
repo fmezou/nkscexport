@@ -2,8 +2,8 @@
 .. default-domain:: py
 .. default-role:: any
 
-:mod:`darkbridge.sidecar.nikon` - Handle Nikon sidecar files (read only)
-========================================================================
+``nikon`` -- Handle Nikon sidecar files (read only)
+===================================================
 .. automodule:: darkbridge.sidecar.nikon
     :platform: all
     :synopsis: Handle Nikon sidecar files (read only)

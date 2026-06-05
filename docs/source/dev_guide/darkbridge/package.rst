@@ -2,8 +2,8 @@
 .. default-domain:: py
 .. default-role:: any
 
-:mod:`darkbridge` - Convert Nikon sidecar files
-===============================================
+``darkbridge`` -- Convert Nikon sidecar files
+=============================================
 .. automodule:: darkbridge
     :platform: all
     :synopsis: Convert Nikon sidecar files.

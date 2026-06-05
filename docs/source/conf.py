@@ -66,7 +66,7 @@ html_show_sourcelink = False
 # -- Theme options
 #  https://pypi.org/project/sphinx-rtd-theme/
 html_theme_options = {
-#    "github_url" : "https://github.com/fmezou/nkscexport"
+#    "github_url" : "https://github.com/fmezou/darkbridge"
 }
 
 # Extension options -----------------------------------------------------------

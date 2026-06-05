@@ -2,11 +2,11 @@
 .. default-domain:: py
 .. default-role:: any
 
-:mod:`darkbridge.core` -- Convert Nikon sidecar files
-=====================================================
+``core`` -- Darkbridge core module
+==================================
 .. automodule:: darkbridge.core
     :platform: all
-    :synopsis: Convert Nikon sidecar files
+    :synopsis: Darkbridge core module
     :members:
     :private-members:
     :show-inheritance:

@@ -8,8 +8,8 @@ The exported data are as follows:
 .. hlist::
     :columns: 2
 
-    * :data:`name` - the name of the project
-    * :data:`version` - the version of the project
+    * :data:`name` - The name of the project
+    * :data:`version` - The version identifier of the project
 
 The easiest way to use is to import the module as below.
 
@@ -26,11 +26,12 @@ __all__ = [
     "version"
 ]
 
-name = "DarkBridge"
+name: str = "DarkBridge"
 """The name of the project"""
-version = "0.1.0.dev0"
-"""The version of the project, as defined in the `Version specifier 
-specification <https://packaging.python.org/en/latest/specifications/
-version-specifiers/#version-specifiers>`_"""
+
+version: str = "0.1.0.dev0"
+"""The version identifier of the project, as defined in the `Version 
+specifier specification <https://packaging.python.org/en/latest/
+specifications/version-specifiers/#version-specifiers>`_"""
 
 

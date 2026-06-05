@@ -8,8 +8,8 @@ The exported modules are as follows:
 .. hlist::
     :columns: 2
 
-    * :mod:`core` - Convert Nikon sidecar files
-    * :mod:`version` - Store project metadata
+    * :mod:`darkbridge.core` - Convert Nikon sidecar files
+    * :mod:`darkbridge.version` - Store project metadata
 """
 from darkbridge.version import version
 

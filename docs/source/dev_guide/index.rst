@@ -5,7 +5,6 @@
 ***************
 Developer Guide
 ***************
-.. sectionauthor:: Frédéric MEZOU <frederic.mezou@free.fr>
 
 This manual is designed for a *developer audience* to enhance features
 and contributing to the project.This documentation describes scripts,
