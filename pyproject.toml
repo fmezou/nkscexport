@@ -1,6 +1,8 @@
 [build-system]
-requires = ["hatchling >= 1.26"]
-build-backend = "hatchling.build"
+#requires = ["hatchling >= 1.26"]
+#build-backend = "hatchling.build"
+requires = ["setuptools >= 61.0.0", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "DarkBridge"
@@ -13,7 +15,7 @@ license-files = ["LICEN[CS]E*"]
 authors = [
   { name="fmezou", email="frederic.mezou@orange.fr" },
 ]
-Keywords = [
+keywords = [
     "nef",
     "nksc",
     "darktable",
@@ -46,7 +48,10 @@ issues = "https://github.com/fmezou/darkbridge/issues"
 [project.scripts]
 darkbridge = "darkbridge.main_cli:main"
 
-[tool.hatch.version]
-source = "code"
-path = "src/darkbridge/version.py"
-expression = "version"
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["darkbridge", "library", "sidecar"]
+namespaces = false
+
+[tool.setuptools.dynamic]
+version = {attr = "darkbridge.__version__"}

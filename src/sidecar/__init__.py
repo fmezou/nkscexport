@@ -10,7 +10,7 @@ The exported modules are as follows:
 .. hlist::
     :columns: 2
 
-    * :mod:`darkbridge.sidecar.nikon` - Handle Nikon sidecar files (read only)
+    * :mod:`sidecar.nikon` - Handle Nikon sidecar files (read only)
 """
 __all__ = [
     "nikon"

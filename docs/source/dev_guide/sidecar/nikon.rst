@@ -4,7 +4,7 @@
 
 ``nikon`` -- Handle Nikon sidecar files (read only)
 ===================================================
-.. automodule:: darkbridge.sidecar.nikon
+.. automodule:: sidecar.nikon
     :platform: all
     :synopsis: Handle Nikon sidecar files (read only)
     :members:

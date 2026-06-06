@@ -42,7 +42,7 @@ from xml.etree import ElementTree
 
 import colorama
 
-from darkbridge.sidecar import nikon
+from sidecar import nikon
 
 
 # This module can be used as library or as a script, a nullHandler is

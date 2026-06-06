@@ -18,5 +18,5 @@ in charge of the user interface (in text mode) and operations scheduling.
     :maxdepth: 1
 
     darkbridge/package
-    darkbridge/sidecar/package
+    sidecar/package
     library/package
