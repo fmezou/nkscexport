@@ -42,7 +42,7 @@ from xml.etree import ElementTree
 
 import colorama
 
-from sidecar import nikon
+from sidecar.nikon import *
 
 
 # This module can be used as library or as a script, a nullHandler is
@@ -56,72 +56,41 @@ class DarkBridge(object):
     """Convert sidecar files from Nikon NX Studio (.nksc) in sidecar files
     compliant with Darktable.
 
+    Args:
+        pathname: List of pathname of images files list based on patterns
+            as defined by `glob.glob` function.
+        recursive: `True` make a recursive search of images files in
+            subfolders.
+
+
     Using darkbridge
     ----------------
 
     This class is the scheduler and handles elementary operations to
     complete the expected task.
 
-    The easiest way of using this class is to call the `run` method.
-    This all-in-one method searches sidecar files in the required
+    The easiest way of using this class is to call the `convert` or
+    `list` methods. The first searches sidecar files in the required
     folders (and subfolders if required), reads the metadata and create
     or modify the sidecar files in XMP format at the same level as the
-    original image file.
-
-    To have more control, you must call individually each method. A
-    typical use case is to build the images files list by calling
-    `parse` method and run the conversion by calling `convert`
+    original image file. The second do the same, but only displays
+    metadata stored in Nikon sidecar files.
 
     Reference
     ---------
     """
     _pathname: list[str]
+    _recursive: bool
     _paths: list[list[Path]]
+    _nksc: None | NikonSideCar # current NKSC file
 
-    def __init__(self, pathname: list[str]):
+    def __init__(self, pathname: list[str], recursive: bool):
         self._pathname = pathname
+        self._recursive = recursive
         self._paths = []
+        self._nksc = None
 
-    def list_filters(self, all: bool) -> bool:
-        """list the image adjustment filters.
-
-        Args:
-            all: `True` includes all filters in the list, `False` limits the
-                list to only active filters.
-
-        Returns:
-            `True` if the execution went well. In case of failure, an
-            error is written on console.
-        """
-        raise NotImplementedError
-
-    def list_metadata(self) -> bool:
-        """list the metadata specified in the sidecar files.
-
-        Returns:
-            `True` if the execution went well. In case of failure, an
-            error is written on console.
-        """
-        raise NotImplementedError
-
-    def convert(self, dry_run: bool, force: bool, recursive:bool) -> bool:
-        """Run the conversion.
-
-        Args:
-            dry_run: `True` runs in preview mode without any sidecar
-                writing.
-            force: `True` overwrites existing sidecar files without
-                prompting for confirmation.
-            recursive: `True` make a recursive search of images files in
-                subfolders.
-
-        Returns:
-            `True` if the execution went well. In case of failure, an
-            error is written on console.
-        """
-        raise NotImplementedError
-
-    def filter(self, path: Path) -> None | list[Path]:
+    def _filter_filelist(self, path: Path) -> None | list[Path]:
         """ Filter the file list by removing no supported images files or
         images files without sidecar files.
 
@@ -136,10 +105,10 @@ class DarkBridge(object):
         paths_set = None
         # check the suffix (maybe lower case or upper case)
         if path.is_file():
-            if path.suffix.lower() in nikon.NIKON_SUPPORTED_FORMAT:
+            if path.suffix.lower() in NIKON_SUPPORTED_FORMAT:
                 # build the sidecar name
-                name = path.name + nikon.NIKON_NKSC_EXT
-                nksc_path = (path.parent / nikon.NIKON_NKSC_SUBFOLDER / name)
+                name = path.name + NIKON_NKSC_EXT
+                nksc_path = (path.parent / NIKON_NKSC_SUBFOLDER / name)
                 if nksc_path.exists():
                     paths_set = [path, nksc_path]
                 else:
@@ -156,7 +125,7 @@ class DarkBridge(object):
 
         return paths_set
 
-    def parse(self, recursive: bool) -> bool:
+    def _build_filelist(self) -> bool:
         """ Build the images files list based on patterns as defined in
         `glob.glob` functions.
 
@@ -166,35 +135,89 @@ class DarkBridge(object):
         """
         self._paths = []
         for pathname in self._pathname:
-            names = glob.glob(pathname, recursive=recursive)
+            names = glob.glob(pathname, recursive=self._recursive)
             for name in names:
-                paths = self.filter(pathlib.Path(name).resolve())
+                paths = self._filter_filelist(pathlib.Path(name).resolve())
                 if paths is not None:
                     self._paths.append(paths)
+                else:
+                    print(f"File '{name}' ignored as it is not a supported "
+                          f"image file or no sidecar file exists",
+                          file=sys.stderr)
         return True
 
-    def run(self, dry_run: bool, force: bool, recursive: bool) -> bool:
-        """All-in-one entry point to run the conversion
+    def convert(self, dry_run: bool, force: bool) -> bool:
+        """Entry point to launch conversions to Darktable sidecar files
+
+        This method searches sidecar files in the required folders (and
+        subfolders if :attr:`_recursive` is ``True``), reads the
+        metadata and create or modify the sidecar files in XMP format at
+        the same level as the original image file.
 
         Args:
             dry_run: `True` runs in preview mode without any sidecar
                 writing.
             force: `True` overwrites existing sidecar files without
                 prompting for confirmation.
-            recursive: `True` make a recursive search of images files in
-                subfolders.
 
         Returns:
             `True` if the execution went well. In case of failure, an
             error is written on console.
         """
-        self.parse(recursive)
+        raise NotImplementedError
+
+    def list(self, all: bool, detailed: bool) -> bool:
+        """Entry point to launch metadata listing.
+
+        This method searches sidecar files in the required folders (and
+        subfolders if :attr:`_recursive` is ``True``), reads the
+        metadata and list metadata for each files.
+
+        Args:
+            detailed: `True` includes active filters specified in
+                sidecar files. `False` displays '[F]' in metadata to
+                indicate that at least a filter is active. In this case,
+                the ``all`` parameter is ignored.
+            all: `True` includes all filters, `False` enumerates only
+                active filters.
+
+        Returns:
+            `True` if the execution went well. In case of failure, an
+            error is written on console.
+        """
+        self._build_filelist()
         for path in self._paths:
-            _logger.info(f"Parse '{path[1].name}'...")
+            _logger.debug(f"Parsing of '{path[1].name}'...")
             file = path[1].open()
             tree = ElementTree.parse(file)
-            nkcs = nikon.NikonSideCar(tree.getroot())
-            nkcs.parse()
+            self._nksc = NikonSideCar(tree.getroot())
+            self._nksc.parse()
+            if detailed:
+                print(f"Image '{path[0].name}': {self._get_metadata(all)}")
+            else:
+                print(f"Image '{path[0].name}': {self._get_summary()}")
             file.close()
         return True
+
+    def _get_summary(self) -> str:
+        """Return a summary of image metadata
+
+        Returns:
+            A string with the metadata summary.
+        """
+        msg = "NotImplementedError"
+        return msg
+
+    def _get_metadata(self, all: bool) -> str:
+        """Return a summary of image metadata
+
+        Args:
+            all: `True` includes all filters, `False` enumerates only
+                active filters.
+
+        Returns:
+             A string with the metadata.
+        """
+        msg = "NotImplementedError"
+        return msg
 

@@ -365,14 +365,11 @@ class NikonXMPProperty(NikonBaseProperties):
                 # Binary buffer
                 case "Binary":
                     self.value = base64.b64decode(res_value)
-                    _logger.debug(f"property {self.name}: "
-                                  f"binary resource = {self.value}")
+
                 # Integer
                 case "Long":
                     buffer = base64.b64decode(res_value)
                     self.value = int.from_bytes(buffer, byteorder='little')
-                    _logger.debug(f"property {self.name}: "
-                                  f"long resource = {self.value}")
 
                 # List of float number (IEEE754 Double precision 64-bits)
                 case "Double":
@@ -380,16 +377,10 @@ class NikonXMPProperty(NikonBaseProperties):
                     value = base64.b64decode(res_value)
                     for i in range(len(value) // 8):
                         self.value.append(IEEE754(value[i*8 : (i+1)*8]).value)
-                        _logger.debug(
-                            f"property {self.name}: "
-                            f"double resource ({i}) = {self.value[i]} "
-                            f"({value[i*8 : (i+1)*8].hex(':')})")
 
                 # ASCII string
                 case "Ascii":
                     self.value = res_value
-                    _logger.debug("property {self.name}: "
-                                  "ascii resource = {self.value}")
 
                 case _:
                     raise NikonResourceTypeError(self.name, res_type)
@@ -397,7 +388,6 @@ class NikonXMPProperty(NikonBaseProperties):
         else:
             # Simple valued XMP property
             self.value = element.text
-            _logger.debug(f"property {self.name}: xmltext = {self.value}")
 
 
 class NikonXMPMeta(NikonBaseProperties):
@@ -546,8 +536,13 @@ class NikonSDCProperties(NikonBaseProperties):
 
                     case _:
                         _logger.warning(
-                            f"property '{xmp_property.name}' is not known"
+                            f"SDC property '{xmp_property.name}' is not known"
                             f" - ignored")
+
+        _logger.debug(f"SDC property {self.about=}")
+        _logger.debug(f"SDC property {self.version=}")
+        _logger.debug(f"SDC property {self.app_version=}")
+        _logger.debug(f"SDC property {self.app_name=}")
 
 
 class NikonAsteroidProperties(NikonBaseProperties):
@@ -627,21 +622,30 @@ class NikonAsteroidProperties(NikonBaseProperties):
                         self.xml_packets = xmp_property.value
 
                     case ("ast:GPSVersionID"):
-                        self.gps_version_id = xmp_property.value
+                        # voir https://dicom.innolitics.com/ciods/vl-photographic-image/vl-photographic-geolocation/00160070
+                        # -
+                        # https://www.dicomstandard.org/current => repointe sur nema
+                        # GPS​Version​ID VR=OB VM=1 - -https://dicom.nema.org/medical/dicom/current/output/chtml/part06/chapter_6.html
+                        # VR=value representation https://dicom.nema.org/medical/dicom/current/output/chtml/part05/sect_6.2.html
+                        # OB=Other byte = https://dicom.nema.org/medical/dicom/current/output/chtml/part05/sect_7.3.html
+                        # little endian by convention
+                        # https://dicom.nema.org/medical/dicom/current/output/chtml/part03/sect_C.8.12.12.html
+                        # define les champs suivant
+
+                        self.gps_version_id = int.from_bytes(xmp_property.value, 'little')
+                        #self.gps_version_id = xmp_property.value
 
                     case ("ast:GPSLatitudeRef"):
                         self.gps_latitude_ref = xmp_property.value
 
                     case ("ast:GPSLatitude"):
                         self.gps_latitude = self._from_dms(xmp_property.value)
-                        _logger.debug(f"property {self.gps_latitude=}")
 
                     case ("ast:GPSLongitudeRef"):
                         self.gps_longitude_ref = xmp_property.value
 
                     case ("ast:GPSLongitude"):
                         self.gps_longitude = self._from_dms(xmp_property.value)
-                        _logger.debug(f"property {self.gps_latitude=}")
 
                     case("ast:GPSMapDatum"):
                         self.gps_map_datum = xmp_property.value
@@ -651,8 +655,19 @@ class NikonAsteroidProperties(NikonBaseProperties):
 
                     case _:
                         _logger.warning(
-                            f"property '{xmp_property.name}' is not known"
+                            f"AST property '{xmp_property.name}' is not known"
                             f" - ignored")
+
+        _logger.debug(f"AST property {self.about=}")
+        _logger.debug(f"AST property {self.version=}")
+        _logger.debug(f"AST property {self.xml_packets=}")
+        _logger.debug(f"AST property {self.gps_version_id=}")
+        _logger.debug(f"AST property {self.gps_latitude_ref=}")
+        _logger.debug(f"AST property {self.gps_latitude=}")
+        _logger.debug(f"AST property {self.gps_longitude_ref=}")
+        _logger.debug(f"AST property {self.gps_longitude=}")
+        _logger.debug(f"AST property {self.gps_map_datum=}")
+        _logger.debug(f"AST property {self.iptc=}")
 
     def _from_dms(self, dms: list[float | None]):
         """Get coordinate in decimal degrees.
@@ -747,8 +762,15 @@ class NikonNineProperties(NikonBaseProperties):
 
                     case _:
                         _logger.warning(
-                            f"property '{xmp_property.name}' is not known"
+                            f"NINE property '{xmp_property.name}' is not known"
                             f" - ignored")
+
+        _logger.debug(f"NINE property {self.about=}")
+        _logger.debug(f"NINE property {self.version=}")
+        _logger.debug(f"NINE property {self.nine_edits=}")
+        _logger.debug(f"NINE property {self.label=}")
+        _logger.debug(f"NINE property {self.rating=}")
+        _logger.debug(f"NINE property {self.trim=}")
 
 
 class NikonSideCar(object):

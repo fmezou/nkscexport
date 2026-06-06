@@ -224,4 +224,4 @@ __marimo__/
 # Project's specific ignored files or folders
 #   image_sample : contains sample for developping and testing the script
 /images_samples/
-
+/*.lnk
