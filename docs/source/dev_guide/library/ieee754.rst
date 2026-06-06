@@ -4,7 +4,7 @@
 
 ``ieee754`` -- Handle IEEE754 floating-point format
 ===================================================
-.. automodule:: darkbridge.sidecar.ieee754
+.. automodule:: library.ieee754
     :platform: all
     :synopsis: Handle IEEE754 floating-point format
     :members:

@@ -1,6 +1,6 @@
 """Test suite for `ieee754` module.
 
-This module defines a test suite for testing the `darkbridge.sidecar.ieee754`
+This module defines a test suite for testing the `library.ieee754`
 module. Test cases are specified in `Single-precision floating-point format
 <https://en.wikipedia.org/wiki/Single-precision_floating-point_format
 #Notable_single-precision_cases>`_ and `Double-precision floating-point format
@@ -11,7 +11,7 @@ import math
 import unittest
 from pathlib import Path
 
-from darkbridge.sidecar.ieee754 import IEEE754
+from library.ieee754 import IEEE754
 
 # Tested modules may use the logging facility, so a minimal configuration
 # is set. To avoid side effects with the `unittest` console output, log
@@ -25,7 +25,7 @@ logging.basicConfig(
     filemode = "w")
 _logger = logging.getLogger(__name__)
 _logger.setLevel(logging.DEBUG)
-logging.getLogger("darkbridge.sidecar.ieee754").setLevel(logging.DEBUG)
+logging.getLogger("library.ieee754").setLevel(logging.DEBUG)
 
 _single_samples = (
     (

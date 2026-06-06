@@ -62,6 +62,7 @@ import base64
 import logging
 from xml.etree import ElementTree
 
+from library.ieee754 import IEEE754
 
 __all__ = [
     "NikonError",
@@ -85,7 +86,6 @@ __all__ = [
     "NIKON_NKSC_EXT"
 ]
 
-from darkbridge.sidecar.ieee754 import IEEE754
 
 NIKON_RATING_MAP = {
     "-1":"-1",# rejeté → -1 en XMP

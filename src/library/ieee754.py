@@ -1,6 +1,6 @@
-"""Handle IEEE754 floating-point format
+"""Handle IEEE754 floating-point format.
 
-The `sidecar.ieee754` module reads float numbers in a `IEEE754`_
+The `library.ieee754` module reads float numbers in a `IEEE754`_
 representation. This module do not implement the full specification of
 the standard. The implementation supports the following subset:
 
@@ -25,7 +25,7 @@ are as follows:
 Using ``ieee754``
 -----------------
 
->>> IEEE754(b"\xab\xaa\xaa\x3e").value
+>>> IEEE754(b"\\xab\\xaa\\xaa\\x3e").value
 0.3333333432674408
 
 ``ieee754`` reference manual
@@ -71,7 +71,8 @@ class IEEE754:
 
     Args:
         buffer: Bytes object of IEEE754 representation of the float
-            number.
+            number with the most significant byte is at the end of the
+            byte array (``byteorder = little``).
 
     Raises:
         KeyError: Unsupported IEEE754 Precision.

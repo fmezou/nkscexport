@@ -19,3 +19,4 @@ in charge of the user interface (in text mode) and operations scheduling.
 
     darkbridge/package
     darkbridge/sidecar/package
+    library/package

@@ -6,7 +6,7 @@
 =============================================
 .. automodule:: darkbridge
     :platform: all
-    :synopsis: Convert Nikon sidecar files.
+    :synopsis: Convert Nikon sidecar files
 
 .. toctree::
     :hidden:
