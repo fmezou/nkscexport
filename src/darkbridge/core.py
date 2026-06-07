@@ -40,7 +40,7 @@ import sys
 from pathlib import Path
 from xml.etree import ElementTree
 
-import colorama
+from colorama import Fore, Back, Style
 
 from sidecar.nikon import *
 
@@ -193,9 +193,21 @@ class DarkBridge(object):
             self._nksc = NikonSideCar(tree.getroot())
             self._nksc.parse()
             if detailed:
-                print(f"Image '{path[0].name}': {self._get_metadata(all)}")
+                print(Fore.GREEN
+                      +Style.BRIGHT
+                      +f"Image {path[0].name:30}"
+                      +Style.RESET_ALL)
+                print(f"{self._get_metadata(all)}")
             else:
-                print(f"Image '{path[0].name}': {self._get_summary()}")
+                print(Fore.GREEN
+                      +Style.BRIGHT
+                      +f"Image {path[0].name:30}"
+                      +Style.RESET_ALL
+                      +": "
+                      +Fore.MAGENTA
+                      +Style.BRIGHT
+                      +f"{self._get_summary()}"
+                      +Style.RESET_ALL)
             file.close()
         return True
 
@@ -205,7 +217,18 @@ class DarkBridge(object):
         Returns:
             A string with the metadata summary.
         """
-        msg = "NotImplementedError"
+        # nom du fichier image (uniquement)
+        # classement
+        # etiquette
+        # protégé ou pas
+        # post traitement ou pas
+        # darktable : presence de tag ou pas
+        # geolocalisé ou pas
+        if self._nksc.ast.gps.longitude is None:
+            msg = ""
+        else:
+            msg = " [G] "
+
         return msg
 
     def _get_metadata(self, all: bool) -> str:
@@ -218,6 +241,16 @@ class DarkBridge(object):
         Returns:
              A string with the metadata.
         """
-        msg = "NotImplementedError"
+        lines = []
+        msg = ""
+        if self._nksc.nine.nine_edits is not None:
+            lines.append(Style.DIM+f"    nine edit: {str(self._nksc.nine.nine_edits[:20])}"+Style.RESET_ALL)
+        if self._nksc.ast.xml_packets is not None:
+            lines.append(Style.DIM+f"    xml packet: {str(self._nksc.ast.xml_packets[:20])}"+Style.RESET_ALL)
+        if self._nksc.ast.iptc is not None:
+            lines.append(Style.DIM+f"    iptc: {str(self._nksc.ast.iptc[:20])}"+Style.RESET_ALL)
+        if self._nksc.ast.gps.longitude is not None:
+            lines.append(Style.BRIGHT+f"    location: {self._nksc.ast.gps}"+Style.RESET_ALL)
+        msg = "\n".join(lines)
         return msg
 
