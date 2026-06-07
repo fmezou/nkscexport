@@ -34,6 +34,9 @@ extensions = [
     "sphinx.ext.graphviz",
     "sphinx_rtd_theme"
 ]
+# -- Options for figure numbering ---------------------------------------------
+numfig = True
+
 # -- Options for highlighting -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-highlighting
 pygments_style = "sphinx"
