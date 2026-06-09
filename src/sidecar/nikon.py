@@ -239,348 +239,6 @@ class NikonResourceTypeError(NikonError):
         NikonError.__init__(self, msg)
 
 
-class NikonGPSProperty():
-    """Nikon GPS property.
-
-    This class manage compound data representing geographic coordinates
-    used by Nikon to geolocalize image. This class can be used in a
-    formatted string.
-
-    The article named ":ref:`Inside Nikon Sidecar file`" details the data
-    structure and tags used by Nikon. In a nutshell, Nikon seems to have
-    using DICOM specification (see :ref:`InsideNKCS.GPSAttrTable`).
-
-    Raises:
-        ValueError: argument has the right type but an
-            inappropriate value.
-
-    Attributes:
-        version_id: The version of GPS information.
-        latitude_ref: Whether the latitude is north (``N``) or south
-            (``S``).
-        latitude: The latitude, expressed in decimal degrees.
-        longitude_ref: Whether the longitude is east (``E``) or west
-            (``W``).
-        longitude: The longitude, expressed in decimal degrees.
-        altitude_ref: The altitude used as the reference altitude in
-            meters.
-        altitude: The altitude based on the reference in
-            :attr:`altitude_ref` in meters.
-        timestamp: The date and time, in UTC (Coordinated Universal Time).
-        status: The status of the GPS receiver when the image is
-            recorded. ``A`` measurement is in progress, ``V``
-            measurement interrupted
-        processing_method: The name of the method used for location
-            finding (``GPS``, ``CELLID``, ``MANUAL``).
-        map_datum: The geodetic survey data used by the GPS receiver.
-            ``WGS-84`` is used in most cases.
-    """
-    version_id: int | None
-    latitude_ref: str | None
-    latitude: float | None
-    longitude_ref: str | None
-    longitude: float | None
-    altitude_ref: int | None
-    altitude: float | None
-    timestamp: dt.datetime | dt.time | None
-    status: str | None
-    processing_method: str | None
-    map_datum: str | None
-    def __init__(self):
-        self.version_id = 0
-        self.latitude_ref = None
-        self.latitude = None
-        self.longitude_ref = None
-        self.longitude = None
-        self.altitude_ref = None
-        self.altitude = None
-        self.timestamp = None
-        self.status = None
-        self.processing_method = None
-        self.map_datum = None
-
-    def set_version_id(self, version_id: bytes):
-        """Set the version of GPS information.
-
-        Args:
-            version_id: The version of GPS information as a binary
-                string.
-
-        Raises:
-            ValueError: argument has the right type but an
-                inappropriate value.
-        """
-        _logger.debug(f"GPS property {version_id=}")
-        self.version_id = int.from_bytes(version_id, 'little')
-
-    def set_latitude_ref(self, latitude_ref: int):
-        """Set the latitude reference.
-
-        Args:
-            latitude_ref: Whether the latitude is north (``0``) or south
-                (``1``). *This attribute do not match with the
-                DICOM specifications* [digps]_.
-
-        Raises:
-            ValueError: argument has the right type but an
-                inappropriate value.
-        """
-        _logger.debug(f"GPS property {latitude_ref=}")
-        match latitude_ref:
-            case 0:
-                self.latitude_ref = "N"
-
-            case 1:
-                self.latitude_ref = "S"
-
-            case _:
-                raise ValueError(
-                    f"Unsupported latitude reference ({latitude_ref})")
-
-    def set_latitude(self, latitude: list[float]):
-        """Set the latitude.
-
-        Args:
-            latitude: The latitude expressed in degrees-minutes-seconds
-                as a set of three floating number. The method considers
-                the set having a variable size (1 to 3 float).
-
-        Raises:
-            ValueError: argument has the right type but an
-                inappropriate value.
-        """
-        _logger.debug(f"GPS property {latitude=}")
-        self.latitude = self._from_dms(latitude)
-
-    def set_longitude_ref(self, longitude_ref: int):
-        """Set the longitude reference.
-
-        Args:
-            longitude_ref: Whether the longitude is east (``2``) or west
-                (``3``). *This attribute do not match with the
-                DICOM specifications* [digps]_.
-
-        Raises:
-            ValueError: argument has the right type but an
-                inappropriate value.
-        """
-        _logger.debug(f"GPS property {longitude_ref=}")
-        match longitude_ref:
-            case 2:
-                self.longitude_ref = "E"
-
-            case 3:
-                self.longitude_ref = "W"
-
-            case _:
-                raise ValueError(
-                    f"Unsupported longitude reference ({longitude_ref})")
-
-    def set_longitude(self, longitude: list[float]):
-        """Set the longitude.
-
-        Args:
-            longitude: The longitude expressed in degrees-minutes-seconds
-                as a set of three floating number. The method considers
-                the set having a variable size (1 to 3 float).
-
-        Raises:
-            ValueError: argument has the right type but an
-                inappropriate value.
-        """
-        _logger.debug(f"GPS property {longitude=}")
-        self.longitude = self._from_dms(longitude)
-
-    def set_altitude_ref(self, altitude_ref: int):
-        """Set the altitude reference.
-
-        Args:
-            altitude_ref: The altitude used as the reference altitude in
-                meters.
-
-        Raises:
-            ValueError: argument has the right type but an
-                inappropriate value.
-        """
-        _logger.debug(f"GPS property {altitude_ref=}")
-        self.altitude_ref = altitude_ref
-
-    def set_altitude(self, altitude: float):
-        """Set the altitude.
-
-        Args:
-            altitude: The altitude based on the reference in
-                :attr:`altitude_ref` in meters.
-
-        Raises:
-            ValueError: argument has the right type but an
-                inappropriate value.
-        """
-        _logger.debug(f"GPS property {altitude=}")
-        self.altitude = altitude
-
-    def set_timestamp(self, timestamp: list[float]):
-        """Set the datetime stamp.
-
-        Args:
-            timestamp: The time in UTC (Coordinated Universal Time)
-                expressed in hours-minutes-seconds as a set of three
-                floating number. *This attribute do not match with the
-                DICOM specifications* [digps]_.
-
-        Raises:
-            ValueError: argument has the right type but an
-                inappropriate value.
-        """
-        _logger.debug(f"GPS property {timestamp=}")
-        time = None
-        # Each part is expressed as a float, but it must be an integer
-        for t in timestamp:
-            if not t.is_integer():
-                raise ValueError(
-                    f"Timestamp part is not a integer ({t})")
-
-        match len(timestamp):
-            case 1:
-                time = dt.time(hour=int(timestamp[0]),
-                               tzinfo=dt.timezone.utc)
-
-            case 2:
-                time = dt.time(hour=int(timestamp[0]),
-                               minute=int(timestamp[1]),
-                               tzinfo=dt.timezone.utc)
-
-            case 3:
-                time = dt.time(hour=int(timestamp[0]),
-                               minute=int(timestamp[1]),
-                               second=int(timestamp[2]),
-                               tzinfo=dt.timezone.utc)
-
-            case _:
-                raise ValueError(
-                    f"Timestamp having more than 3 number ({len(timestamp)})")
-
-        # Combine timestamps (date and time)
-        if self.timestamp is None:
-            self.timestamp = time
-        else:
-            self.timestamp = dt.datetime.combine(self.timestamp, time)
-
-    def set_datestamp(self, datestamp: str):
-        """Set the datetime stamp.
-
-        Args:
-            timestamp: The date as a string in the format: YYYY:MM:DD.
-                *This attribute do not match with the DICOM
-                specifications* [digps]_.
-
-        Raises:
-            ValueError: argument has the right type but an
-                inappropriate value.
-        """
-        _logger.debug(f"GPS property {datestamp=}")
-        date = dt.date.strptime(datestamp, "%Y:%m:%d")
-        if self.timestamp is None:
-            self.timestamp = date
-        else:
-            self.timestamp = dt.datetime.combine(date, self.timestamp)
-
-    def set_status(self, status: str):
-        """Set the status of the GPS receiver.
-
-        Args:
-            status: The status of the GPS receiver when the image is
-            recorded. ``A`` measurement is in progress, ``V``
-            measurement interrupted.
-
-        Raises:
-            ValueError: argument has the right type but an
-                inappropriate value.
-        """
-        _logger.debug(f"GPS property {status=}")
-        match status:
-            case "A" | "V":
-                self.status = "E"
-
-            case _:
-                raise ValueError(
-                    f"Unsupported longitude reference ({status})")
-
-    def set_processing_method(self, processing_method: bytes):
-        """Set ame of the method used for location finding.
-
-        DICOM specifications [digps]_ do not clearly define the
-            encoding use.
-
-        Args:
-            processing_method: The name of the method used for location
-                finding as a set of two fixed strings ended by NULL
-                characters.
-
-        Raises:
-            ValueError: argument has the right type but an
-                inappropriate value.
-        """
-        _logger.debug(f"GPS property {processing_method=}")
-        type = str(processing_method[0:7].strip(b"\x00"), encoding='ascii')
-        method = str(processing_method[8:].strip(b"\x00"), encoding='ascii')
-        if type != "ASCII":
-            raise ValueError(
-                f"Processing method encoding is unknown ({type})")
-        else:
-            self.processing_method = method
-
-    def set_map_datum(self, map_datum: str ):
-        """Set the geodetic survey data.
-
-        Args:
-            map_datum: The geodetic survey data used by the GPS receiver.
-                ``WGS-84`` is used in most cases.
-
-        Raises:
-            ValueError: argument has the right type but an
-                inappropriate value.
-        """
-        _logger.debug(f"GPS property {map_datum=}")
-        self.map_datum = map_datum
-
-    def _from_dms(self, dms: list[float]):
-        """Get coordinate in decimal degrees.
-
-        The method convert a coordinate expressed in degrees-minutes-seconds
-        in decimal degrees. This method can accept one to three float.
-
-        Returns:
-            float: coordinate in decimal degrees .
-        """
-        div = 1
-        dd = 0.0
-
-        if len(dms) > 3:
-            raise ValueError(
-                f"Coordinate having more than 3 number ({len(dms)})")
-        else:
-            for c in dms:
-                if c is not None:
-                    dd = dd + c / div
-                    div = div * 60
-        return dd
-
-    def __repr__(self) -> str:
-        """Return a printable string representation.
-
-        The method format the latitude and the longitude coordinate as two
-        number expressed in decimal degree (5 precision digits) and the
-        reference as suffix.
-
-        lat: ll.lllll (r), long: lll.lllll (r)
-        """
-        s = ""
-        if self.latitude is not None and self.longitude is not None:
-            s = (f"lat: {self.latitude:.5f} ({self.latitude_ref}) "
-                 f"long: {self.longitude:.5f} ({self.longitude_ref})")
-        return s
-
 class NikonBaseProperties(object):
     """Base class for Nikon Properties class.
 
@@ -592,7 +250,6 @@ class NikonBaseProperties(object):
             details the error.
         NikonMissingTagError: A tag value is not expected.
         NikonTagValueError: An expected tag is missing.
-
     """
     def __init__(self, element: ElementTree.Element):
         self._element = element
@@ -655,6 +312,299 @@ class NikonBaseProperties(object):
         return expanded_name
 
 
+class NikonGPSProperty(NikonBaseProperties):
+    """Nikon GPS properties container.
+
+    This class parse a sidecar file and extract ``ast`` tags (namespace
+    'http://ns.nikon.com/asteroid/1.0/') related to GPS Information.
+    The properties read are copied into the attribute :attr:`props`
+    which can contain the following entries:
+
+    * ``GPSVersionID``: The version of GPS information.
+    * ``GPSLatitudeRef``: Whether the latitude is north (``N``) or south
+      (``S``).
+    * ``GPSLatitude``: The latitude, expressed in decimal degrees.
+    * ``GPSLongitudeRef``: Whether the longitude is east (``E``) or west
+      (``W``).
+    * ``GPSLongitude``: The longitude, expressed in decimal degrees.
+    * ``GPSAltitudeRef``: The altitude used as the reference altitude in
+      meters.
+    * ``GPSAltitude``: The altitude based on the reference in
+      ``GPSAltitudeRef`` in meters.
+    * ``GPSDateTimeStamp``: The date and time, in UTC (Coordinated
+      Universal Time).
+    * ``GPSStatus``: The status of the GPS receiver when the image is
+      recorded.
+
+      * ``A`` measurement is in progress,
+      * ``V`` measurement interrupted
+
+    * ``GPSProcessingMethod``: The name of the method used for location
+      finding (``GPS``, ``CELLID``, ``MANUAL``).
+    * ``GPSMapDatum``: The geodetic survey data used by the GPS receiver.
+      ``WGS-84`` is used in most cases.
+
+    .. note:: others GPS properties are ignored.
+
+    This class can be used in a formatted string and returns the latitude
+    and longitude.
+
+    The article named ":ref:`Inside Nikon Sidecar file`" details the data
+    structure and tags used by Nikon. In a nutshell, Nikon seems to have
+    using DICOM specification (see :ref:`InsideNKCS.GPSAttrTable`).
+
+    Raises:
+        ValueError: argument has the right type but an
+            inappropriate value.
+
+    Attributes:
+        props: Dictionary of properties of the SDC set.
+    """
+    props: dict
+    def __init__(self, element: ElementTree.Element):
+        super().__init__(element)
+        self.props = {}
+
+        name = self._shorten_name(self._element.tag)
+        if name != "rdf:Description":
+            raise NikonMissingTagError("rdf:Description")
+
+        for child in self._element:
+            if self._shorten_name(child.tag).startswith("ast:GPS"):
+                xmp_property = NikonXMPProperty(child)
+                match xmp_property.name:
+                    case ("ast:GPSVersionID"):
+                        # The version of GPS information as a binary string.
+                        self.props["GPSVersionID"] \
+                            = int.from_bytes(xmp_property.value, "little")
+
+                    case ("ast:GPSLatitudeRef"):
+                        # Whether the latitude is north (``0``) or south
+                        # (``1``). *This attribute do not match with the
+                        # DICOM specifications* [digps]_.
+                        match xmp_property.value:
+                            case 0:
+                                self.props["GPSLatitudeRef"] = "N"
+
+                            case 1:
+                                self.props["GPSLatitudeRef"] = "S"
+
+                            case _:
+                                raise ValueError(
+                                    f"Unsupported latitude reference "
+                                    f"({xmp_property.value})")
+
+                    case ("ast:GPSLatitude"):
+                        # The latitude expressed in degrees-minutes-seconds
+                        # as a set of three floating number.
+                        self.props["GPSLatitude"] \
+                            = self._from_dms(xmp_property.value)
+
+                    case ("ast:GPSLongitudeRef"):
+                        # Whether the longitude is east (``2``) or west
+                        # (``3``). *This attribute do not match with the
+                        # DICOM specifications* [digps]_.
+                        match xmp_property.value:
+                            case 2:
+                                self.props["GPSLongitudeRef"] = "E"
+
+                            case 3:
+                                self.props["GPSLongitudeRef"] = "W"
+
+                            case _:
+                                raise ValueError(
+                                    f"Unsupported longitude reference "
+                                    f"({xmp_property.value})")
+
+                    case ("ast:GPSLongitude"):
+                        # The longitude expressed in degrees-minutes-seconds
+                        # as a set of three floating number.
+                        self.props["GPSLongitude"] \
+                            = self._from_dms(xmp_property.value)
+
+                    case ("ast:GPSAltitudeRef"):
+                        # The altitude used as the reference altitude in
+                        # meters as a binary string.
+                        self.props["GPSAltitudeRef"] \
+                            = int.from_bytes(xmp_property.value, 'little')
+
+                    case ("ast:GPSAltitude"):
+                        # The altitude based on the reference in
+                        # ``GPSAltitudeRef`` in meters.
+                        self.props["GPSAltitude"] = xmp_property.value
+
+                    case ("ast:GPSTimeStamp"):
+                        self._set_timestamp(xmp_property.value)
+
+                    case ("ast:GPSDateStamp"):
+                        self._set_datestamp(xmp_property.value)
+
+                    case ("ast:GPSStatus"):
+                        # The status of the GPS receiver when the image is
+                        # recorded. ``A`` measurement is in progress, ``V``
+                        # measurement interrupted.
+                        match xmp_property.value:
+                            case "A" | "V":
+                                self.props["GPSStatus"] = xmp_property.value
+
+                            case _:
+                                raise ValueError(
+                                    f"Unsupported longitude reference "
+                                    f"({xmp_property.value})")
+
+                    case("ast:GPSMapDatum"):
+                        # The geodetic survey data used by the GPS receiver.
+                        # ``WGS-84`` is used in most cases.
+                        self.props["GPSMapDatum"] = xmp_property.value
+
+                    case("ast:GPSProcessingMethod"):
+                        # The name of the method used for location
+                        # finding as a set of two fixed strings ended by NULL
+                        # characters.
+                        type = str(xmp_property.value[0:7].strip(b"\x00"),
+                                   encoding='ascii')
+                        if type != "ASCII":
+                            raise ValueError(
+                                f"Processing method encoding is unknown "
+                                f"({type})")
+                        else:
+                            self.props["GPSProcessingMethod"]\
+                                = str(xmp_property.value[8:].strip(b"\x00"),
+                                      encoding='ascii')
+
+                    case("ast:IPTC"):
+                        self.props[xmp_property.name] = xmp_property.value
+
+                    case _:
+                        _logger.warning(
+                            f"GPS property '{xmp_property.name}' is not known"
+                            f" - {xmp_property.value=} ignored")
+
+        for key in list(self.props):
+            _logger.info(f"GPS property {key}={self.props[key]}")
+
+    def _set_timestamp(self, timestamp: list[float]):
+        """Set the datetime stamp.
+
+        Args:
+            timestamp: The time in UTC (Coordinated Universal Time)
+                expressed in hours-minutes-seconds as a set of three
+                floating number. *This attribute do not match with the
+                DICOM specifications* [digps]_.
+
+        Raises:
+            ValueError: argument has the right type but an
+                inappropriate value.
+        """
+        time = None
+        # Each part is expressed as a float, but it must be an integer
+        for t in timestamp:
+            if not t.is_integer():
+                raise ValueError(
+                    f"Timestamp part is not a integer ({t})")
+
+        match len(timestamp):
+            case 1:
+                time = dt.time(hour=int(timestamp[0]),
+                               tzinfo=dt.timezone.utc)
+
+            case 2:
+                time = dt.time(hour=int(timestamp[0]),
+                               minute=int(timestamp[1]),
+                               tzinfo=dt.timezone.utc)
+
+            case 3:
+                time = dt.time(hour=int(timestamp[0]),
+                               minute=int(timestamp[1]),
+                               second=int(timestamp[2]),
+                               tzinfo=dt.timezone.utc)
+
+            case _:
+                raise ValueError(
+                    f"Timestamp having more than 3 number ({len(timestamp)})")
+
+        # Combine timestamps (date and time)
+        if "GPSDateTimeStamp" in self.props:
+            self.props["GPSDateTimeStamp"] \
+                = dt.datetime.combine(self.timestamp, time)
+        else:
+            self.props["GPSDateTimeStamp"] = time
+
+    def _set_datestamp(self, datestamp: str):
+        """Set the datetime stamp.
+
+        Args:
+            datestamp: The date as a string in the format: YYYY:MM:DD.
+                *This attribute do not match with the DICOM
+                specifications* [digps]_.
+
+        Raises:
+            ValueError: argument has the right type but an
+                inappropriate value.
+        """
+        date = dt.date.strptime(datestamp, "%Y:%m:%d")
+        if "GPSDateTimeStamp" in self.props:
+            self.props["GPSDateTimeStamp"] \
+                = dt.datetime.combine(date, self.props["GPSDateTimeStamp"])
+        else:
+            self.props["GPSDateTimeStamp"] = date
+
+    def _from_dms(self, dms: list[float]):
+        """Get coordinate in decimal degrees.
+
+        The method convert a coordinate expressed in degrees-minutes-seconds
+        in decimal degrees. This method can accept one to three float.
+
+        Args:
+            dms: coordinate expressed in degrees-minutes-seconds as a
+                set of one to three `float`.
+
+        Returns:
+            float: coordinate in decimal degrees .
+        """
+        div = 1
+        dd = 0.0
+
+        if len(dms) > 3:
+            raise ValueError(
+                f"Coordinate having more than 3 number ({len(dms)})")
+        else:
+            for c in dms:
+                if c is not None:
+                    dd = dd + c / div
+                    div = div * 60
+        return dd
+
+    def is_completed(self) -> bool:
+        """Indicates a minimum of properties is present.
+
+        The choice is a latitude and a longitude. The other properties
+        as GPS references or altitude are optional.
+
+        Returns:
+             `True` if at least latitude and longitude is present.
+        """
+        return ("GPSLongitude" in self.props
+                and "GPSLatitude" in self.props)
+
+    def __repr__(self) -> str:
+        """Return a printable string representation.
+
+        The method format the latitude and the longitude coordinate as two
+        number expressed in decimal degree (5 precision digits) and the
+        reference as suffix.
+
+        lat: ll.lllll (r), long: lll.lllll (r)
+        """
+        s = ""
+        if "GPSLatitude" in self.props and "GPSLongitude" in self.props:
+            s = (f"lat: {self.props["GPSLatitude"]:.5f} "
+                 f"({self.props["GPSLatitudeRef"]}) "
+                 f"long: {self.props["GPSLongitude"]:.5f} "
+                 f"({self.props["GPSLongitudeRef"]})")
+        return s
+
+
 class NikonXMPProperty(NikonBaseProperties):
     """Nikon XMP property.
 
@@ -709,27 +659,43 @@ class NikonXMPProperty(NikonBaseProperties):
                 # Binary buffer
                 case "Binary":
                     self.value = base64.b64decode(res_value)
+                    _logger.debug(f"XMP property (Binary):"
+                                  f" {self.name}={self.value}")
 
-                # Integer
+            # Integer
                 case "Long":
                     buffer = base64.b64decode(res_value)
                     self.value = int.from_bytes(buffer, byteorder='little')
+                    _logger.debug(f"XMP property (Long):"
+                                  f" {self.name}={self.value}")
 
-                # List of float number (IEEE754 Double precision 64-bits)
+                # One or more float number (IEEE754 Double precision 64-bits)
                 case "Double":
-                    self.value = []
-                    value = base64.b64decode(res_value)
-                    for i in range(len(value) // 8):
-                        self.value.append(IEEE754(value[i*8 : (i+1)*8]).value)
+                    buffer = base64.b64decode(res_value)
+                    vm = len(buffer) // 8
+                    if vm == 1:
+                        self.value = IEEE754(buffer).value
+                        _logger.debug(f"XMP property (Double):"
+                                      f" {self.name}={self.value}")
+                    else:
+                        self.value = []
+                        for i in range(len(buffer) // 8):
+                            self.value.append(
+                                IEEE754(buffer[i*8 : (i+1)*8]).value)
+                        _logger.debug(f"XMP property (n*Double):"
+                                      f" {self.name}={self.value}")
 
                 # ASCII string
                 case "Ascii":
                     self.value = res_value
+                    _logger.debug(f"XMP property (Ascii):"
+                                  f" {self.name}={self.value}")
 
-                # GPSProcessingMethod : unknown format...
-                # todo: explain or search
+                # GPSProcessingMethod : proprietary format...
                 case "GPSProcessingMethod":
                     self.value = base64.b64decode(res_value)
+                    _logger.debug(f"XMP property (GPSProcessingMethod):"
+                                  f" {self.name}={self.value}")
 
                 case _:
                     raise NikonResourceTypeError(self.name, res_type)
@@ -737,6 +703,8 @@ class NikonXMPProperty(NikonBaseProperties):
         else:
             # Simple valued XMP property
             self.value = element.text
+            _logger.debug(f"XMP property (XML text):"
+                          f" {self.name}={self.value}")
 
 
 class NikonXMPMeta(NikonBaseProperties):
@@ -825,7 +793,13 @@ class NikonSDCProperties(NikonBaseProperties):
     """Nikon SDC properties container.
 
     This class parse a sidecar file and extract ``sdc`` tags (namespace
-    'http://ns.nikon.com/sdc/1.0/').
+    'http://ns.nikon.com/sdc/1.0/'). The properties read are copied into
+    the attribute :attr:`props` which can contain the following entries:
+
+    * ``sdc:appname``: Name of the application that created the sidecar
+      file.
+    * ``sdc:appversion``: Version identifier of the application that
+      created the sidecar file.
 
     The article named ":ref:`Inside Nikon Sidecar file`" details the data
     structure and tags used by Nikon.
@@ -842,23 +816,18 @@ class NikonSDCProperties(NikonBaseProperties):
     Attributes:
         about: Identifier of the sidecar file format. The identifier
             have to be ``nikon sidecar/1.0``.
-        version: Version identifier of the sidecar format
-        app_name: Name of the application that created the sidecar file.
-        app_version: Version identifier of the application that created
-            the sidecar file.
+        version: Version identifier of the sidecar format.
+        props: Dictionary of properties of the SDC set.
     """
     _ID = "nikon sidecar/1.0"
     about: str | None
     version: str | None
-    app_name: str | None
-    app_version: str | None
-
+    props: dict
     def __init__(self, element: ElementTree.Element):
         super().__init__(element)
         self.about = None
         self.version= None
-        self.app_name = None
-        self.version = None
+        self.props = {}
 
         name = self._shorten_name(self._element.tag)
         if name != "rdf:Description":
@@ -869,36 +838,43 @@ class NikonSDCProperties(NikonBaseProperties):
             if prefix == "sdc":
                 xmp_property = NikonXMPProperty(child)
                 match xmp_property.name:
-                    case("sdc:about"):
+                    case "sdc:about":
                         self.about = xmp_property.value
                         if self.about != self._ID:
                             raise NikonTagValueError("sdc:about", self.about)
 
-                    case("sdc:version"):
+                    case "sdc:version":
                         self.version = xmp_property.value
 
-                    case("sdc:appversion"):
-                        self.app_version = xmp_property.value
+                    case "sdc:appversion":
+                        self.props['appversion'] = xmp_property.value
 
-                    case("sdc:appname"):
-                        self.app_name = xmp_property.value
+                    case "sdc:appname":
+                        self.props['appname'] = xmp_property.value
 
                     case _:
                         _logger.warning(
                             f"SDC property '{xmp_property.name}' is not known"
                             f" - ignored")
 
-        _logger.debug(f"SDC property {self.about=}")
-        _logger.debug(f"SDC property {self.version=}")
-        _logger.debug(f"SDC property {self.app_version=}")
-        _logger.debug(f"SDC property {self.app_name=}")
+        _logger.info(f"SDC property {self.about=}")
+        _logger.info(f"SDC property {self.version=}")
+        _logger.info(f"SDC property {self.props=}")
+        for key in list(self.props):
+            _logger.info(f"SDC property {key}={self.props[key]}")
 
 
 class NikonAsteroidProperties(NikonBaseProperties):
     """Nikon Asteroid properties container.
 
     This class parse a sidecar file and extract ``ast`` tags (namespace
-    'http://ns.nikon.com/asteroid/1.0/').
+    'http://ns.nikon.com/asteroid/1.0/'). The properties read are copied
+    into the attribute :attr:`props` which can contain the following
+    entries:
+
+    * ``XMLPackets``: `<https://www.exiftool.org/TagNames/XMP.html>`_
+    * ``GPS``: Object containing the GPS properties
+    * ``IPTC``: `<https://www.exiftool.org/TagNames/IPTC.html>`_
 
     The article named ":ref:`Inside Nikon Sidecar file`" details the data
     structure and tags used by Nikon.
@@ -917,113 +893,68 @@ class NikonAsteroidProperties(NikonBaseProperties):
             have to be ``core-asteroid-tags``.
         version: version identifier of the sidecar format (currently
             ``11.0.0.3000``)
-        xml_packets: `<https://www.exiftool.org/TagNames/XMP.html>`_
-        gps: Object containing the GPS properties
-        iptc: `<https://www.exiftool.org/TagNames/IPTC.html>`_
+        props: Dictionary of properties of the SDC set.
     """
     _ID = "core-asteroid-tags"
     about: str | None
     version: str | None
-    xml_packets: bytes | None
-    gps: NikonGPSProperty
-    iptc: bytes | None
-
+    props: dict
     def __init__(self, element: ElementTree.Element):
         super().__init__(element)
         self.about = None
         self.version= None
-        self.xml_packets = None
-        self.gps = NikonGPSProperty()
-        self.iptc = None
+        self.props = {}
 
         name = self._shorten_name(self._element.tag)
         if name != "rdf:Description":
             raise NikonMissingTagError("rdf:Description")
 
+        self.props["GPS"] = NikonGPSProperty(self._element)
         for child in self._element:
             prefix = (self._shorten_name(child.tag)).split(":")[0]
             if prefix == "ast":
                 xmp_property = NikonXMPProperty(child)
-                match xmp_property.name:
-                    case "ast:about":
-                        self.about = xmp_property.value
-                        if self.about != self._ID:
-                            raise NikonTagValueError("ast:about", self.about)
+                if not xmp_property.name.startswith("ast:GPS"):
+                    match xmp_property.name:
+                        case "ast:about":
+                            self.about = xmp_property.value
+                            if self.about != self._ID:
+                                raise NikonTagValueError(
+                                    "ast:about", self.about)
 
-                    case "ast:version":
-                        self.version = xmp_property.value
+                        case "ast:version":
+                            self.version = xmp_property.value
 
-                    case "ast:XMLPackets":
-                        self.xml_packets = xmp_property.value
+                        case "ast:XMLPackets":
+                            self.props["XMLPackets"] = xmp_property.value
 
-                    case ("ast:GPSVersionID"):
-                        self.gps.set_version_id(xmp_property.value)
+                        case("ast:IPTC"):
+                            self.props["IPTC"] = xmp_property.value
 
-                    case ("ast:GPSLatitudeRef"):
-                        self.gps.set_latitude_ref(xmp_property.value)
+                        case _:
+                            _logger.warning(
+                                f"AST property '{xmp_property.name}' is not known"
+                                f" - {xmp_property.value=} ignored")
 
-                    case ("ast:GPSLatitude"):
-                        self.gps.set_latitude(xmp_property.value)
-
-                    case ("ast:GPSLongitudeRef"):
-                        self.gps.set_longitude_ref(xmp_property.value)
-
-                    case ("ast:GPSLongitude"):
-                        self.gps.set_longitude(xmp_property.value)
-
-                    case ("ast:GPSAltitudeRef"):
-                        self.gps.set_altitude_ref(xmp_property.value)
-
-                    case ("ast:GPSAltitude"):
-                        self.gps.set_altitude(xmp_property.value)
-
-                    case ("ast:GPSTimeStamp"):
-                        self.gps.set_timestamp(xmp_property.value)
-
-                    case ("ast:GPSDateStamp"):
-                        self.gps.set_datestamp(xmp_property.value)
-
-                    case ("ast:GPSStatus"):
-                        self.gps.set_status(xmp_property.value)
-
-                    case("ast:GPSMapDatum"):
-                        self.gps.set_map_datum(xmp_property.value)
-
-                    case("ast:GPSProcessingMethod"):
-                        self.gps.set_processing_method(xmp_property.value)
-
-                    case("ast:IPTC"):
-                        self.iptc = xmp_property.value
-
-                    case _:
-                        _logger.warning(
-                            f"AST property '{xmp_property.name}' is not known"
-                            f" - {xmp_property.value=} ignored")
-
-        _logger.debug(f"AST property {self.about=}")
-        _logger.debug(f"AST property {self.version=}")
-        _logger.debug(f"AST property {self.xml_packets=}")
-        _logger.debug(f"AST property {self.gps=}")
-        _logger.debug(f"AST property {self.gps.version_id=}")
-        _logger.debug(f"AST property {self.gps.latitude_ref=}")
-        _logger.debug(f"AST property {self.gps.latitude=}")
-        _logger.debug(f"AST property {self.gps.longitude_ref=}")
-        _logger.debug(f"AST property {self.gps.longitude=}")
-        _logger.debug(f"AST property {self.gps.altitude_ref=}")
-        _logger.debug(f"AST property {self.gps.altitude=}")
-        if self.gps.timestamp is not None:
-            _logger.debug(f"AST property {self.gps.timestamp.isoformat()=}")
-        _logger.debug(f"AST property {self.gps.status=}")
-        _logger.debug(f"AST property {self.gps.processing_method=}")
-        _logger.debug(f"AST property {self.gps.map_datum=}")
-        _logger.debug(f"AST property {self.iptc=}")
+        _logger.info(f"AST property about={self.about}")
+        _logger.info(f"AST property version={self.version}")
+        for key in list(self.props):
+            _logger.info(f"AST property {key}={self.props[key]}")
+        for key in list(self.props["GPS"].props):
+            _logger.info(f"AST property {key}={self.props["GPS"].props[key]}")
 
 
 class NikonNineProperties(NikonBaseProperties):
     """Nikon Nine properties container.
 
     This class parse a sidecar file and extract ``nine`` tags (namespace
-    'http://ns.nikon.com/nine/1.0/').
+    'http://ns.nikon.com/nine/1.0/').The properties read are copied
+    into the attribute :attr:`props` which can contain the following
+    entries:
+
+    * ``NineEdits``: `<https://www.exiftool.org/TagNames/Nikon.html#NineEdits>`_
+    * ``Label``:  todo
+    * ``Rating``: todo
 
     The article named ":ref:`Inside Nikon Sidecar file`" details the data
     structure and tags used by Nikon.
@@ -1042,26 +973,18 @@ class NikonNineProperties(NikonBaseProperties):
             have to be ``nine-tags``.
         version: version identifier of the sidecar format (currently
             ``2.0.0``)
-        nine_edits: `<https://www.exiftool.org/TagNames/Nikon.html#NineEdits>`_
-        label:
-        rating:
+        props: Dictionary of properties of the SDC set.
     """
     _ID = "nine-tags"
     about: str | None
     version: str | None
-    nine_edits: str | None
-    label: str | None
-    rating: str | None
     trim: str | None
-
     def __init__(self, element: ElementTree.Element):
         super().__init__(element)
         self.about = None
         self.version= None
-        self.nine_edits = None
-        self.label = None
-        self.rating = None
         self.trim = None
+        self.props = {}
 
         name = self._shorten_name(self._element.tag)
         if name != "rdf:Description":
@@ -1081,13 +1004,13 @@ class NikonNineProperties(NikonBaseProperties):
                         self.version = xmp_property.value
 
                     case("nine:NineEdits"):
-                        self.nine_edits = xmp_property.value
+                        self.props["NineEdits"] = xmp_property.value
 
                     case ("nine:Label"):
-                        self.label = xmp_property.value
+                        self.props["Label"] = xmp_property.value
 
                     case ("nine:Rating"):
-                        self.rating = xmp_property.value
+                        self.props["Rating"] = xmp_property.value
 
                     case ("nine:Trim"):
                         self.trim = xmp_property.value
@@ -1097,12 +1020,11 @@ class NikonNineProperties(NikonBaseProperties):
                             f"NINE property '{xmp_property.name}' is not known"
                             f" - ignored")
 
-        _logger.debug(f"NINE property {self.about=}")
-        _logger.debug(f"NINE property {self.version=}")
-        _logger.debug(f"NINE property {self.nine_edits=}")
-        _logger.debug(f"NINE property {self.label=}")
-        _logger.debug(f"NINE property {self.rating=}")
-        _logger.debug(f"NINE property {self.trim=}")
+        _logger.info(f"NINE property about={self.about}")
+        _logger.info(f"NINE property version={self.version}")
+        for key in list(self.props):
+            _logger.info(f"NINE property {key}={self.props[key]}")
+        _logger.info(f"NINE property trim={self.trim}")
 
 
 class NikonSideCar(object):
@@ -1163,7 +1085,6 @@ class NikonSideCar(object):
             bool: `True` if the execution went well. In case of failure, an
             error log is written on the standard error (``stderr``).
         """
-
         # Check the document header (x:xmptk)
         xmp_meta = NikonXMPMeta(self._element)
         _logger.debug(f"XMPTK : {xmp_meta.xmptk}")
@@ -1180,3 +1101,85 @@ class NikonSideCar(object):
                 self.sdc = NikonSDCProperties(description_item)
                 self.ast = NikonAsteroidProperties(description_item)
                 self.nine = NikonNineProperties(description_item)
+
+    def get_rating(self) -> int:
+        """Return the image rating.
+
+        detail the param
+        """
+        return 0
+
+    def get_label(self) -> int:
+        """Return the image label.
+
+        detail the param
+        """
+        return 0
+
+    def is_protected(self) -> bool:
+        """Return `True` if the image is protected.
+
+        detail the param
+        """
+        return False
+
+    def is_geotagged(self) -> bool:
+        """Return `True` if the image have geolocation data.
+
+        detail the param
+        """
+        is_geotagged = False
+        if "GPS" in self.ast.props:
+            is_geotagged = self.ast.props["GPS"].is_completed
+        return is_geotagged
+
+    def is_tagged(self) -> bool:
+        """Return `True` if the image have keywords.
+
+        detail the param
+        """
+        return False
+
+    def is_filtered(self) -> bool:
+        """Return `True` if the image have image adjustment.
+
+        The method indicates if at least one image adjustment (filter) is
+        active.
+        """
+        return False
+
+    def is_cropped(self) -> bool:
+        """Return `True` if the image is cropped.
+
+        detail the param
+        """
+        return False
+
+    def is_perpective_adj(self) -> bool:
+        """Return `True` if the image have perspective adjusted.
+
+        detail the param
+        """
+        return False
+
+    def is_bw(self) -> bool:
+        """Return `True` if the image is monochrome (black and white).
+
+        detail the param
+        """
+        return False
+
+    def is_exposure_comp(self) -> bool:
+        """Return `True` if the image have its exposure adjusted.
+
+        detail the param
+        """
+        return False
+
+    def is_denoised(self) -> bool:
+        """Return `True` if the image have noise reduction.
+
+        detail the param
+        """
+        return False
+
