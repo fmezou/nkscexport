@@ -292,7 +292,7 @@ def main():
                 style = "{",
                 filename = Path(".") / f"{parser.prog}.log",
                 filemode = "w",
-                format = "{levelname} {name} {funcName} {message}")
+                format = "{levelname} {name} {funcName}:{lineno} {message}")
 
     _logger.info(
         f"Starting {parser.prog} v{version} on {datetime.datetime.now():%c}")

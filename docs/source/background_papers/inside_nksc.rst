@@ -58,25 +58,33 @@ with a '*' do not comply with the specifications (see `Not compliant properties`
 .. table:: GPS Attributes in NKSC files
     :name: InsideNKCS.GPSAttrTable
 
-    ======================= =================== =========== ==========
-    Name                    Tag name            VR [#vr]_   VM [#vm]_
-    ======================= =================== =========== ==========
-    GPS Version ID          GPSVersionID        OB          1
-    GPS Latitude Ref*       GPSLatitudeRef      CS          1
-    GPS Latitude            GPSLatitude         DS          3
-    GPS Longitude Ref*      GPSLongitudeRef     CS          1
-    GPS Longitude           GPSLongitude        DS          3
-    GPS Altitude Ref        GPSAltitudeRef      US          1
-    GPS Altitude            GPSAltitude         DS          1
-    GPS Status              GPSStatus           CS          1
-    GPS Map Datum           GPSMapDatum         UT          1
-    GPS Processing Method*  GPSProcessingMethod OB          1
-    GPS Date Stamp*         GPSDateStamp        DT          1
-    GPS Time Stamp*         GPSTimeStamp        DT          1
-    ======================= =================== =========== ==========
+    =========================== =================== =========== ==========
+    Name                        Tag name            VR [#vr]_   VM [#vm]_
+    =========================== =================== =========== ==========
+    GPS Version ID              GPSVersionID        OB          1
+    GPS Altitude                GPSAltitude         DS          1
+    GPS Altitude Ref            GPSAltitudeRef      US          1
+    GPS Date Stamp*             GPSDateStamp        DT          1
+    GPS Dest Bearing Ref [#db]_ GPSDestBearingRef   CS          1
+    GPS Dest Bearing [#db]_     GPSDestBearing      DS          1
+    GPS Img Direction           GPSImgDirection     DS          1
+    GPS Img Direction Ref       GPSImgDirectionRef  CS          1
+    GPS Latitude                GPSLatitude         DS          3
+    GPS Latitude Ref*           GPSLatitudeRef      CS          1
+    GPS Longitude               GPSLongitude        DS          3
+    GPS Longitude Ref*          GPSLongitudeRef     CS          1
+    GPS Map Datum               GPSMapDatum         UT          1
+    GPS Processing Method*      GPSProcessingMethod OB          1
+    GPS Speed                   GPSSpeed            DS          1
+    GPS Speed Ref               GPSSpeedRef         CS          1
+    GPS Status                  GPSStatus           CS          1
+    GPS Time Stamp*             GPSTimeStamp        DT          1
+    =========================== =================== =========== ==========
 
 .. [#vr] Value Representation (VR)
 .. [#vm] Value Multiplicity (VM)
+.. [#db] This property is ignored as it contains the same information as 'Img
+    Direction'. (See on jpeg images produced by an iPhone XS Max).
 
 Value Representation (VR) Definition
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

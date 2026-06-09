@@ -336,15 +336,30 @@ class NikonGPSProperty(NikonBaseProperties):
     * ``GPSStatus``: The status of the GPS receiver when the image is
       recorded.
 
-      * ``A`` measurement is in progress,
+      * ``A`` measurement is in progress
       * ``V`` measurement interrupted
 
     * ``GPSProcessingMethod``: The name of the method used for location
       finding (``GPS``, ``CELLID``, ``MANUAL``).
     * ``GPSMapDatum``: The geodetic survey data used by the GPS receiver.
       ``WGS-84`` is used in most cases.
+    * ``GPSSpeedRef``: The unit used to express the ``GPSSpeed`` property.
 
-    .. note:: others GPS properties are ignored.
+      * ``K`` kilometers per hour
+      * ``M`` miles per hour
+      * ``N`` knots
+
+    * ``GPSSpeed``: The speed of GPS receiver movement.
+    * ``GPSImgDirectionRef``: The reference for giving the direction of
+      the image when it is captured.
+
+      * ``T`` true direction
+      * ``M`` magnetic direction
+
+    * ``GPSImgDirection``: The direction of the image when it was captured.
+      The range of values is from 0.00 to 359.99.
+
+    .. note:: Others GPS properties are ignored.
 
     This class can be used in a formatted string and returns the latitude
     and longitude.
@@ -373,12 +388,12 @@ class NikonGPSProperty(NikonBaseProperties):
             if self._shorten_name(child.tag).startswith("ast:GPS"):
                 xmp_property = NikonXMPProperty(child)
                 match xmp_property.name:
-                    case ("ast:GPSVersionID"):
+                    case "ast:GPSVersionID":
                         # The version of GPS information as a binary string.
                         self.props["GPSVersionID"] \
                             = int.from_bytes(xmp_property.value, "little")
 
-                    case ("ast:GPSLatitudeRef"):
+                    case "ast:GPSLatitudeRef":
                         # Whether the latitude is north (``0``) or south
                         # (``1``). *This attribute do not match with the
                         # DICOM specifications* [digps]_.
@@ -394,13 +409,13 @@ class NikonGPSProperty(NikonBaseProperties):
                                     f"Unsupported latitude reference "
                                     f"({xmp_property.value})")
 
-                    case ("ast:GPSLatitude"):
+                    case "ast:GPSLatitude":
                         # The latitude expressed in degrees-minutes-seconds
                         # as a set of three floating number.
                         self.props["GPSLatitude"] \
                             = self._from_dms(xmp_property.value)
 
-                    case ("ast:GPSLongitudeRef"):
+                    case "ast:GPSLongitudeRef":
                         # Whether the longitude is east (``2``) or west
                         # (``3``). *This attribute do not match with the
                         # DICOM specifications* [digps]_.
@@ -416,33 +431,27 @@ class NikonGPSProperty(NikonBaseProperties):
                                     f"Unsupported longitude reference "
                                     f"({xmp_property.value})")
 
-                    case ("ast:GPSLongitude"):
+                    case "ast:GPSLongitude":
                         # The longitude expressed in degrees-minutes-seconds
                         # as a set of three floating number.
                         self.props["GPSLongitude"] \
                             = self._from_dms(xmp_property.value)
 
-                    case ("ast:GPSAltitudeRef"):
-                        # The altitude used as the reference altitude in
-                        # meters as a binary string.
+                    case "ast:GPSAltitudeRef":
+                        # Reference altitude in meters as a binary string.
                         self.props["GPSAltitudeRef"] \
                             = int.from_bytes(xmp_property.value, 'little')
 
-                    case ("ast:GPSAltitude"):
-                        # The altitude based on the reference in
-                        # ``GPSAltitudeRef`` in meters.
+                    case "ast:GPSAltitude":
                         self.props["GPSAltitude"] = xmp_property.value
 
-                    case ("ast:GPSTimeStamp"):
+                    case "ast:GPSTimeStamp":
                         self._set_timestamp(xmp_property.value)
 
-                    case ("ast:GPSDateStamp"):
+                    case "ast:GPSDateStamp":
                         self._set_datestamp(xmp_property.value)
 
-                    case ("ast:GPSStatus"):
-                        # The status of the GPS receiver when the image is
-                        # recorded. ``A`` measurement is in progress, ``V``
-                        # measurement interrupted.
+                    case "ast:GPSStatus":
                         match xmp_property.value:
                             case "A" | "V":
                                 self.props["GPSStatus"] = xmp_property.value
@@ -452,15 +461,13 @@ class NikonGPSProperty(NikonBaseProperties):
                                     f"Unsupported longitude reference "
                                     f"({xmp_property.value})")
 
-                    case("ast:GPSMapDatum"):
-                        # The geodetic survey data used by the GPS receiver.
-                        # ``WGS-84`` is used in most cases.
+                    case "ast:GPSMapDatum":
                         self.props["GPSMapDatum"] = xmp_property.value
 
-                    case("ast:GPSProcessingMethod"):
+                    case "ast:GPSProcessingMethod":
                         # The name of the method used for location
-                        # finding as a set of two fixed strings ended by NULL
-                        # characters.
+                        # finding as a set of two fixed strings ended by
+                        # NULL characters.
                         type = str(xmp_property.value[0:7].strip(b"\x00"),
                                    encoding='ascii')
                         if type != "ASCII":
@@ -472,7 +479,39 @@ class NikonGPSProperty(NikonBaseProperties):
                                 = str(xmp_property.value[8:].strip(b"\x00"),
                                       encoding='ascii')
 
-                    case("ast:IPTC"):
+                    case "ast:GPSSpeedRef":
+                        match xmp_property.value:
+                            case "K" | "M" | "N":
+                                self.props["GPSSpeedRef"] = xmp_property.value
+
+                            case _:
+                                raise ValueError(
+                                    f"Unsupported speed reference "
+                                    f"({xmp_property.value})")
+
+                    case "ast:GPSSpeed":
+                        self.props["GPSSpeed"] = xmp_property.value
+
+                    case "ast:GPSImgDirectionRef":
+                        match xmp_property.value:
+                            case "T" | "M":
+                                self.props["GPSImgDirectionRef"] = xmp_property.value
+
+                            case _:
+                                raise ValueError(
+                                    f"Unsupported image direction reference "
+                                    f"({xmp_property.value})")
+
+                    case "ast:GPSImgDirection":
+                        self.props["GPSImgDirection"] = xmp_property.value
+
+                    case "ast:GPSDestBearingRef" | "ast:GPSDestBearing":
+                        _logger.info(
+                            f"GPS property '{xmp_property.name}' "
+                            f"({xmp_property.value=}) is ignored as it contains"
+                            f" the same information as Image Direction. ")
+
+                    case "ast:IPTC":
                         self.props[xmp_property.name] = xmp_property.value
 
                     case _:
@@ -857,9 +896,8 @@ class NikonSDCProperties(NikonBaseProperties):
                             f"SDC property '{xmp_property.name}' is not known"
                             f" - ignored")
 
-        _logger.info(f"SDC property {self.about=}")
-        _logger.info(f"SDC property {self.version=}")
-        _logger.info(f"SDC property {self.props=}")
+        _logger.info(f"SDC property about={self.about}")
+        _logger.info(f"SDC property version={self.version}")
         for key in list(self.props):
             _logger.info(f"SDC property {key}={self.props[key]}")
 
@@ -928,7 +966,7 @@ class NikonAsteroidProperties(NikonBaseProperties):
                         case "ast:XMLPackets":
                             self.props["XMLPackets"] = xmp_property.value
 
-                        case("ast:IPTC"):
+                        case "ast:IPTC":
                             self.props["IPTC"] = xmp_property.value
 
                         case _:
@@ -995,24 +1033,24 @@ class NikonNineProperties(NikonBaseProperties):
             if prefix == "nine":
                 xmp_property = NikonXMPProperty(child)
                 match xmp_property.name:
-                    case("nine:about"):
+                    case "nine:about":
                         self.about = xmp_property.value
                         if self.about != self._ID:
                             raise NikonTagValueError("nine:about", self.about)
 
-                    case("nine:version"):
+                    case "nine:version":
                         self.version = xmp_property.value
 
-                    case("nine:NineEdits"):
+                    case "nine:NineEdits":
                         self.props["NineEdits"] = xmp_property.value
 
-                    case ("nine:Label"):
+                    case "nine:Label":
                         self.props["Label"] = xmp_property.value
 
-                    case ("nine:Rating"):
+                    case "nine:Rating":
                         self.props["Rating"] = xmp_property.value
 
-                    case ("nine:Trim"):
+                    case "nine:Trim":
                         self.trim = xmp_property.value
 
                     case _:
@@ -1130,7 +1168,7 @@ class NikonSideCar(object):
         """
         is_geotagged = False
         if "GPS" in self.ast.props:
-            is_geotagged = self.ast.props["GPS"].is_completed
+            is_geotagged = self.ast.props["GPS"].is_completed()
         return is_geotagged
 
     def is_tagged(self) -> bool:
