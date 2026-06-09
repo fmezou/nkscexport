@@ -217,19 +217,45 @@ class DarkBridge(object):
         Returns:
             A string with the metadata summary.
         """
-        # nom du fichier image (uniquement)
-        # classement
-        # etiquette
-        # protégé ou pas
-        # post traitement ou pas
-        # darktable : presence de tag ou pas
-        # geolocalisé ou pas
-        if self._nksc.ast.gps.longitude is None:
-            msg = ""
+        msgs = []
+        rate = self._nksc.get_rating()
+        if rate == -1:
+            msgs.append(" [X]")
         else:
-            msg = " [G] "
+            msgs.append(f" [{'*'*rate}]")
 
-        return msg
+        label = self._nksc.get_label()
+        if label != -1:
+            msgs.append(f" [{label}]")
+
+        if self._nksc.is_geotagged():
+            msgs.append(" [G]")
+
+        if self._nksc.is_tagged():
+            msgs.append(" [T]")
+
+        if self._nksc.is_protected():
+            msgs.append(" [Lck]")
+
+        if self._nksc.is_filtered():
+            msgs.append(" [F]")
+
+        if self._nksc.is_exposure_comp():
+            msgs.append(".[+/-]")
+
+        if self._nksc.is_bw():
+            msgs.append(".[BW]")
+
+        if self._nksc.is_cropped():
+            msgs.append(".[Crp]")
+
+        if self._nksc.is_perpective_adj():
+            msgs.append(".[H/V]")
+
+        if self._nksc.is_denoised():
+            msgs.append(".[NR]")
+
+        return "".join(msgs)
 
     def _get_metadata(self, all: bool) -> str:
         """Return a summary of image metadata
@@ -241,16 +267,14 @@ class DarkBridge(object):
         Returns:
              A string with the metadata.
         """
-        lines = []
-        msg = ""
+        msgs = []
         if self._nksc.nine.nine_edits is not None:
-            lines.append(Style.DIM+f"    nine edit: {str(self._nksc.nine.nine_edits[:20])}"+Style.RESET_ALL)
+            msgs.append(Style.DIM+f"    nine edit: {str(self._nksc.nine.nine_edits[:20])}"+Style.RESET_ALL)
         if self._nksc.ast.xml_packets is not None:
-            lines.append(Style.DIM+f"    xml packet: {str(self._nksc.ast.xml_packets[:20])}"+Style.RESET_ALL)
+            msgs.append(Style.DIM+f"    xml packet: {str(self._nksc.ast.xml_packets[:20])}"+Style.RESET_ALL)
         if self._nksc.ast.iptc is not None:
-            lines.append(Style.DIM+f"    iptc: {str(self._nksc.ast.iptc[:20])}"+Style.RESET_ALL)
-        if self._nksc.ast.gps.longitude is not None:
-            lines.append(Style.BRIGHT+f"    location: {self._nksc.ast.gps}"+Style.RESET_ALL)
-        msg = "\n".join(lines)
-        return msg
+            msgs.append(Style.DIM+f"    iptc: {str(self._nksc.ast.iptc[:20])}"+Style.RESET_ALL)
+        if self._nksc.is_geotagged():
+            msgs.append(Style.BRIGHT+f"    location: {self._nksc.ast.gps}"+Style.RESET_ALL)
+        return "\n".join(msgs)
 
