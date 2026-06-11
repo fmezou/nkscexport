@@ -64,6 +64,7 @@ import datetime as dt
 from xml.etree import ElementTree
 
 from library.ieee754 import IEEE754
+from sidecar.nik_adjustment import NineEdits
 
 __all__ = [
     "NikonError",
@@ -519,8 +520,8 @@ class NikonGPSProperty(NikonBaseProperties):
                             f"GPS property '{xmp_property.name}' is not known"
                             f" - {xmp_property.value=} ignored")
 
-        for key in list(self.props):
-            _logger.info(f"GPS property {key}={self.props[key]}")
+        for k, v in self.props.items():
+            _logger.debug(f"GPS property {k}={v}")
 
     def _set_timestamp(self, timestamp: list[float]):
         """Set the datetime stamp.
@@ -629,11 +630,13 @@ class NikonGPSProperty(NikonBaseProperties):
     def __repr__(self) -> str:
         """Return a printable string representation.
 
-        The method format the latitude and the longitude coordinate as two
-        number expressed in decimal degree (5 precision digits) and the
-        reference as suffix.
+        The representation is the latitude and the longitude coordinate
+        as two number expressed in decimal degree (5 precision digits)
+        and the reference as suffix.
 
-        lat: ll.lllll (r), long: lll.lllll (r)
+        Example::
+
+            lat: ll.lllll (r), long: lll.lllll (r)
         """
         s = ""
         if "GPSLatitude" in self.props and "GPSLongitude" in self.props:
@@ -898,8 +901,8 @@ class NikonSDCProperties(NikonBaseProperties):
 
         _logger.info(f"SDC property about={self.about}")
         _logger.info(f"SDC property version={self.version}")
-        for key in list(self.props):
-            _logger.info(f"SDC property {key}={self.props[key]}")
+        for k, v in self.props.items():
+            _logger.info(f"SDC property {k}={v}")
 
 
 class NikonAsteroidProperties(NikonBaseProperties):
@@ -965,6 +968,17 @@ class NikonAsteroidProperties(NikonBaseProperties):
 
                         case "ast:XMLPackets":
                             self.props["XMLPackets"] = xmp_property.value
+                            tree = ElementTree.fromstring(xmp_property.value)
+                            # for c in tree:
+                            #     _logger.debug(f"* {c.tag=}, {c.text=} {c.attrib=}")
+                            #     for i in c:
+                            #         _logger.debug(f"** {i.tag=}, {i.text=} {i.attrib=}")
+                            #         for j in i:
+                            #             _logger.debug(f"*** {j.tag=}, {j.text=} {j.attrib=}")
+                            #             for k in j:
+                            #                 _logger.debug(f"**** {k.tag=}, {k.text=} {k.attrib=}")
+                            #                 for l in k:
+                            #                     _logger.debug(f"***** {l.tag=}, {l.text=} {l.attrib=}")
 
                         case "ast:IPTC":
                             self.props["IPTC"] = xmp_property.value
@@ -976,10 +990,11 @@ class NikonAsteroidProperties(NikonBaseProperties):
 
         _logger.info(f"AST property about={self.about}")
         _logger.info(f"AST property version={self.version}")
-        for key in list(self.props):
-            _logger.info(f"AST property {key}={self.props[key]}")
-        for key in list(self.props["GPS"].props):
-            _logger.info(f"AST property {key}={self.props["GPS"].props[key]}")
+        for k, v in self.props.items():
+            _logger.info(f"AST property {k}={v}")
+        if self.props["GPS"] is not None:
+            for k, v in self.props["GPS"].props.items():
+                _logger.info(f"AST GPS property {k}={v}")
 
 
 class NikonNineProperties(NikonBaseProperties):
@@ -1042,7 +1057,9 @@ class NikonNineProperties(NikonBaseProperties):
                         self.version = xmp_property.value
 
                     case "nine:NineEdits":
-                        self.props["NineEdits"] = xmp_property.value
+                        #self.props["NineEdits"] = xmp_property.value
+                        tree = ElementTree.fromstring(xmp_property.value)
+                        self.props["NineEdits"] = NineEdits(tree).adjustments
 
                     case "nine:Label":
                         self.props["Label"] = xmp_property.value
@@ -1060,8 +1077,8 @@ class NikonNineProperties(NikonBaseProperties):
 
         _logger.info(f"NINE property about={self.about}")
         _logger.info(f"NINE property version={self.version}")
-        for key in list(self.props):
-            _logger.info(f"NINE property {key}={self.props[key]}")
+        for k, v in self.props.items():
+            _logger.info(f"NINE property {k}={v}")
         _logger.info(f"NINE property trim={self.trim}")
 
 

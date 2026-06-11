@@ -40,7 +40,9 @@ Nikon sidecar file contains the following sets:
 * **nine** (``http://ns.nikon.com/nine/1.0/``): contains the image adjustments
   history in XML format with escaped characters (&lt;..). Theses image
   processing modules are proprietary and cannot be transferred in an other
-  software except for format filter as cropping.
+  software except for format filter as cropping. The `Nikon adjustments`
+  section details the supported Nikon settings and indicates whether their
+  parameters can be converted into the equivalent module of Darktable.
 
 No public specifications are available from Nikon, so the attributes
 were discovered by reading ``.nsks`` files and the help of ExifTool
@@ -119,56 +121,95 @@ of three floating number respectively.
 analysis show a set of two fixed strings (resp. 8 and 66 characters in ASCII)
 ended by NULL characters.
 
-Transferable filter
--------------------
+Nikon adjustments
+-----------------
 
-.. todo:: list the tansferable filter. The below list are for memory
+THe Nikon adjustments are the following:
 
-    * nikon::ColorShift
-    * nikon::DLightingHS
-    * nikon::WhiteBalance
-    * nik::Straighten
-    * nikon::PictureControl
-    * nikon::QuickFixToneCurve
-    * nik::GaussianBlur
-    * nikon::LEGeneral
-    * nikon::FishEye
-    * nikon::Dehaze
-    * nikon::ColorBalance
-    * nikon::Flare
-    * nikon::SkinTone
-    * nikon::Vignette
-    * nikon::Perspective
-    * nikon::ChrAb
-    * nikon::UnsharpMask
-    * nikon::ColorBooster
-    * nikon::NXHistory
-    * nikon::SkinSoftening
-    * nik::LevelsCurves
-    * nikon::RedEye
-    * nikon::Diffraction
-    * nikon::Distortion
-    * nikon::ApplicationData
-    * nikon::LongChrAb
-    * nikon::ExposureSettings
-    * nik::LCH
-    * nikon::QuickFixContrast
-    * nik::GrainNoise
-    * nikon::DustOff
-    * nikon::transform
-    * nikon::SizeRes
-    * nikon::PhotoEffects
-    * nikon::Brightness
-    * nikon::ActiveDLighting
-    * nikon::NoiseReduction
-    * nikon::PixelShiftNoiseReduction
-    * nikon::DLightingHQ
+.. hlist::
+    :columns: 2
+
+    * `nik::GaussianBlur`
+    * `nik::GrainNoise`
+    * `nik::LCH`
+    * `nik::LevelsCurves`
+    * `nik::Straighten`
+    * `nikon::ActiveDLighting`
+    * `nikon::ApplicationData`
+    * `nikon::Brightness`
+    * `nikon::ChrAb`
+    * `nikon::ColorBalance`
+    * `nikon::ColorBooster`
+    * `nikon::ColorShift`
+    * `nikon::DLightingHQ`
+    * `nikon::DLightingHS`
+    * `nikon::Dehaze`
+    * `nikon::Diffraction`
+    * `nikon::Distortion`
+    * `nikon::DustOff`
+    * `nikon::ExposureSettings`
+    * `nikon::FishEye`
+    * `nikon::Flare`
+    * `nikon::LEGeneral`
+    * `nikon::LongChrAb`
+    * `nikon::NXHistory`
+    * `nikon::NoiseReduction`
+    * `nikon::Perspective`
+    * `nikon::PhotoEffects`
+    * `nikon::PictureControl`
+    * `nikon::PixelShiftNoiseReduction`
+    * `nikon::QuickFixContrast`
+    * `nikon::QuickFixToneCurve`
+    * `nikon::RedEye`
+    * `nikon::SizeRes`
+    * `nikon::SkinSoftening`
+    * `nikon::SkinTone`
+    * `nikon::UnsharpMask`
+    * `nikon::Vignette`
+    * `nikon::WhiteBalance`
+    * `nikon::transform`
+
+Adjustment parameters
+^^^^^^^^^^^^^^^^^^^^^
+
+An adjustment parameter is characterized by its name, its type, and its value.
+Parameter type may be implicit or explicit. An explicit type is expressed by
+a tag name (``integer``, ``double``...) and within an attribute defining the
+parameter name (``name``, ``id``...). An implicit type is not specified, the
+tag name only defines the parameter name.
+
+Adjustment parameters type
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+* ``binary``: is a binary string encoded in Base64. The attribute
+  ``name`` define the parameter name. (seems similar to ``Export``
+  parameters)
+* ``double``: a decimal number or a floating number. The attribute
+  ``name`` define the parameter name.
+* ``integer``: a decimal number or a boolean value with ``true`` or
+  ``false``. The attribute ``name`` define the parameter name.
+* ``map``: **No information**
+* ``dateAndTime``: a date and time stamp expressed as a set of tags
+  (``year``, ``month``, ``day``, ``hour``, ``minute`` and ``second``).
+  The date 1900-1-1 00:00:00 seems to be default value.
+* ``points``: a 2D coordinates expressed as a set of tag
+  ``pointOfPoints`` with the attributes ``x`` and ``y``. The attribute
+  ``name`` define the parameter name.
+* ``data``: a text string. The attribute ``id`` define the parameter name.
+
+The list below exposes particaler case of implicit adjustment parameters.
+
+* **``Export``**: a binary string expressed as a set of two elements:
+  ``ExportData`` and ``ExportDataSize``. ``ExportData`` is a binary string
+  encoded in Base64. ``ExportDataSize`` is the length of the **encoded**
+  string. .
+
 
 nikon::ColorShift
-^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^
 
 nikon::DLightingHS
-^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^
 
 nikon::WhiteBalance
 ^^^^^^^^^^^^^^^^^^^^^
@@ -282,9 +323,12 @@ nikon::DLightingHQ
 ^^^^^^^^^^^^^^^^^^^^
 
 .. rubric:: References
-.. [nksave] Nikon, `NX Studio Help <https://nikonimglib.com/nxstdo/
-    onlinehelp/en/save_80.html>`_,
-    Options > [Save]
+.. [nksave] Nikon, `[Save] <https://nikonimglib.com/nxstdo/onlinehelp/en
+    /save_80.html>`_, Options > [Save]
+
+.. [nkadj] Nikon, `The Adjustments Tab <https://nikonimglib.com/nxstdo/
+    onlinehelp/en/the_adjustments_tab_20.html>`_, Enhancing Pictures >
+    The Adjustments Tab
 
 .. [phniktag] Phil Harvey, `Nikon Tags <https://www.exiftool.org/
     TagNames/Nikon.html>`_

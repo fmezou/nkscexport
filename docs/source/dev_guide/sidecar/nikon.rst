@@ -9,4 +9,5 @@
     :synopsis: Handle Nikon sidecar files (read only)
     :members:
     :private-members:
+    :special-members:
     :show-inheritance:

@@ -13,3 +13,4 @@
     :maxdepth: 1
 
     nikon
+    nik_adjustment

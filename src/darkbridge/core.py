@@ -83,7 +83,6 @@ class DarkBridge(object):
     _recursive: bool
     _paths: list[list[Path]]
     _nksc: None | NikonSideCar # current NKSC file
-
     def __init__(self, pathname: list[str], recursive: bool):
         self._pathname = pathname
         self._recursive = recursive
