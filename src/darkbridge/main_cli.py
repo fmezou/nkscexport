@@ -300,19 +300,27 @@ def main():
     match args.verb:
         case 'list':
             mode: str = f""
-            if args.recursive: mode = mode + f" recursive"
-            if args.all: mode = mode + f" all"
-            if args.detailed: mode = mode + f" detailed"
-            if mode != "": mode = "(mode:" + mode + ")"
+            if args.recursive:
+                mode = mode + f" recursive"
+            if args.all:
+                mode = mode + f" all"
+            if args.detailed:
+                mode = mode + f" detailed"
+            if mode != "":
+                mode = "(mode:" + mode + ")"
             _logger.debug(f"List metadata from '{args.filename=}' {mode}")
             result = bridge.list(args.all, args.detailed)
 
         case 'convert':
             mode: str = f""
-            if args.recursive: mode = mode + f" recursive"
-            if args.force: mode = mode + f" force"
-            if args.dry_run: mode = mode + f" dry_run"
-            if mode != "": mode = "(mode:" + mode + ")"
+            if args.recursive:
+                mode = mode + f" recursive"
+            if args.force:
+                mode = mode + f" force"
+            if args.dry_run:
+                mode = mode + f" dry_run"
+            if mode != "":
+                mode = "(mode:" + mode + ")"
             _logger.debug(f"Convert sidecar files from '{args.filename=}' {mode}")
             result = bridge.convert(args.all, args.detailed)
 

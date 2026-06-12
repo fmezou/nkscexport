@@ -267,13 +267,29 @@ class DarkBridge(object):
              A string with the metadata.
         """
         msgs = []
-        if self._nksc.nine.nine_edits is not None:
-            msgs.append(Style.DIM+f"    nine edit: {str(self._nksc.nine.nine_edits[:20])}"+Style.RESET_ALL)
-        if self._nksc.ast.xml_packets is not None:
-            msgs.append(Style.DIM+f"    xml packet: {str(self._nksc.ast.xml_packets[:20])}"+Style.RESET_ALL)
-        if self._nksc.ast.iptc is not None:
-            msgs.append(Style.DIM+f"    iptc: {str(self._nksc.ast.iptc[:20])}"+Style.RESET_ALL)
-        if self._nksc.is_geotagged():
-            msgs.append(Style.BRIGHT+f"    location: {self._nksc.ast.gps}"+Style.RESET_ALL)
+        if self._nksc.sdc.props is not None:
+            appname = self._nksc.sdc.props["appname"]
+            appversion = self._nksc.sdc.props["appversion"]
+            msgs.append(Style.BRIGHT + f"    Application: {appname} v{appversion}" + Style.RESET_ALL)
+
+        if self._nksc.nine.props is not None:
+            label = self._nksc.nine.props["Label"]
+            rating = self._nksc.nine.props["Rating"]
+            msgs.append(Style.BRIGHT + f"    Label: {label} - Rating {rating}" + Style.RESET_ALL)
+            for k, v in self._nksc.nine.props["NineEdits"].items():
+                if all:
+                    if v.active:
+                        msgs.append(Style.BRIGHT + f"    Adjustment {k})" + Style.RESET_ALL)
+                    else:
+                        msgs.append(Style.DIM + f"    Adjustment {k})" + Style.RESET_ALL)
+                else:
+                    if v.active:
+                        msgs.append(Style.BRIGHT + f"    Adjustment {k}" + Style.RESET_ALL)
+
+        if self._nksc.ast.props is not None:
+            iptc = f"    IPTC: {self._nksc.ast.props["IPTC"]}"[:79]
+            metadata = f"    Metadata: {self._nksc.ast.props["XMLPackets"]}"[:79]
+            msgs.append(Style.DIM + iptc + Style.RESET_ALL)
+            msgs.append(Style.DIM + metadata + Style.RESET_ALL)
         return "\n".join(msgs)
 

@@ -83,6 +83,8 @@ with a '*' do not comply with the specifications (see `Not compliant properties`
     GPS Time Stamp*             GPSTimeStamp        DT          1
     =========================== =================== =========== ==========
 
+.. rubric:: Notes
+
 .. [#vr] Value Representation (VR)
 .. [#vm] Value Multiplicity (VM)
 .. [#db] This property is ignored as it contains the same information as 'Img
@@ -184,11 +186,11 @@ Adjustment parameters type
 * ``binary``: is a binary string encoded in Base64. The attribute
   ``name`` define the parameter name. (seems similar to ``Export``
   parameters)
-* ``double``: a decimal number or a floating number. The attribute
-  ``name`` define the parameter name.
-* ``integer``: a decimal number or a boolean value with ``true`` or
-  ``false``. The attribute ``name`` define the parameter name.
-* ``map``: **No information**
+* ``double``: a decimal number or a double precision (64 bits) floating
+  number. The attribute ``name`` define the parameter name.
+* ``integer``: a decimal number, a single precision (32 bits) floating
+  number or a boolean value with ``true`` or ``false`` [#int]_. The
+  attribute ``name`` define the parameter name.
 * ``dateAndTime``: a date and time stamp expressed as a set of tags
   (``year``, ``month``, ``day``, ``hour``, ``minute`` and ``second``).
   The date 1900-1-1 00:00:00 seems to be default value.
@@ -199,10 +201,19 @@ Adjustment parameters type
 
 The list below exposes particaler case of implicit adjustment parameters.
 
-* **``Export``**: a binary string expressed as a set of two elements:
+* ``Export``: a binary string expressed as a set of two elements:
   ``ExportData`` and ``ExportDataSize``. ``ExportData`` is a binary string
   encoded in Base64. ``ExportDataSize`` is the length of the **encoded**
-  string. .
+  string.
+* ``map``: similar to ``Export`` but with ``mapData`` and ``mapSize`` as
+  elements
+
+.. rubric:: Notes
+
+.. [#int] ``integer`` and ``double`` types are almost identical except
+    that integer can be a boolean. Floating-point numbers are usually
+    implemented using double in C, so single precision and double precision are
+    converted in `float` number.
 
 
 nikon::ColorShift

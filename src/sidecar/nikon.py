@@ -968,7 +968,7 @@ class NikonAsteroidProperties(NikonBaseProperties):
 
                         case "ast:XMLPackets":
                             self.props["XMLPackets"] = xmp_property.value
-                            tree = ElementTree.fromstring(xmp_property.value)
+                            #tree = ElementTree.fromstring(xmp_property.value)
                             # for c in tree:
                             #     _logger.debug(f"* {c.tag=}, {c.text=} {c.attrib=}")
                             #     for i in c:
@@ -1057,7 +1057,6 @@ class NikonNineProperties(NikonBaseProperties):
                         self.version = xmp_property.value
 
                     case "nine:NineEdits":
-                        #self.props["NineEdits"] = xmp_property.value
                         tree = ElementTree.fromstring(xmp_property.value)
                         self.props["NineEdits"] = NineEdits(tree).adjustments
 
