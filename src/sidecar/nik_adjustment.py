@@ -195,7 +195,7 @@ class NikBaseAdjustment:
                                 case "false" | "true":
                                     self.params[k] = (v.lower() == "true")
                                 case _:
-                                    self.params[k] = int(v)
+                                    self.params[k] = float(v)
                         else:
                             self.params[k] = None
                     else:
@@ -359,10 +359,11 @@ class NikBaseAdjustment:
     def _set_param_map(self, element: ElementTree.Element):
         """Set map parameter.
 
-        .. todo: search image with this type of filter (DustOff)
-
-        Export parameter is a binary string expressed as a set of two elements:
-        ``????`` and ``mapSize``.
+        Map parameter is a binary string expressed as a set of two elements:
+        ``mapdata`` and ``mapsize``. ``mapdata`` is a binary
+        string encoded in Base64. ``mapsize`` is the length of the
+        **encoded** string. This parameter contains data used by the dust
+        off adjustment.
 
         Args:
             element: Element containing the parameter.
@@ -372,27 +373,29 @@ class NikBaseAdjustment:
                 details the error.
         """
         map = None
-        mapsize = 0
+        map_size = 0
+        rawdata_size = 0
         for child in element:
             k, v = child.tag, child.text
             match k:
-                case "map":
+                case "mapData":
                     if v is not None:
                         map = base64.b64decode(v)
+                        rawdata_size = len(v)
 
                 case "mapSize":
                     if v is not None:
-                        mapsize = int(v)
+                        map_size = int(v)
 
                 case _:
                     raise NikAdjustmentError(
                         f"Unexpected tag for map parameter: {k}")
 
         if map is not None:
-            if len(map) != mapsize:
+            if rawdata_size != map_size:
                 raise NikAdjustmentError(
-                    f"map have a wrong size: actual {len(map)}, "
-                    f"expected {mapsize}")
+                    f"map have a wrong size: actual {rawdata_size}, "
+                    f"expected {map_size}")
             self.params["map"] = map
 
     def _set_param_points(self, element: ElementTree.Element):
