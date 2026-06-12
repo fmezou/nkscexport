@@ -270,26 +270,50 @@ class DarkBridge(object):
         if self._nksc.sdc.props is not None:
             appname = self._nksc.sdc.props["appname"]
             appversion = self._nksc.sdc.props["appversion"]
-            msgs.append(Style.BRIGHT + f"    Application: {appname} v{appversion}" + Style.RESET_ALL)
+            msgs.append(Style.BRIGHT
+                        + f"    Application: {appname} v{appversion}"
+                        + Style.RESET_ALL)
 
         if self._nksc.nine.props is not None:
             label = self._nksc.nine.props["Label"]
             rating = self._nksc.nine.props["Rating"]
-            msgs.append(Style.BRIGHT + f"    Label: {label} - Rating {rating}" + Style.RESET_ALL)
+            msgs.append(Style.BRIGHT
+                        + f"    Label: {label} - Rating {rating}"
+                        + Style.RESET_ALL)
             for k, v in self._nksc.nine.props["NineEdits"].items():
                 if all:
                     if v.active:
-                        msgs.append(Style.BRIGHT + f"    Adjustment {k})" + Style.RESET_ALL)
+                        msgs.append(Style.BRIGHT
+                                    + f"    Adjustment {k})"
+                                    + Style.RESET_ALL)
                     else:
-                        msgs.append(Style.DIM + f"    Adjustment {k})" + Style.RESET_ALL)
+                        msgs.append(Style.DIM
+                                    + f"    Adjustment {k})"
+                                    + Style.RESET_ALL)
                 else:
                     if v.active:
-                        msgs.append(Style.BRIGHT + f"    Adjustment {k}" + Style.RESET_ALL)
+                        msgs.append(Style.BRIGHT
+                                    + f"    Adjustment {k}"
+                                    + Style.RESET_ALL)
 
         if self._nksc.ast.props is not None:
-            iptc = f"    IPTC: {self._nksc.ast.props["IPTC"]}"[:79]
-            metadata = f"    Metadata: {self._nksc.ast.props["XMLPackets"]}"[:79]
-            msgs.append(Style.DIM + iptc + Style.RESET_ALL)
-            msgs.append(Style.DIM + metadata + Style.RESET_ALL)
+            if "IPTC" in self._nksc.ast.props:
+                iptc = f"    IPTC: {self._nksc.ast.props["IPTC"]}"[:79]
+                msgs.append(Style.DIM + iptc + Style.RESET_ALL)
+            else:
+                msgs.append(Style.BRIGHT
+                            + Fore.LIGHTRED_EX
+                            + "    No IPTC Data present"
+                            + Style.RESET_ALL)
+
+            if "XMLPackets" in self._nksc.ast.props:
+                metadata = f"    Metadata: {self._nksc.ast.props["XMLPackets"]}"[:79]
+                msgs.append(Style.DIM + metadata + Style.RESET_ALL)
+            else:
+                msgs.append(Style.BRIGHT
+                            + Fore.LIGHTRED_EX
+                            + "    No Metadata present"
+                            + Style.RESET_ALL)
+
         return "\n".join(msgs)
 
