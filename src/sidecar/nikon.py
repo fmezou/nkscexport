@@ -63,6 +63,8 @@ import logging
 import datetime as dt
 from xml.etree import ElementTree
 
+from colorama import ansi
+
 from library.ieee754 import IEEE754
 from sidecar.nik_adjustment import NineEdits
 
@@ -937,6 +939,49 @@ class NikonAsteroidProperties(NikonBaseProperties):
         props: Dictionary of properties of the SDC set.
     """
     _ID = "core-asteroid-tags"
+    #: Mapping IPTC properties to XMP properties, `IPTC Specification
+    #: <https://www.iptc.org/std/photometadata/specification
+    #: /IPTC-PhotoMetadata-2025.1.html#specification-table-template>`_
+    #: defines the mapping.
+    _XMP = {
+        "2:05": "dc:title",
+        "2:25": "dc:subject",
+        "2:40": "photoshop:Instructions",
+        "2:55": "photoshop:DateCreated",
+        "2:80": "dc:creator",
+        "2:85": "photoshop:AuthorsPosition",
+        "2:90": "photoshop:City",
+        "2:95": "photoshop:State",
+        "2:101": "photoshop:Country",
+        "2:103": "photoshop:TransmissionReference",
+        "2:105": "photoshop:Headline",
+        "2:110": "photoshop:Credit",
+        "2:115": "photoshop:Source",
+        "2:116": "dc:rights",
+        "2:120": "dc:description",
+        "2:122": "photoshop:CaptionWriter",
+    }
+    #: See `Mapping Category Codes to Subject NewsCodes
+    #: <https://www.iptc.org/std/photometadata/specification
+    #: /IPTC-PhotoMetadata-2025.1.html#guideline-for-mapping-category-
+    #: codes-to-subject-newscodes>`_
+    _SUBJECT = {
+        'ACE': '1000000',
+        'CLJ': '2000000',
+        'DIS': '3000000',
+        'FIN': '4000000',
+        'EDU': '5000000',
+        'EVN': '6000000',
+        'HTH': '7000000',
+        'HUM': '8000000',
+        'LAB': '9000000',
+        'LIF': '10000000',
+        'POL': '11000000',
+        'REL': '12000000',
+        'SCI': '13000000',
+        'SOI': '14000000',
+        'SPO': '15000000',
+    }
     about: str | None
     version: str | None
     props: dict
@@ -981,7 +1026,7 @@ class NikonAsteroidProperties(NikonBaseProperties):
                             #                     _logger.debug(f"***** {l.tag=}, {l.text=} {l.attrib=}")
 
                         case "ast:IPTC":
-                            self.props["IPTC"] = xmp_property.value
+                            self._set_iptc(xmp_property)
 
                         case _:
                             _logger.warning(
@@ -995,7 +1040,76 @@ class NikonAsteroidProperties(NikonBaseProperties):
         if self.props["GPS"] is not None:
             for k, v in self.props["GPS"].props.items():
                 _logger.info(f"AST GPS property {k}={v}")
+        if "IPTC" in self.props:
+            for k, v in self.props["IPTC"].items():
+                _logger.info(f"AST IPTC property {k}={v}")
 
+    def _set_iptc(self, xmp_property: NikonXMPProperty):
+        """Set the IPTC data expressed as an XMP binary property.
+
+        This method use the XMP name for the IPTC properties and
+        not the IPTC name. It allows to have a unique naming referential
+
+        Datasets 2:15 “Category” and 2:20 “Supplemental Category” are
+        deprecated, but both are still present in NX studio. These two
+        fields were replaced in IIM version 4 by the Dataset 2:12 “Subject
+        Reference” which must be populated by values from the Subject
+        NewsCodes controlled (see `Guideline for mapping Category Codes
+        to Subject NewsCodes <https://www.iptc.org/std/photometadata
+        /specification/IPTC-PhotoMetadata-2025.1.html#guideline-for
+        -mapping-category-codes-to-subject-newscodes>`_
+
+        Args:
+            xmp_property: Nikon XMP property containing IPTC data.
+
+        Raises:
+            NikonError: Generic error, the :attr:`NikonError.message`
+                details the error.
+        """
+        iptc = {}
+        buffer = xmp_property.value
+        subject_code = [None]
+        keywords = []
+        while len(buffer) != 0:
+            t, r, d = buffer[0], buffer[1], buffer[2]
+            l = int.from_bytes(buffer[3:5])
+            iim_id = f"{r:}:{d:02}"
+            value = str(buffer[5:5 + l], encoding="ansi")
+            if iim_id in self._XMP:
+                match iim_id:
+                    case "2:25": # May be present one or more time.
+                        keywords.append(value)
+                    case _:
+                        iptc[self._XMP[iim_id]] = value
+            else:
+                match iim_id:
+                    case "2:15":
+                        if value in self._SUBJECT:
+                            subject_code[0] = "IPTC"
+                            subject_code.append(f"{self._SUBJECT[value]}")
+                        else:
+                            _logger.warning(
+                                f"IPTC Unknown Category ({value} )- "
+                                f"ignored as this field is deprecated")
+
+                    case "2:20":
+                        subject_code.append(f"{value}")
+
+                    case _:
+                        raise NikonError(
+                            f"Unsupported IIMid ({iim_id})")
+            buffer = buffer[5 + l:]
+
+        # Adding keywords
+        if len(keywords) != 0:
+            iptc[self._XMP["2:25"]] = keywords
+
+        # Mapping Category Codes to Subject NewsCodes
+        # Subject Reference => Iptc4xmpCore:SubjectCode
+        if subject_code[0] is not None:
+            iptc["Iptc4xmpCore:SubjectCode"] = ":".join(subject_code)
+
+        self.props["IPTC"] = iptc
 
 class NikonNineProperties(NikonBaseProperties):
     """Nikon Nine properties container.
