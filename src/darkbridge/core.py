@@ -298,8 +298,11 @@ class DarkBridge(object):
 
         if self._nksc.ast.props is not None:
             if "IPTC" in self._nksc.ast.props:
-                iptc = f"    IPTC: {self._nksc.ast.props["IPTC"]}"[:79]
-                msgs.append(Style.DIM + iptc + Style.RESET_ALL)
+                msgs.append(Style.BRIGHT + f"    IPTC: " + Style.RESET_ALL)
+                for k, v in self._nksc.ast.props["IPTC"].items():
+                    msgs.append(Style.BRIGHT
+                                + f"        {k}: {v}"
+                                + Style.RESET_ALL)
             else:
                 msgs.append(Style.BRIGHT
                             + Fore.LIGHTRED_EX
