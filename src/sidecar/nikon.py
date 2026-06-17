@@ -63,10 +63,9 @@ import logging
 import datetime as dt
 from xml.etree import ElementTree
 
-from colorama import ansi
-
 from library.ieee754 import IEEE754
 from sidecar.nik_adjustment import NineEdits
+
 
 __all__ = [
     "NikonError",
@@ -74,53 +73,38 @@ __all__ = [
     "NikonTagValueError",
     "NikonResourceError",
     "NikonResourceTypeError",
-    "NikonBaseProperties",
-    "NikonGPSProperty",
+    "NikonGPSProperties",
     "NikonXMPProperty",
-    "NikonXMPMeta",
-    "NikonRDF",
-    "NikonRDFDescription",
+    "NikonXMPDescriptions",
     "NikonSDCProperties",
     "NikonAsteroidProperties",
     "NikonNineProperties",
     "NikonSideCar",
-    "NIKON_RATING_MAP",
-    "NIKON_LABEL_MAP",
     "NIKON_SUPPORTED_FORMAT",
     "NIKON_NKSC_SUBFOLDER",
-    "NIKON_NKSC_EXT"
+    "NIKON_NKSC_EXT",
+    "NIKON_LABEL_MAP"
 ]
 
 
-NIKON_RATING_MAP = {
-    "-1":"-1",# rejeté → -1 en XMP
-    "0":"0", # Aucun
-    "1":"1", # *
-    "2":"2", # **
-    "3":"3", # ***
-    "4":"4", # ****
-    "5":"5", # *****
-}
-"""Correspondence note Nikon → note XMP (0-5)
-Nikon stocke la note sous forme entière 0–5 directement compatible XMP"""
-
-
+#: Mapping between Nikon Label and XMP label expressed as a text. This
+#: table is based on default value and do not consider any customization.
+#: See Nikon, `[Labels] <https://nikonimglib.com/nxstdo/onlinehelp/en/
+#: labels_76.html>`_, Options > [Labels]
 NIKON_LABEL_MAP = {
-    "1":"Rouge",
+    "1":"Red",
     "2":"Orange",
-    "3":"Jaune",
-    "4":"Vert",
+    "3":"Yellow",
+    "4":"Green",
     "5":"Cyan",
-    "6":"Bleu",
-    "7":"Violet",
+    "6":"Blue",
+    "7":"Purple",
     "8":"Magenta",
-    "9":"Rose",
+    "9":"Pink",
     "0":"(Aucune)",
 }
-"""Correspondence label couleur Nikon → label XMP (texte)
-Nikon encode les labels par numéro dans nksc"""
 
-
+#: file extensions of supported image files
 NIKON_SUPPORTED_FORMAT = [
     ".nef", ".nrw",
     ".jpg", ".jpeg",
@@ -129,19 +113,75 @@ NIKON_SUPPORTED_FORMAT = [
     ".nefx",
     ".mpo"
 ]
-"""file extension of the supported image file"""
 
+#: Subfolder storing the Nikon sidecar files
 NIKON_NKSC_SUBFOLDER = "NKSC_PARAM"
-"""subfolder storing the Nikon sidecar files"""
 
+#: file extension of Nikon sidecar files
 NIKON_NKSC_EXT = ".nksc"
-"""file extension of Nikon sidecar files"""
+
+#: XML Namespaces used in sidecar file
+_NIKON_NS = {
+    "x": "adobe:ns:meta/",
+    "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+    "sdc": "http://ns.nikon.com/sdc/1.0/",
+    "ast": "http://ns.nikon.com/asteroid/1.0/",
+    "astype": "http://ns.nikon.com/asteroid/Types/1.0/",
+    "nine": "http://ns.nikon.com/nine/1.0/"
+}
+#: Build reverse XML Namespaces table for shortening attribute names
+_NIKON_REV_NS = {}
+for p, u in _NIKON_NS.items():
+    _NIKON_REV_NS[u] = p
+
 
 # This module can be used as library or as a script, a nullHandler is
 # added to avoid output in the absence of any logging configuration.
 # https://docs.python.org/howto/logging.html#configuring-logging-for-a-library
 _logger = logging.getLogger(__name__)
 _logger.addHandler(logging.NullHandler())
+
+
+def _shorten_name(name: str) -> str:
+    """Shorten a tag or attribute name based on the namespace table.
+
+    Args:
+        name: Name of the tag or attribute in expanded format (i.e.
+            ``{uri}tag``). An empty string or without uri is accepted.
+
+    Return:
+        Name in a short format (i.e. ``prefix:tag``). An empty
+        string or without uri in :data:`expanded_name` returns the
+        unchanged value.
+    """
+    if "}" in name:
+        uri, tag = name.split("}")
+        short_name = "{}:{}".format(_NIKON_REV_NS[uri.removeprefix("{")], tag)
+    else:
+        short_name = name
+
+    return short_name
+
+
+def _expand_name(name: str) -> str:
+    """Expand a tag or attribute name based on the namespace table.
+
+    Args:
+        name: Name of the tag or attribute in short format (i.e.
+            ``prefix:tag``). An empty string or without prefix is
+            accepted.
+
+    Returns:
+        Name in expanded format (i.e. ``{uri}tag``). An empty
+        string or without prefix in :data:`short_name` return the
+        unchanged value.
+    """
+    if ":" in name:
+        prefix, tag = name.split(":")
+        expanded_name = "{{{}}}{}".format(_NIKON_NS[prefix], tag)
+    else:
+        expanded_name = name
+    return expanded_name
 
 
 class NikonError(Exception):
@@ -242,80 +282,7 @@ class NikonResourceTypeError(NikonError):
         NikonError.__init__(self, msg)
 
 
-class NikonBaseProperties(object):
-    """Base class for Nikon Properties class.
-
-    Args:
-        element: XML element containing the metadata.
-
-    Raises:
-        NikonError: Generic error, the :attr:`NikonError.message`
-            details the error.
-        NikonMissingTagError: A tag value is not expected.
-        NikonTagValueError: An expected tag is missing.
-    """
-    def __init__(self, element: ElementTree.Element):
-        self._element = element
-
-        # Namespaces used in sidecar file
-        self._namespaces = {
-            "x": "adobe:ns:meta/",
-            "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
-            "sdc": "http://ns.nikon.com/sdc/1.0/",
-            "ast": "http://ns.nikon.com/asteroid/1.0/",
-            "astype": "http://ns.nikon.com/asteroid/Types/1.0/",
-            "nine": "http://ns.nikon.com/nine/1.0/"
-        }
-        # build the reverse namespace table
-        self._reverse_namespaces = {}
-        for prefix, uri in self._namespaces.items():
-            self._reverse_namespaces[uri] = prefix
-
-    def _shorten_name(self, expanded_name: str) -> str:
-        """Shorten a tag or attribute name based on the namespace table.
-
-        Args:
-            expanded_name: Name of the tag or attribute in expanded
-                format (i.e. ``{uri}tag``). An empty string or without
-                uri is accepted.
-
-        Return:
-            Name in a short format (i.e. ``prefix:tag``). An empty
-            string or without uri in :data:`expanded_name` returns the
-            unchanged value.
-        """
-        if "}" in expanded_name:
-            uri, tag = expanded_name.split("}")
-            short_name = "{}:{}".format(
-                self._reverse_namespaces[uri.removeprefix("{")],
-                tag)
-        else:
-            short_name = expanded_name
-
-        return short_name
-
-    def _expand_name(self, short_name: str) -> str:
-        """Expand a tag or attribute name based on the namespace table.
-
-        Args:
-            short_name: Name of the tag or attribute in short format
-                (i.e. ``prefix:tag``). An empty string or without
-                prefix is accepted.
-
-        Returns:
-            Name in expanded format (i.e. ``{uri}tag``). An empty
-            string or without prefix in :data:`short_name` return the
-            unchanged value.
-        """
-        if ":" in short_name:
-            prefix, tag = short_name.split(":")
-            expanded_name = "{{{}}}{}".format(self._namespaces[prefix], tag)
-        else:
-            expanded_name = short_name
-        return expanded_name
-
-
-class NikonGPSProperty(NikonBaseProperties):
+class NikonGPSProperties:
     """Nikon GPS properties container.
 
     This class parse a sidecar file and extract ``ast`` tags (namespace
@@ -362,7 +329,8 @@ class NikonGPSProperty(NikonBaseProperties):
     * ``GPSImgDirection``: The direction of the image when it was captured.
       The range of values is from 0.00 to 359.99.
 
-    .. note:: Others GPS properties are ignored.
+    Note:
+        Others GPS properties are ignored.
 
     This class can be used in a formatted string and returns the latitude
     and longitude.
@@ -376,194 +344,216 @@ class NikonGPSProperty(NikonBaseProperties):
             inappropriate value.
 
     Attributes:
-        props: Dictionary of properties of the SDC set.
+        props: Dictionary of properties of the GPS location.
     """
     props: dict
-    def __init__(self, element: ElementTree.Element):
-        super().__init__(element)
+    def __init__(self):
+        # Table of doers method for processing properties
+        self._doers = {
+            "ast:GPSVersionID": self._set_version,
+            "ast:GPSLatitudeRef": self._set_latitude_ref,
+            "ast:GPSLatitude": self._set_latitude,
+            "ast:GPSLongitudeRef": self._set_longitude_ref,
+            "ast:GPSLongitude": self._set_longitude,
+            "ast:GPSAltitudeRef": self._set_altitude_ref,
+            "ast:GPSAltitude": self._set_altitude,
+            "ast:GPSTimeStamp": self._set_timestamp,
+            "ast:GPSDateStamp": self._set_datestamp,
+            "ast:GPSStatus": self._set_status,
+            "ast:GPSMapDatum": self._set_map_datum,
+            "ast:GPSProcessingMethod": self._set_processing,
+            "ast:GPSSpeedRef": self._set_speed_ref,
+            "ast:GPSSpeed": self._set_speed,
+            "ast:GPSImgDirectionRef": self._set_img_direction_ref,
+            "ast:GPSImgDirection": self._set_img_direction,
+            "ast:GPSDestBearingRef": self._ignore_bearing,
+            "ast:GPSDestBearing": self._ignore_bearing,
+        }
         self.props = {}
 
-        name = self._shorten_name(self._element.tag)
-        if name != "rdf:Description":
-            raise NikonMissingTagError("rdf:Description")
+    def get_xmp_props(self):
+        """Returns the supported properties
 
-        for child in self._element:
-            if self._shorten_name(child.tag).startswith("ast:GPS"):
-                xmp_property = NikonXMPProperty(child)
-                match xmp_property.name:
-                    case "ast:GPSVersionID":
-                        # The version of GPS information as a binary string.
-                        self.props["GPSVersionID"] \
-                            = int.from_bytes(xmp_property.value, "little")
+        This method provides the list of the supported XMP properties to
+        populate the attribute classes.
 
-                    case "ast:GPSLatitudeRef":
-                        # Whether the latitude is north (``0``) or south
-                        # (``1``). *This attribute do not match with the
-                        # DICOM specifications* [digps]_.
-                        match xmp_property.value:
-                            case 0:
-                                self.props["GPSLatitudeRef"] = "N"
+        Returns:
+            list: List of the supported properties. The property names
+            are those of the XMP properties expressed in a short form
+            (i.e. ``prefix:tag``).
+        """
+        return self._doers.keys()
 
-                            case 1:
-                                self.props["GPSLatitudeRef"] = "S"
-
-                            case _:
-                                raise ValueError(
-                                    f"Unsupported latitude reference "
-                                    f"({xmp_property.value})")
-
-                    case "ast:GPSLatitude":
-                        # The latitude expressed in degrees-minutes-seconds
-                        # as a set of three floating number.
-                        self.props["GPSLatitude"] \
-                            = self._from_dms(xmp_property.value)
-
-                    case "ast:GPSLongitudeRef":
-                        # Whether the longitude is east (``2``) or west
-                        # (``3``). *This attribute do not match with the
-                        # DICOM specifications* [digps]_.
-                        match xmp_property.value:
-                            case 2:
-                                self.props["GPSLongitudeRef"] = "E"
-
-                            case 3:
-                                self.props["GPSLongitudeRef"] = "W"
-
-                            case _:
-                                raise ValueError(
-                                    f"Unsupported longitude reference "
-                                    f"({xmp_property.value})")
-
-                    case "ast:GPSLongitude":
-                        # The longitude expressed in degrees-minutes-seconds
-                        # as a set of three floating number.
-                        self.props["GPSLongitude"] \
-                            = self._from_dms(xmp_property.value)
-
-                    case "ast:GPSAltitudeRef":
-                        # Reference altitude in meters as a binary string.
-                        self.props["GPSAltitudeRef"] \
-                            = int.from_bytes(xmp_property.value, 'little')
-
-                    case "ast:GPSAltitude":
-                        self.props["GPSAltitude"] = xmp_property.value
-
-                    case "ast:GPSTimeStamp":
-                        self._set_timestamp(xmp_property.value)
-
-                    case "ast:GPSDateStamp":
-                        self._set_datestamp(xmp_property.value)
-
-                    case "ast:GPSStatus":
-                        match xmp_property.value:
-                            case "A" | "V":
-                                self.props["GPSStatus"] = xmp_property.value
-
-                            case _:
-                                raise ValueError(
-                                    f"Unsupported longitude reference "
-                                    f"({xmp_property.value})")
-
-                    case "ast:GPSMapDatum":
-                        self.props["GPSMapDatum"] = xmp_property.value
-
-                    case "ast:GPSProcessingMethod":
-                        # The name of the method used for location
-                        # finding as a set of two fixed strings ended by
-                        # NULL characters.
-                        type = str(xmp_property.value[0:7].strip(b"\x00"),
-                                   encoding='ascii')
-                        if type != "ASCII":
-                            raise ValueError(
-                                f"Processing method encoding is unknown "
-                                f"({type})")
-                        else:
-                            self.props["GPSProcessingMethod"]\
-                                = str(xmp_property.value[8:].strip(b"\x00"),
-                                      encoding='ascii')
-
-                    case "ast:GPSSpeedRef":
-                        match xmp_property.value:
-                            case "K" | "M" | "N":
-                                self.props["GPSSpeedRef"] = xmp_property.value
-
-                            case _:
-                                raise ValueError(
-                                    f"Unsupported speed reference "
-                                    f"({xmp_property.value})")
-
-                    case "ast:GPSSpeed":
-                        self.props["GPSSpeed"] = xmp_property.value
-
-                    case "ast:GPSImgDirectionRef":
-                        match xmp_property.value:
-                            case "T" | "M":
-                                self.props["GPSImgDirectionRef"] = xmp_property.value
-
-                            case _:
-                                raise ValueError(
-                                    f"Unsupported image direction reference "
-                                    f"({xmp_property.value})")
-
-                    case "ast:GPSImgDirection":
-                        self.props["GPSImgDirection"] = xmp_property.value
-
-                    case "ast:GPSDestBearingRef" | "ast:GPSDestBearing":
-                        _logger.info(
-                            f"GPS property '{xmp_property.name}' "
-                            f"({xmp_property.value=}) is ignored as it contains"
-                            f" the same information as Image Direction. ")
-
-                    case "ast:IPTC":
-                        self.props[xmp_property.name] = xmp_property.value
-
-                    case _:
-                        _logger.warning(
-                            f"GPS property '{xmp_property.name}' is not known"
-                            f" - {xmp_property.value=} ignored")
-
-        for k, v in self.props.items():
-            _logger.debug(f"GPS property {k}={v}")
-
-    def _set_timestamp(self, timestamp: list[float]):
-        """Set the datetime stamp.
+    def set_attr(self, xmp_property: NikonXMPProperty):
+        """Set the GPS attribute expressed as an XMP property.
 
         Args:
-            timestamp: The time in UTC (Coordinated Universal Time)
-                expressed in hours-minutes-seconds as a set of three
-                floating number. *This attribute do not match with the
-                DICOM specifications* [digps]_.
+            xmp_property: Nikon XMP property containing data.
 
         Raises:
-            ValueError: argument has the right type but an
-                inappropriate value.
+            ValueError: Inappropriate value, the :attr:`ValueError.message`
+                details the error.
+       """
+        if xmp_property.name in self._doers:
+            self._doers[xmp_property.name](xmp_property)
+        else:
+            _logger.warning(
+                f"GPS property '{xmp_property.name}' is not known"
+                f" - {xmp_property.value=} ignored")
+
+    def _set_version(self, xmp_property: NikonXMPProperty):
+        """Set the version of GPS information.
+
+        Args:
+            xmp_property: Nikon XMP property containing data.
+        """
+        # The version of GPS information as a binary string.
+        self.props["GPSVersionID"] \
+            = int.from_bytes(xmp_property.value, "little")
+
+    def _set_latitude_ref(self, xmp_property: NikonXMPProperty):
+        """Set the latitude reference: north or south.
+
+        Whether the latitude is north (``0``) or south (``1``). *This
+        attribute do not match with the DICOM specifications* [digps]_.
+
+        Args:
+            xmp_property: Nikon XMP property containing data.
+
+        Raises:
+            ValueError: Inappropriate value, the :attr:`ValueError.message`
+                details the error.
+        """
+        match xmp_property.value:
+            case 0:
+                self.props["GPSLatitudeRef"] = "N"
+
+            case 1:
+                self.props["GPSLatitudeRef"] = "S"
+
+            case _:
+                raise ValueError(
+                    f"Unsupported latitude reference "
+                    f"({xmp_property.value})")
+
+    def _set_latitude(self, xmp_property: NikonXMPProperty):
+        """Set the latitude.
+
+        The latitude expressed in degrees-minutes-seconds
+        as a set of three floating number.
+
+        Args:
+            xmp_property: Nikon XMP property containing data.
+
+        Raises:
+            ValueError: Inappropriate value, the :attr:`ValueError.message`
+                details the error.
+        """
+        self.props["GPSLatitude"] = self._from_dms(xmp_property.value)
+
+    def _set_longitude_ref(self, xmp_property: NikonXMPProperty):
+        """Set the longitude reference: east or west.
+
+        Whether the longitude is east (``2``) or west # (``3``). *This
+        attribute do not match with the DICOM specifications* [digps]_.
+
+        Args:
+            xmp_property: Nikon XMP property containing data.
+
+        Raises:
+            ValueError: Inappropriate value, the :attr:`ValueError.message`
+                details the error.
+        """
+        match xmp_property.value:
+            case 2:
+                self.props["GPSLongitudeRef"] = "E"
+
+            case 3:
+                self.props["GPSLongitudeRef"] = "W"
+
+            case _:
+                raise ValueError(
+                    f"Unsupported longitude reference "
+                    f"({xmp_property.value})")
+
+    def _set_longitude(self, xmp_property: NikonXMPProperty):
+        """Set the longitude.
+
+        The longitude expressed in degrees-minutes-seconds as a set of
+        three floating number.
+
+        Args:
+            xmp_property: Nikon XMP property containing data.
+
+        Raises:
+            ValueError: Inappropriate value, the :attr:`ValueError.message`
+                details the error.
+        """
+        self.props["GPSLongitude"] = self._from_dms(xmp_property.value)
+
+    def _set_altitude_ref(self, xmp_property: NikonXMPProperty):
+        """Set the altitude reference.
+
+        Reference altitude in meters as a binary string.
+
+        Args:
+            xmp_property: Nikon XMP property containing data.
+        """
+        self.props["GPSAltitudeRef"] = int.from_bytes(xmp_property.value,
+                                                      'little')
+
+    def _set_altitude(self, xmp_property: NikonXMPProperty):
+        """Set the altitude.
+
+        The altitude based on the reference in ``GPSAltitudeRef``, in
+        meters.
+
+        Args:
+            xmp_property: Nikon XMP property containing data.
+        """
+        self.props["GPSAltitude"] = xmp_property.value
+
+    def _set_timestamp(self, xmp_property: NikonXMPProperty):
+        """Set the time stamp.
+
+        The time in UTC (Coordinated Universal Time) expressed in
+        hours-minutes-seconds as a set of three floating number.
+        *This attribute do not match with the DICOM specifications* [digps]_.
+
+        Args:
+            xmp_property: Nikon XMP property containing data.
+
+        Raises:
+            ValueError: Inappropriate value, the :attr:`ValueError.message`
+                details the error.
         """
         time = None
         # Each part is expressed as a float, but it must be an integer
-        for t in timestamp:
+        for t in xmp_property.value:
             if not t.is_integer():
                 raise ValueError(
                     f"Timestamp part is not a integer ({t})")
 
-        match len(timestamp):
+        match len(xmp_property.value):
             case 1:
-                time = dt.time(hour=int(timestamp[0]),
+                time = dt.time(hour=int(xmp_property.value[0]),
                                tzinfo=dt.timezone.utc)
 
             case 2:
-                time = dt.time(hour=int(timestamp[0]),
-                               minute=int(timestamp[1]),
+                time = dt.time(hour=int(xmp_property.value[0]),
+                               minute=int(xmp_property.value[1]),
                                tzinfo=dt.timezone.utc)
 
             case 3:
-                time = dt.time(hour=int(timestamp[0]),
-                               minute=int(timestamp[1]),
-                               second=int(timestamp[2]),
+                time = dt.time(hour=int(xmp_property.value[0]),
+                               minute=int(xmp_property.value[1]),
+                               second=int(xmp_property.value[2]),
                                tzinfo=dt.timezone.utc)
 
             case _:
                 raise ValueError(
-                    f"Timestamp having more than 3 number ({len(timestamp)})")
+                    f"Timestamp having more than 3 number"
+                    f" ({len(xmp_property.value)})")
 
         # Combine timestamps (date and time)
         if "GPSDateTimeStamp" in self.props:
@@ -572,24 +562,139 @@ class NikonGPSProperty(NikonBaseProperties):
         else:
             self.props["GPSDateTimeStamp"] = time
 
-    def _set_datestamp(self, datestamp: str):
+    def _set_datestamp(self, xmp_property: NikonXMPProperty):
         """Set the datetime stamp.
 
+        The date as a string in the format: YYYY:MM:DD. *This attribute
+        do not match with the DICOM specifications* [digps]_.
+
         Args:
-            datestamp: The date as a string in the format: YYYY:MM:DD.
-                *This attribute do not match with the DICOM
-                specifications* [digps]_.
+            xmp_property: Nikon XMP property containing data.
 
         Raises:
-            ValueError: argument has the right type but an
-                inappropriate value.
+            ValueError: Inappropriate value, the :attr:`ValueError.message`
+                details the error.
         """
-        date = dt.date.strptime(datestamp, "%Y:%m:%d")
+        date = dt.date.strptime(xmp_property.value, "%Y:%m:%d")
         if "GPSDateTimeStamp" in self.props:
             self.props["GPSDateTimeStamp"] \
                 = dt.datetime.combine(date, self.props["GPSDateTimeStamp"])
         else:
             self.props["GPSDateTimeStamp"] = date
+
+    def _set_status(self, xmp_property: NikonXMPProperty):
+        """Set the status of the GPS receiver when the image is recorded.
+
+        Args:
+            xmp_property: Nikon XMP property containing data.
+
+        Raises:
+            ValueError: Inappropriate value, the :attr:`ValueError.message`
+                details the error.
+        """
+        match xmp_property.value:
+            case "A" | "V":
+                self.props["GPSStatus"] = xmp_property.value
+
+            case _:
+                raise ValueError(
+                    f"Unsupported longitude reference "
+                    f"({xmp_property.value})")
+
+    def _set_map_datum(self, xmp_property: NikonXMPProperty):
+        """Set The geodetic survey data used by the GPS receiver.
+
+        Args:
+            xmp_property: Nikon XMP property containing data.
+        """
+        self.props["GPSMapDatum"] = xmp_property.value
+
+    def _set_processing(self, xmp_property: NikonXMPProperty):
+        """Set the name of the method used for location finding.
+
+        The name of the method used for location finding as a set of two
+        fixed strings ended by NULL characters.
+
+        Args:
+            xmp_property: Nikon XMP property containing data.
+
+        Raises:
+            ValueError: Inappropriate value, the :attr:`ValueError.message`
+                details the error.
+        """
+        type = str(xmp_property.value[0:7].strip(b"\x00"), encoding='ascii')
+        if type != "ASCII":
+            raise ValueError(f"Processing method encoding is unknown ({type})")
+        else:
+            self.props["GPSProcessingMethod"] \
+                = str(xmp_property.value[8:].strip(b"\x00"), encoding='ascii')
+
+    def _set_speed_ref(self, xmp_property: NikonXMPProperty):
+        """Set The unit used to express the ``GPSSpeed``.
+
+        Args:
+            xmp_property: Nikon XMP property containing data.
+
+        Raises:
+            ValueError: Inappropriate value, the :attr:`ValueError.message`
+                details the error.
+        """
+        match xmp_property.value:
+            case "K" | "M" | "N":
+                self.props["GPSSpeedRef"] = xmp_property.value
+
+            case _:
+                raise ValueError(f"Unsupported speed reference "
+                                 f"({xmp_property.value})")
+
+    def _set_speed(self, xmp_property: NikonXMPProperty):
+        """Set the speed of GPS receiver movement.
+
+        Args:
+            xmp_property: Nikon XMP property containing data.
+        """
+        self.props["GPSSpeed"] = xmp_property.value
+
+    def _set_img_direction_ref(self, xmp_property: NikonXMPProperty):
+        """Set the reference for giving the direction of the image.
+
+        Args:
+            xmp_property: Nikon XMP property containing data.
+
+        Raises:
+            ValueError: Inappropriate value, the :attr:`ValueError.message`
+                details the error.
+        """
+        match xmp_property.value:
+            case "T" | "M":
+                self.props["GPSImgDirectionRef"] = xmp_property.value
+
+            case _:
+                raise ValueError(
+                    f"Unsupported image direction reference "
+                    f"({xmp_property.value})")
+
+    def _set_img_direction(self, xmp_property: NikonXMPProperty):
+        """Set the direction of the image.
+
+        Args:
+            xmp_property: Nikon XMP property containing data.
+        """
+        self.props["GPSImgDirection"] = xmp_property.value
+
+    def _ignore_bearing(self, xmp_property: NikonXMPProperty):
+        """Do nothing.
+
+        Bearing GPS properties are is ignored as it contains the same
+        information as Image Direction.
+
+        Args:
+            xmp_property: Nikon XMP property containing data.
+        """
+        _logger.info(
+            f"GPS property '{xmp_property.name}' "
+            f"({xmp_property.value=}) is ignored as it contains"
+            f" the same information as Image Direction. ")
 
     def _from_dms(self, dms: list[float]):
         """Get coordinate in decimal degrees.
@@ -649,7 +754,7 @@ class NikonGPSProperty(NikonBaseProperties):
         return s
 
 
-class NikonXMPProperty(NikonBaseProperties):
+class NikonXMPProperty:
     """Nikon XMP property.
 
     This class parses an XML element as a ``XMP`` property and decode
@@ -675,11 +780,10 @@ class NikonXMPProperty(NikonBaseProperties):
     value: None | str | list[float|None] | int | bytes
 
     def __init__(self, element: ElementTree.Element):
-        super().__init__(element)
         self.value = None
 
-        self.name = self._shorten_name(element.tag)
-        type_name = self._expand_name("rdf:parseType")
+        self.name = _shorten_name(element.tag)
+        type_name = _expand_name("rdf:parseType")
         if type_name in element.attrib:
             # Structure valued XMP property
             res_value = ""
@@ -688,7 +792,7 @@ class NikonXMPProperty(NikonBaseProperties):
             match element.attrib[type_name]:
                 case "Resource":
                     for item in element:
-                        item_name = self._shorten_name(item.tag)
+                        item_name = _shorten_name(item.tag)
                         match item_name:
                             case "rdf:value":
                                 res_value = item.text
@@ -751,115 +855,136 @@ class NikonXMPProperty(NikonBaseProperties):
                           f" {self.name}={self.value}")
 
 
-class NikonXMPMeta(NikonBaseProperties):
-    """Nikon XMP Meta container.
+class NikonXMPDescriptions:
+    """Manage the XMP Packet header description
 
-    This class parse a sidecar file and extract ``xmpmeta`` tags.
+    This class parses an XMP Packet and checks its structure. In case of
+    error and NikonError exception is raised. :attr:`descriptions`
+    attribute contains the list of description block. For the observed
+    use case, there is only description block per sidecar file.
 
     The article named ":ref:`Inside Nikon Sidecar file`" details the data
     structure and tags used by Nikon.
 
     Args:
-        element: XML element containing the ``x:xmpmeta`` element.
-
-    Raises:
-        NikonError: Generic error, the :attr:`NikonError.message` details
-            the error.
-        NikonMissingTagError: A tag value is not expected.
-        NikonTagValueError: An expected tag is missing.
+        element: XML element containing the XMP Packet with its wrapper(
+            ``xpacket``) as an XML processing instruction.
 
     Attributes:
-        xmptk: The toolkit name (``XMP Core 5.5.0`` for example).
-    """
-    xmptk: str | None
+        xmptk: Name of the xmp toolkit used to build the sidecar files.
+        descriptions: List of ElementTree.Element containing XMP
+            description block identified by the ``rdf:Description``
+            element.
 
+    Raises:
+        NikonError: Generic error, the :attr:`NikonError.message` details
+            the error.
+    """
+    _element: ElementTree.Element
+    xmptk: str | None
+    descriptions: list[ElementTree.Element] | None
     def __init__(self, element: ElementTree.Element):
-        super().__init__(element)
+        self._element = element
+        self.descriptions = None
         self.xmptk = None
 
-        if self._shorten_name(self._element.tag) != "x:xmpmeta":
-            raise NikonMissingTagError("x:xmpmeta")
-        name = self._expand_name("x:xmptk")
-        if name in self._element.attrib:
-            self.xmptk = element.attrib[name]
-            _logger.debug(f"{name} = {element.attrib[name]}")
+        self._check_xmp_packet()
+        self._set_xmp_descriptions()
+
+    def _check_xmp_packet(self):
+        """Check the XMP metadata marker
+        
+        This method checks the XMP packet identified by a ``rdf:RDF``
+        element (section 7.4 [adxmp1]_). The method set the
+        :attr:`_element` attribute to ``rdf:RDF`` element in the XML tree.
+        An ``x:xmpmeta`` element may be placed around the ``rdf:RDF``
+        element (aka XMP packet). (section 7.3.3 [adxmp1]_) with name of
+        the toolkit (``x:xmptk``) as attribute. This value is saved in
+        :attr:`xmptk`.
+
+        Raises:
+            NikonError: Generic error, the :attr:`NikonError.message` details
+                the error.
+        """
+
+        element = self._element
+        # An XMP processor should tolerate an ``x:xmpmeta`` element in any
+        # input and look within it for the ``rdf:RDF`` element.
+        tag = _shorten_name(element.tag)
+        if tag == "x:xmpmeta":
+            name = _expand_name("x:xmptk")
+            if name in element.attrib:
+                self.xmptk = element.attrib[name]
+                _logger.debug(f"XMP Toolkit: {self.xmptk}")
+
+            name = _expand_name("rdf:RDF")
+            elements = element.findall(name)
+            if len(elements) != 1:
+                raise NikonError(
+                    f"More than XMP Packet: actual '{len(elements)}', "
+                    f"expected 1")
+        else:
+            name = _expand_name("rdf:RDF")
+            elements = element.findall(name)
+            if len(elements) != 1:
+                raise NikonError(
+                    f"More than XMP Packet: actual '{len(elements)}', "
+                    f"expected 1")
+
+        self._element = elements[0]
+
+    def _set_xmp_descriptions(self):
+        """Set the XMP descriptions attributes
+
+        This method checks the XMP description identified by a
+        ``rdf:Description`` element (section 7.4 [adxmp1]_). The method
+        set the :attr:`descriptions` attribute.
+
+        Raises:
+            NikonError: Generic error, the :attr:`NikonError.message` details
+                the error.
+        """
+        element = self._element
+        self.descriptions = []
+        for descr in element:
+            tag = _shorten_name(descr.tag)
+            if tag != "rdf:Description":
+                raise NikonError(f"Not a XMP description: actual '{tag}', "
+                                 f"expected 'rdf:Description'")
+            else:
+                self.descriptions.append(descr)
+
+        match len(self.descriptions):
+            case 0:
+                _logger.warning(f"No description element (rdf:Description)")
+
+            case 1:
+                pass
+
+            case _:
+                _logger.warning(f"More than one description element: "
+                                f"actual {len(self.descriptions)},expected: 1."
+                                f"Only the first one will be considered")
 
 
-class NikonRDF(NikonBaseProperties):
-    """Nikon RDF container.
-
-    This class parse a sidecar file and extract ``rdf:RDF`` tags.
-
-    The article named ":ref:`Inside Nikon Sidecar file`" details the data
-    structure and tags used by Nikon.
-
-    Args:
-        element: XML element containing the ``rdf:RDF`` tag.
-
-    Raises:
-        NikonError: Generic error, the :attr:`NikonError.message` details
-            the error.
-        NikonMissingTagError: A tag value is not expected.
-        NikonTagValueError: A expected tag is missing.
-    """
-    def __init__(self, element: ElementTree.Element):
-        super().__init__(element)
-
-        if self._shorten_name(self._element.tag) != "rdf:RDF":
-            raise NikonMissingTagError("rdf:RDF")
-
-
-class NikonRDFDescription(NikonBaseProperties):
-    """Nikon RDF Description container. (NOT USEFUL)
-
-    This class parse a sidecar file and extract ``rdf:Description`` tags.
-
-    The article named ":ref:`Inside Nikon Sidecar file`" details the data
-    structure and tags used by Nikon.
-
-    Args:
-        element: XML element containing the ``rdf:Description`` tag.
-
-    Raises:
-        NikonError: Generic error, the :attr:`NikonError.message` details
-            the error.
-        NikonMissingTagError: A tag value is not expected.
-        NikonTagValueError: An expected tag is missing.
-    """
-    def __init__(self, element: ElementTree.Element):
-        super().__init__(element)
-
-        if self._shorten_name(self._element.tag) != "rdf:Description":
-            raise NikonMissingTagError("rdf:Description")
-
-
-class NikonSDCProperties(NikonBaseProperties):
+class NikonSDCProperties:
     """Nikon SDC properties container.
 
     This class parse a sidecar file and extract ``sdc`` tags (namespace
     'http://ns.nikon.com/sdc/1.0/'). The properties read are copied into
     the attribute :attr:`props` which can contain the following entries:
 
-    * ``sdc:appname``: Name of the application that created the sidecar
+    * ``appname``: Name of the application that created the sidecar
       file.
-    * ``sdc:appversion``: Version identifier of the application that
+    * ``appversion``: Version identifier of the application that
       created the sidecar file.
 
     The article named ":ref:`Inside Nikon Sidecar file`" details the data
     structure and tags used by Nikon.
 
-    Args:
-        element: XML element containing the ``rdf:Description`` tag.
-
-    Raises:
-        NikonError: Generic error, the :attr:`NikonError.message` details
-            the error.
-        NikonMissingTagError: A tag value is not expected.
-        NikonTagValueError: An expected tag is missing.
-
     Attributes:
-        about: Identifier of the sidecar file format. The identifier
-            have to be ``nikon sidecar/1.0``.
+        about: Identifier of properties set. The identifier have to be
+            ``nikon sidecar/1.0``.
         version: Version identifier of the sidecar format.
         props: Dictionary of properties of the SDC set.
     """
@@ -867,47 +992,91 @@ class NikonSDCProperties(NikonBaseProperties):
     about: str | None
     version: str | None
     props: dict
-    def __init__(self, element: ElementTree.Element):
-        super().__init__(element)
+    def __init__(self):
+        # Table of doers method for processing properties
+        self._doers = {
+            "sdc:about": self._check_about,
+            "sdc:version": self._check_version,
+            "sdc:appversion": self._set_appversion,
+            "sdc:appname": self._set_appname,
+        }
         self.about = None
         self.version= None
         self.props = {}
 
-        name = self._shorten_name(self._element.tag)
-        if name != "rdf:Description":
-            raise NikonMissingTagError("rdf:Description")
+    def get_xmp_props(self):
+        """Returns the supported properties
 
-        for child in self._element:
-            prefix = (self._shorten_name(child.tag)).split(":")[0]
-            if prefix == "sdc":
-                xmp_property = NikonXMPProperty(child)
-                match xmp_property.name:
-                    case "sdc:about":
-                        self.about = xmp_property.value
-                        if self.about != self._ID:
-                            raise NikonTagValueError("sdc:about", self.about)
+        This method provides the list of the supported XMP properties to
+        populate the attribute classes.
 
-                    case "sdc:version":
-                        self.version = xmp_property.value
+        Returns:
+            list: List of the supported properties. The property names
+            are those of the XMP properties expressed in a short form
+            (i.e. ``prefix:tag``).
+        """
+        return self._doers.keys()
 
-                    case "sdc:appversion":
-                        self.props['appversion'] = xmp_property.value
+    def set_attr(self, xmp_property: NikonXMPProperty):
+        """Set the SDC attribute expressed as an XMP property.
 
-                    case "sdc:appname":
-                        self.props['appname'] = xmp_property.value
+        Args:
+            xmp_property: Nikon XMP property containing data.
 
-                    case _:
-                        _logger.warning(
-                            f"SDC property '{xmp_property.name}' is not known"
+        Raises:
+            ValueError: Inappropriate value, the :attr:`ValueError.message`
+                details the error.
+        """
+        if xmp_property.name in self._doers:
+            self._doers[xmp_property.name](xmp_property)
+            _logger.debug(f"SDC property {xmp_property.name}"
+                          f"={xmp_property.value}")
+        else:
+            _logger.warning(f"SDC property '{xmp_property.name}' is not known"
                             f" - ignored")
 
-        _logger.info(f"SDC property about={self.about}")
-        _logger.info(f"SDC property version={self.version}")
-        for k, v in self.props.items():
-            _logger.info(f"SDC property {k}={v}")
+    def _check_about(self, xmp_property: NikonXMPProperty):
+        """Check the identifier of properties set.
+
+        The identifier have to be ``nikon sidecar/1.0``.
+
+        Args:
+            xmp_property: Nikon XMP property containing data.
+        """
+        self.about = xmp_property.value
+        if self.about != self._ID:
+            raise ValueError(f"SDC Unsupported identifier, actual: "
+                             f"{xmp_property.value}, expected: {self._ID}")
+
+    def _check_version(self, xmp_property: NikonXMPProperty):
+        """Check the version identifier  of properties set.
+
+        The method simply read the version identifier as this attributes
+        is not used.
+
+        Args:
+            xmp_property: Nikon XMP property containing data.
+        """
+        self.version = xmp_property.value
+
+    def _set_appname(self, xmp_property: NikonXMPProperty):
+        """Set the name of the application that created the sidecar file.
+
+        Args:
+            xmp_property: Nikon XMP property containing data.
+        """
+        self.props['appname'] = xmp_property.value
+
+    def _set_appversion(self, xmp_property: NikonXMPProperty):
+        """Set the version of the application that created the sidecar file.
+
+        Args:
+            xmp_property: Nikon XMP property containing data.
+        """
+        self.props['appversion'] = xmp_property.value
 
 
-class NikonAsteroidProperties(NikonBaseProperties):
+class NikonAsteroidProperties:
     """Nikon Asteroid properties container.
 
     This class parse a sidecar file and extract ``ast`` tags (namespace
@@ -926,10 +1095,8 @@ class NikonAsteroidProperties(NikonBaseProperties):
         element: XML element containing the ``rdf:Description`` tag.
 
     Raises:
-        NikonError: Generic error, the :attr:`NikonError.message` details
-            the error.
-        NikonMissingTagError: A tag value is not expected.
-        NikonTagValueError: An expected tag is missing.
+        ValueError: Inappropriate value, the :attr:`ValueError.message`
+            details the error.
 
     Attributes:
         about: Identifier of the sidecar file format. The identifier
@@ -985,64 +1152,101 @@ class NikonAsteroidProperties(NikonBaseProperties):
     about: str | None
     version: str | None
     props: dict
-    def __init__(self, element: ElementTree.Element):
-        super().__init__(element)
+    def __init__(self):
+        # Table of doers method for processing properties
+        self._doers = {
+            "ast:about": self._check_about,
+            "ast:version": self._check_version,
+            "ast:XMLPackets": self._set_xmlpacket,
+            "ast:IPTC": self._set_iptc,
+            "ast:GPSVersionID": self._set_gps,
+            "ast:GPSLatitudeRef": self._set_gps,
+            "ast:GPSLatitude": self._set_gps,
+            "ast:GPSLongitudeRef": self._set_gps,
+            "ast:GPSLongitude": self._set_gps,
+            "ast:GPSAltitudeRef": self._set_gps,
+            "ast:GPSAltitude": self._set_gps,
+            "ast:GPSTimeStamp": self._set_gps,
+            "ast:GPSDateStamp": self._set_gps,
+            "ast:GPSStatus": self._set_gps,
+            "ast:GPSMapDatum": self._set_gps,
+            "ast:GPSProcessingMethod": self._set_gps,
+            "ast:GPSSpeedRef": self._set_gps,
+            "ast:GPSSpeed": self._set_gps,
+            "ast:GPSImgDirectionRef": self._set_gps,
+            "ast:GPSImgDirection": self._set_gps,
+            "ast:GPSDestBearingRef": self._set_gps,
+            "ast:GPSDestBearing": self._set_gps,
+        }
         self.about = None
         self.version= None
         self.props = {}
 
-        name = self._shorten_name(self._element.tag)
-        if name != "rdf:Description":
-            raise NikonMissingTagError("rdf:Description")
+    def get_xmp_props(self):
+        """Returns the supported properties
 
-        self.props["GPS"] = NikonGPSProperty(self._element)
-        for child in self._element:
-            prefix = (self._shorten_name(child.tag)).split(":")[0]
-            if prefix == "ast":
-                xmp_property = NikonXMPProperty(child)
-                if not xmp_property.name.startswith("ast:GPS"):
-                    match xmp_property.name:
-                        case "ast:about":
-                            self.about = xmp_property.value
-                            if self.about != self._ID:
-                                raise NikonTagValueError(
-                                    "ast:about", self.about)
+        This method provides the list of the supported XMP properties to
+        populate the attribute classes.
 
-                        case "ast:version":
-                            self.version = xmp_property.value
+        Returns:
+            list: List of the supported properties. The property names
+            are those of the XMP properties expressed in a short form
+            (i.e. ``prefix:tag``).
+        """
+        return self._doers.keys()
 
-                        case "ast:XMLPackets":
-                            self.props["XMLPackets"] = xmp_property.value
-                            #tree = ElementTree.fromstring(xmp_property.value)
-                            # for c in tree:
-                            #     _logger.debug(f"* {c.tag=}, {c.text=} {c.attrib=}")
-                            #     for i in c:
-                            #         _logger.debug(f"** {i.tag=}, {i.text=} {i.attrib=}")
-                            #         for j in i:
-                            #             _logger.debug(f"*** {j.tag=}, {j.text=} {j.attrib=}")
-                            #             for k in j:
-                            #                 _logger.debug(f"**** {k.tag=}, {k.text=} {k.attrib=}")
-                            #                 for l in k:
-                            #                     _logger.debug(f"***** {l.tag=}, {l.text=} {l.attrib=}")
+    def set_attr(self, xmp_property: NikonXMPProperty):
+        """Set the AST attribute expressed as an XMP property.
 
-                        case "ast:IPTC":
-                            self._set_iptc(xmp_property)
+        Args:
+            xmp_property: Nikon XMP property containing data.
 
-                        case _:
-                            _logger.warning(
-                                f"AST property '{xmp_property.name}' is not known"
-                                f" - {xmp_property.value=} ignored")
+        Raises:
+            ValueError: Inappropriate value, the :attr:`ValueError.message`
+                details the error.
+        """
+        if xmp_property.name in self._doers:
+            self._doers[xmp_property.name](xmp_property)
+            _logger.debug(f"AST property {xmp_property.name}"
+                          f"={xmp_property.value}")
+        else:
+            _logger.warning(f"AST property '{xmp_property.name}' is not known"
+                            f" - ignored")
 
-        _logger.info(f"AST property about={self.about}")
-        _logger.info(f"AST property version={self.version}")
-        for k, v in self.props.items():
-            _logger.info(f"AST property {k}={v}")
-        if self.props["GPS"] is not None:
-            for k, v in self.props["GPS"].props.items():
-                _logger.info(f"AST GPS property {k}={v}")
-        if "IPTC" in self.props:
-            for k, v in self.props["IPTC"].items():
-                _logger.info(f"AST IPTC property {k}={v}")
+    def _check_about(self, xmp_property: NikonXMPProperty):
+        """Check the identifier of properties set.
+
+        The identifier have to be ``core-asteroid-tags``.
+
+        Args:
+            xmp_property: Nikon XMP property containing data.
+        """
+        self.about = xmp_property.value
+        if self.about != self._ID:
+            raise ValueError(f"AST Unsupported identifier, actual: "
+                             f"{xmp_property.value}, expected: {self._ID}")
+
+    def _check_version(self, xmp_property: NikonXMPProperty):
+        """Check the version identifier  of properties set.
+
+        The method simply read the version identifier as this attributes
+        is not used.
+
+        Args:
+            xmp_property: Nikon XMP property containing data.
+        """
+        self.version = xmp_property.value
+
+    def _set_xmlpacket(self, xmp_property: NikonXMPProperty):
+        """Set the metadata of the image.
+
+        The image data are serialized in an embedded XML/XMP, so we
+        walk in the RDF tree.
+
+        Args:
+            xmp_property: Nikon XMP property containing data.
+        """
+        self.props["XMLPackets"] = xmp_property.value
 
     def _set_iptc(self, xmp_property: NikonXMPProperty):
         """Set the IPTC data expressed as an XMP binary property.
@@ -1063,7 +1267,7 @@ class NikonAsteroidProperties(NikonBaseProperties):
             xmp_property: Nikon XMP property containing IPTC data.
 
         Raises:
-            NikonError: Generic error, the :attr:`NikonError.message`
+            ValueError: Inappropriate value, the :attr:`ValueError.message`
                 details the error.
         """
         iptc = {}
@@ -1096,8 +1300,8 @@ class NikonAsteroidProperties(NikonBaseProperties):
                         subject_code.append(f"{value}")
 
                     case _:
-                        raise NikonError(
-                            f"Unsupported IIMid ({iim_id})")
+                        raise ValueError(
+                            f"IPTC Unsupported IIMid ({iim_id})")
             buffer = buffer[5 + l:]
 
         # Adding keywords
@@ -1111,7 +1315,20 @@ class NikonAsteroidProperties(NikonBaseProperties):
 
         self.props["IPTC"] = iptc
 
-class NikonNineProperties(NikonBaseProperties):
+    def _set_gps(self, xmp_property: NikonXMPProperty):
+        """Set the GPS data expressed as an XMP property.
+
+        This method is called for each GPS attribute, so the GPS container
+        is created during the first call and updated on following calls.
+
+        Args:
+            xmp_property: Nikon XMP property containing data.
+        """
+        if "GPS" not in self.props:
+            self.props["GPS"] = NikonGPSProperties()
+        self.props["GPS"].set_attr(xmp_property)
+
+class NikonNineProperties:
     """Nikon Nine properties container.
 
     This class parse a sidecar file and extract ``nine`` tags (namespace
@@ -1146,53 +1363,117 @@ class NikonNineProperties(NikonBaseProperties):
     about: str | None
     version: str | None
     trim: str | None
-    def __init__(self, element: ElementTree.Element):
-        super().__init__(element)
+    def __init__(self):
+        # Table of doers method for processing properties
+        self._doers = {
+            "nine:about": self._check_about,
+            "nine:version": self._check_version,
+            "nine:NineEdits": self._set_nine_edits,
+            "nine:Label": self._set_label,
+            "nine:Rating": self._set_rating,
+            "nine:Trim": self._ignore,
+        }
         self.about = None
         self.version= None
         self.trim = None
         self.props = {}
 
-        name = self._shorten_name(self._element.tag)
-        if name != "rdf:Description":
-            raise NikonMissingTagError("rdf:Description")
+    def get_xmp_props(self):
+        """Returns the supported properties
 
-        for child in self._element:
-            prefix = (self._shorten_name(child.tag)).split(":")[0]
-            if prefix == "nine":
-                xmp_property = NikonXMPProperty(child)
-                match xmp_property.name:
-                    case "nine:about":
-                        self.about = xmp_property.value
-                        if self.about != self._ID:
-                            raise NikonTagValueError("nine:about", self.about)
+        This method provides the list of the supported XMP properties to
+        populate the attribute classes.
 
-                    case "nine:version":
-                        self.version = xmp_property.value
+        Returns:
+            list: List of the supported properties. The property names
+            are those of the XMP properties expressed in a short form
+            (i.e. ``prefix:tag``).
+        """
+        return self._doers.keys()
 
-                    case "nine:NineEdits":
-                        tree = ElementTree.fromstring(xmp_property.value)
-                        self.props["NineEdits"] = NineEdits(tree).adjustments
+    def set_attr(self, xmp_property: NikonXMPProperty):
+        """Set the Nine attribute expressed as an XMP property.
 
-                    case "nine:Label":
-                        self.props["Label"] = xmp_property.value
+        Args:
+            xmp_property: Nikon XMP property containing data.
 
-                    case "nine:Rating":
-                        self.props["Rating"] = xmp_property.value
-
-                    case "nine:Trim":
-                        self.trim = xmp_property.value
-
-                    case _:
-                        _logger.warning(
-                            f"NINE property '{xmp_property.name}' is not known"
+        Raises:
+            ValueError: Inappropriate value, the :attr:`ValueError.message`
+                details the error.
+        """
+        if xmp_property.name in self._doers:
+            self._doers[xmp_property.name](xmp_property)
+            _logger.debug(f"NINE property {xmp_property.name}"
+                          f"={xmp_property.value}")
+        else:
+            _logger.warning(f"NINE property '{xmp_property.name}' is not known"
                             f" - ignored")
 
-        _logger.info(f"NINE property about={self.about}")
-        _logger.info(f"NINE property version={self.version}")
-        for k, v in self.props.items():
-            _logger.info(f"NINE property {k}={v}")
-        _logger.info(f"NINE property trim={self.trim}")
+    def _check_about(self, xmp_property: NikonXMPProperty):
+        """Check the identifier of properties set.
+
+        The identifier have to be ``nikon sidecar/1.0``.
+
+        Args:
+            xmp_property: Nikon XMP property containing data.
+        """
+        self.about = xmp_property.value
+        if self.about != self._ID:
+            raise ValueError(f"NINE Unsupported identifier, actual: "
+                             f"{xmp_property.value}, expected: {self._ID}")
+
+    def _check_version(self, xmp_property: NikonXMPProperty):
+        """Check the version identifier  of properties set.
+
+        The method simply read the version identifier as this attributes
+        is not used.
+
+        Args:
+            xmp_property: Nikon XMP property containing data.
+        """
+        self.version = xmp_property.value
+
+    def _set_nine_edits(self, xmp_property: NikonXMPProperty):
+        """Set the NineEdits (aka adjustments) attribute.
+
+        Args:
+            xmp_property: Nikon XMP property containing data.
+
+        Raises:
+            NikAdjustmentError: Generic error, the :attr:`NikFilterError.message`
+                details the error.
+        """
+        tree = ElementTree.fromstring(xmp_property.value)
+        self.props["NineEdits"] = NineEdits(tree).adjustments
+
+    def _set_label(self, xmp_property: NikonXMPProperty):
+        """Set the label of the image.
+
+        Args:
+            xmp_property: Nikon XMP property containing data.
+        """
+        self.props["Label"] = xmp_property.value
+
+    def _set_rating(self, xmp_property: NikonXMPProperty):
+        """Set the rating of the image.
+
+        The image data are serialized in an embedded XML/XMP, so we
+        walk in the RDF tree.
+
+        Args:
+            xmp_property: Nikon XMP property containing data.
+        """
+        self.props["Rating"] = xmp_property.value
+
+    def _ignore(self, xmp_property: NikonXMPProperty):
+        """Do nothing.
+
+        Args:
+            xmp_property: Nikon XMP property containing data.
+        """
+        _logger.debug(
+            f"NINE property '{xmp_property.name}' "
+            f"({xmp_property.value}) is ignored ")
 
 
 class NikonSideCar(object):
@@ -1233,6 +1514,7 @@ class NikonSideCar(object):
     ast: NikonAsteroidProperties | None
     nine: NikonNineProperties | None
     def __init__(self, element: ElementTree.Element):
+        self._doers = {}
         self._metadata = {}
         self._processing = {}
         self._data = None
@@ -1240,6 +1522,23 @@ class NikonSideCar(object):
         self.sdc = None
         self.ast = None
         self.nine = None
+
+        # Build the doers list based on elementary containers
+        c = NikonSDCProperties()
+        for k in c.get_xmp_props():
+            self._doers[k] = self._set_sdc_attr
+
+        c = NikonAsteroidProperties()
+        for k in c.get_xmp_props():
+            self._doers[k] = self._set_ast_attr
+        c = NikonGPSProperties()
+        for k in c.get_xmp_props():
+            self._doers[k] = self._set_ast_attr
+
+        c = NikonNineProperties()
+        for k in c.get_xmp_props():
+            self._doers[k] = self._set_nine_attr
+
 
     def parse(self):
         """
@@ -1254,21 +1553,92 @@ class NikonSideCar(object):
             error log is written on the standard error (``stderr``).
         """
         # Check the document header (x:xmptk)
-        xmp_meta = NikonXMPMeta(self._element)
-        _logger.debug(f"XMPTK : {xmp_meta.xmptk}")
-        if xmp_meta.xmptk != "XMP Core 5.5.0":
-            raise NikonTagValueError("x:xmptk", xmp_meta.xmptk)
+        # self._check_enveloppe(self._element)
+        #
+        # # Check RDF blocs (rdf:RDF)
+        # if len(self._element) != 1:
+        #     raise NikonError("No or more than one child in 'x:xmpmeta'")
+        # for rdf_item in self._element:
+        #     self._check_rdf(rdf_item)
+        #     # list
+        #     for description_item in rdf_item:
+        xmp_descr = NikonXMPDescriptions(self._element)
+        if len(xmp_descr.descriptions) != 0:
+            for prop in xmp_descr.descriptions[0]:
+                xmp_property = NikonXMPProperty(prop)
+                if xmp_property.name in self._doers:
+                    self._doers[xmp_property.name](xmp_property)
+                else:
+                    _logger.warning(f"SDC property '{xmp_property.name}' is not known"
+                                    f" - ignored")
 
-        # Check RDF blocs (rdf:RDF)
-        if len(self._element) != 1:
-            raise NikonError("No or more than one child in 'x:xmpmeta'")
-        for rdf_item in self._element:
-            rdf = NikonRDF(rdf_item)
-            # list
-            for description_item in rdf_item:
-                self.sdc = NikonSDCProperties(description_item)
-                self.ast = NikonAsteroidProperties(description_item)
-                self.nine = NikonNineProperties(description_item)
+        # Logging the read attributes
+        if _logger.getEffectiveLevel() <= logging.INFO:
+            if self.sdc is not None:
+                for k, v in self.sdc.props.items():
+                    _logger.info(f"SDC property {k}={v}")
+            else:
+                _logger.info(f"No SDC property")
+
+            if self.ast is not None:
+                for k, v in self.ast.props.items():
+                    _logger.info(f"AST property {k}={v}")
+                if "GPS" in self.ast.props:
+                    for k, v in self.ast.props["GPS"].props.items():
+                        _logger.info(f"AST GPS property {k}={v}")
+                if "IPTC" in self.ast.props:
+                    for k, v in self.ast.props["IPTC"].items():
+                        _logger.info(f"AST IPTC property {k}={v}")
+            else:
+                _logger.info(f"No AST property")
+
+            if self.nine is not None:
+                for k, v in self.nine.props.items():
+                    _logger.info(f"NINE property {k}={v}")
+            else:
+                _logger.info(f"No NINE property")
+
+    def _set_sdc_attr(self, xmp_property: NikonXMPProperty):
+        """Set the SDC attribute expressed as an XMP property.
+
+        Args:
+            xmp_property: Nikon XMP property containing data.
+
+        Raises:
+            ValueError: Inappropriate value, the :attr:`ValueError.message`
+                details the error.
+        """
+        if self.sdc is None:
+            self.sdc = NikonSDCProperties()
+        self.sdc.set_attr(xmp_property)
+
+    def _set_ast_attr(self, xmp_property: NikonXMPProperty):
+        """Set the AST attribute expressed as an XMP property.
+
+        Args:
+            xmp_property: Nikon XMP property containing data.
+
+        Raises:
+            ValueError: Inappropriate value, the :attr:`ValueError.message`
+                details the error.
+        """
+        if self.ast is None:
+            self.ast = NikonAsteroidProperties()
+        self.ast.set_attr(xmp_property)
+
+    def _set_nine_attr(self, xmp_property: NikonXMPProperty):
+        """Set the NINE attribute expressed as an XMP property.
+
+        Args:
+            xmp_property: Nikon XMP property containing data.
+
+        Raises:
+            ValueError: Inappropriate value, the :attr:`ValueError.message`
+                details the error.
+        """
+        if self.nine is None:
+            self.nine = NikonNineProperties()
+        self.nine.set_attr(xmp_property)
 
     def get_rating(self) -> int:
         """Return the image rating.
@@ -1297,7 +1667,7 @@ class NikonSideCar(object):
         detail the param
         """
         is_geotagged = False
-        if "GPS" in self.ast.props:
+        if self.ast is not None and "GPS" in self.ast.props:
             is_geotagged = self.ast.props["GPS"].is_completed()
         return is_geotagged
 

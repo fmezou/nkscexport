@@ -19,7 +19,8 @@ REC-rdf-syntax-grammar-20040210/>`_ [adxmp1]_.
 
 In a nutshell, a sidecar file is a XMP packet with the image metadata
 serialized as XMP properties. Each property have a name and a value. A value
-may a simple value as XML text element, or a structured value (named resource).
+may a simple value as XML text element, or a structured value (named resource)
+with a type (``astype:Type``) and a value (``rad:value``)  .
 
 These properties are grouped per set identified by a namespace [adxmp1]_, a
 Nikon sidecar file contains the following sets:
@@ -346,7 +347,7 @@ nikon::DLightingHQ
     , Tag Names > Nikon
 
 .. [adxmp1] Adobe, `XMP Specification Part 1 <https://github.com/adobe/
-    XMP-Toolkit-SDK/blob/main/docs/XMPSpecificationPart1.pdf>`_, pp. 5-9
+    XMP-Toolkit-SDK/blob/main/docs/XMPSpecificationPart1.pdf>`_, pp. 5-17
 
 .. [digps] DICOM, PS3.3 2026b - Information Object Definitions, `VL
     Photographic Geolocation Module <https://dicom.nema.org/medical/

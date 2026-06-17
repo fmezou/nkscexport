@@ -15,4 +15,3 @@
     nikon
     nik_adjustment
     nik_metadata
-    nik_iptc

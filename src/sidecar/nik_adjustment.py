@@ -582,7 +582,7 @@ class NineEdits():
          element: XML element containing the ``NineEdits`` property.
 
      Raises:
-         NikFilterError: Generic error, the :attr:`NikFilterError.message`
+         NikAdjustmentError: Generic error, the :attr:`NikFilterError.message`
              details the error.
 
      Attributes:
@@ -612,48 +612,48 @@ class NineEdits():
                                  f" actual {element.tag}, expected userData")
 
         for k, v in self.adjustments.items():
-            _logger.info(f"NineEdits adjustments parameters {k}={v}")
+            _logger.debug(f"NineEdits adjustments parameters {k}={v}")
 
 
 _MAP_ADJUSTMENT_ID = {
-    "nikon::ColorShift": NikColorShift ,
-    "nikon::DLightingHS": NikDLightingHS ,
-    "nikon::WhiteBalance": NikWhiteBalance ,
-    "nik::Straighten": NikStraighten ,
-    "nikon::PictureControl": NikPictureControl ,
-    "nikon::QuickFixToneCurve": NikQuickFixToneCurve ,
-    "nik::GaussianBlur": NikGaussianBlur ,
-    "nikon::LEGeneral": NikLEGeneral ,
-    "Nikon::FishEye": NikFishEye ,
-    "nikon::Dehaze": NikDehaze ,
-    "nikon::ColorBalance": NikColorBalance ,
-    "nikon::Flare": NikFlare ,
-    "nikon::SkinTone": NikSkinTone ,
-    "nikon::Vignette": NikVignette ,
-    "nikon::Perspective": NikPerspective ,
-    "nikon::ChrAb": NikChrAb ,
-    "nikon::UnsharpMask": NikUnsharpMask ,
-    "nikon::ColorBooster": NikColorBooster ,
-    "nikon::NXHistory": NikNXHistory ,
-    "nikon::SkinSoftening": NikSkinSoftening ,
-    "nik::LevelsCurves": NikLevelsCurves ,
-    "nikon::RedEye": NikRedEye ,
-    "nikon::Diffraction": NikDiffraction ,
-    "nikon::Distortion": NikDistortion ,
-    "nikon::ApplicationData": NikApplicationData ,
-    "nikon::LongChrAb": NikLongChrAb ,
-    "nikon::ExposureSettings": NikExposureSettings ,
-    "nik::LCH": NikLCH ,
-    "nikon::QuickFixContrast": NikQuickFixContrast ,
-    "nik::GrainNoise": NikGrainNoise ,
-    "nikon::DustOff": NikDustOff ,
-    "nikon::transform": Niktransform ,
-    "nikon::SizeRes": NikSizeRes ,
-    "nikon::PhotoEffects": NikPhotoEffects ,
-    "nikon::Brightness": NikBrightness ,
-    "nikon::ActiveDLighting": NikActiveDLighting ,
-    "nikon::NoiseReduction": NikNoiseReduction ,
-    "nikon::PixelShiftNoiseReduction": NikPixelShiftNoiseReduction ,
-    "nikon::DLightingHQ": NikDLightingHQ ,
+    "nikon::ColorShift": NikColorShift,
+    "nikon::DLightingHS": NikDLightingHS,
+    "nikon::WhiteBalance": NikWhiteBalance,
+    "nik::Straighten": NikStraighten,
+    "nikon::PictureControl": NikPictureControl,
+    "nikon::QuickFixToneCurve": NikQuickFixToneCurve,
+    "nik::GaussianBlur": NikGaussianBlur,
+    "nikon::LEGeneral": NikLEGeneral,
+    "Nikon::FishEye": NikFishEye,
+    "nikon::Dehaze": NikDehaze,
+    "nikon::ColorBalance": NikColorBalance,
+    "nikon::Flare": NikFlare,
+    "nikon::SkinTone": NikSkinTone,
+    "nikon::Vignette": NikVignette,
+    "nikon::Perspective": NikPerspective,
+    "nikon::ChrAb": NikChrAb,
+    "nikon::UnsharpMask": NikUnsharpMask,
+    "nikon::ColorBooster": NikColorBooster,
+    "nikon::NXHistory": NikNXHistory,
+    "nikon::SkinSoftening": NikSkinSoftening,
+    "nik::LevelsCurves": NikLevelsCurves,
+    "nikon::RedEye": NikRedEye,
+    "nikon::Diffraction": NikDiffraction,
+    "nikon::Distortion": NikDistortion,
+    "nikon::ApplicationData": NikApplicationData,
+    "nikon::LongChrAb": NikLongChrAb,
+    "nikon::ExposureSettings": NikExposureSettings,
+    "nik::LCH": NikLCH,
+    "nikon::QuickFixContrast": NikQuickFixContrast,
+    "nik::GrainNoise": NikGrainNoise,
+    "nikon::DustOff": NikDustOff,
+    "nikon::transform": Niktransform,
+    "nikon::SizeRes": NikSizeRes,
+    "nikon::PhotoEffects": NikPhotoEffects,
+    "nikon::Brightness": NikBrightness,
+    "nikon::ActiveDLighting": NikActiveDLighting,
+    "nikon::NoiseReduction": NikNoiseReduction,
+    "nikon::PixelShiftNoiseReduction": NikPixelShiftNoiseReduction,
+    "nikon::DLightingHQ": NikDLightingHQ,
 }
 """Mapping Nikon adjustement name (``filter id``) with the adjustement class"""
