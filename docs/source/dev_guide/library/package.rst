@@ -13,3 +13,4 @@
     :maxdepth: 1
 
     ieee754
+    namespace

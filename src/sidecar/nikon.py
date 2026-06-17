@@ -64,6 +64,7 @@ import datetime as dt
 from xml.etree import ElementTree
 
 from library.ieee754 import IEEE754
+from library.namespace import NameSpace
 from sidecar.nik_adjustment import NineEdits
 
 
@@ -121,67 +122,19 @@ NIKON_NKSC_SUBFOLDER = "NKSC_PARAM"
 NIKON_NKSC_EXT = ".nksc"
 
 #: XML Namespaces used in sidecar file
-_NIKON_NS = {
+_NS = NameSpace({
     "x": "adobe:ns:meta/",
     "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
     "sdc": "http://ns.nikon.com/sdc/1.0/",
     "ast": "http://ns.nikon.com/asteroid/1.0/",
     "astype": "http://ns.nikon.com/asteroid/Types/1.0/",
-    "nine": "http://ns.nikon.com/nine/1.0/"
-}
-#: Build reverse XML Namespaces table for shortening attribute names
-_NIKON_REV_NS = {}
-for p, u in _NIKON_NS.items():
-    _NIKON_REV_NS[u] = p
-
+    "nine": "http://ns.nikon.com/nine/1.0/"})
 
 # This module can be used as library or as a script, a nullHandler is
 # added to avoid output in the absence of any logging configuration.
 # https://docs.python.org/howto/logging.html#configuring-logging-for-a-library
 _logger = logging.getLogger(__name__)
 _logger.addHandler(logging.NullHandler())
-
-
-def _shorten_name(name: str) -> str:
-    """Shorten a tag or attribute name based on the namespace table.
-
-    Args:
-        name: Name of the tag or attribute in expanded format (i.e.
-            ``{uri}tag``). An empty string or without uri is accepted.
-
-    Return:
-        Name in a short format (i.e. ``prefix:tag``). An empty
-        string or without uri in :data:`expanded_name` returns the
-        unchanged value.
-    """
-    if "}" in name:
-        uri, tag = name.split("}")
-        short_name = "{}:{}".format(_NIKON_REV_NS[uri.removeprefix("{")], tag)
-    else:
-        short_name = name
-
-    return short_name
-
-
-def _expand_name(name: str) -> str:
-    """Expand a tag or attribute name based on the namespace table.
-
-    Args:
-        name: Name of the tag or attribute in short format (i.e.
-            ``prefix:tag``). An empty string or without prefix is
-            accepted.
-
-    Returns:
-        Name in expanded format (i.e. ``{uri}tag``). An empty
-        string or without prefix in :data:`short_name` return the
-        unchanged value.
-    """
-    if ":" in name:
-        prefix, tag = name.split(":")
-        expanded_name = "{{{}}}{}".format(_NIKON_NS[prefix], tag)
-    else:
-        expanded_name = name
-    return expanded_name
 
 
 class NikonError(Exception):
@@ -782,8 +735,8 @@ class NikonXMPProperty:
     def __init__(self, element: ElementTree.Element):
         self.value = None
 
-        self.name = _shorten_name(element.tag)
-        type_name = _expand_name("rdf:parseType")
+        self.name = _NS.shorten_name(element.tag)
+        type_name = _NS.expand_name("rdf:parseType")
         if type_name in element.attrib:
             # Structure valued XMP property
             res_value = ""
@@ -792,7 +745,7 @@ class NikonXMPProperty:
             match element.attrib[type_name]:
                 case "Resource":
                     for item in element:
-                        item_name = _shorten_name(item.tag)
+                        item_name = _NS.shorten_name(item.tag)
                         match item_name:
                             case "rdf:value":
                                 res_value = item.text
@@ -910,21 +863,21 @@ class NikonXMPDescriptions:
         element = self._element
         # An XMP processor should tolerate an ``x:xmpmeta`` element in any
         # input and look within it for the ``rdf:RDF`` element.
-        tag = _shorten_name(element.tag)
+        tag = _NS.shorten_name(element.tag)
         if tag == "x:xmpmeta":
-            name = _expand_name("x:xmptk")
+            name = _NS.expand_name("x:xmptk")
             if name in element.attrib:
                 self.xmptk = element.attrib[name]
                 _logger.debug(f"XMP Toolkit: {self.xmptk}")
 
-            name = _expand_name("rdf:RDF")
+            name = _NS.expand_name("rdf:RDF")
             elements = element.findall(name)
             if len(elements) != 1:
                 raise NikonError(
                     f"More than XMP Packet: actual '{len(elements)}', "
                     f"expected 1")
         else:
-            name = _expand_name("rdf:RDF")
+            name = _NS.expand_name("rdf:RDF")
             elements = element.findall(name)
             if len(elements) != 1:
                 raise NikonError(
@@ -947,7 +900,7 @@ class NikonXMPDescriptions:
         element = self._element
         self.descriptions = []
         for descr in element:
-            tag = _shorten_name(descr.tag)
+            tag = _NS.shorten_name(descr.tag)
             if tag != "rdf:Description":
                 raise NikonError(f"Not a XMP description: actual '{tag}', "
                                  f"expected 'rdf:Description'")
@@ -1552,16 +1505,6 @@ class NikonSideCar(object):
             bool: `True` if the execution went well. In case of failure, an
             error log is written on the standard error (``stderr``).
         """
-        # Check the document header (x:xmptk)
-        # self._check_enveloppe(self._element)
-        #
-        # # Check RDF blocs (rdf:RDF)
-        # if len(self._element) != 1:
-        #     raise NikonError("No or more than one child in 'x:xmpmeta'")
-        # for rdf_item in self._element:
-        #     self._check_rdf(rdf_item)
-        #     # list
-        #     for description_item in rdf_item:
         xmp_descr = NikonXMPDescriptions(self._element)
         if len(xmp_descr.descriptions) != 0:
             for prop in xmp_descr.descriptions[0]:

@@ -10,7 +10,9 @@ The exported modules are as follows:
     :columns: 2
 
     * :mod:`library.ieee754` -- Handle IEEE754 floating-point format
+    * :mod:`library.namespace` -- Handle XML namespaces.
 """
 __all__ = [
-    "ieee754"
+    "ieee754",
+    "namespace"
 ]
