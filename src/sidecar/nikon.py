@@ -736,7 +736,7 @@ class NikonXMPProperty:
             element: Element containing the property.
         """
         self.value = []
-        for li in element[0]:
+        for li in element:
             name = _NS.shorten_name(li.tag)
             if name == "rdf:li":
                 self.value.append(li.text)
@@ -1529,6 +1529,15 @@ class NikonSideCar(object):
     Args:
         element: XML element containing the XMP Packet element.
 
+    Attributes:
+        metadata: unified dictionary of image metadata coming the Asteroid
+            (ast) set.
+        geolocation: object contains the geolocation of the image.
+        processing: dictonary of image ajustements. The key ``active``
+            indicate if the processing will be applied on the
+            image when opening in NX Studio. The key ``params`` contains
+            processing's parameters as a dictionnary.
+
     **Public Methods**
         This class has a number of public methods listed below in alphabetical
         order.
@@ -1539,18 +1548,18 @@ class NikonSideCar(object):
 
     **Using NikonSideCar...**
     """
-    sdc: NikonSDCProperties | None
-    ast: NikonAsteroidProperties | None
-    nine: NikonNineProperties | None
+    metadata: dict | None
+    processing: dict | None
+    geolocation: NikonGPSProperties | None
     def __init__(self, element: ElementTree.Element):
         self._doers = {}
-        self._metadata = {}
-        self._processing = {}
-        self._data = None
         self._element = element
-        self.sdc = None
-        self.ast = None
-        self.nine = None
+        self._sdc = None
+        self._ast = None
+        self._nine = None
+        self.metadata = {}
+        self.processing = {}
+        self.geolocation = None
 
         # Build the doers list based on elementary containers
         c = NikonSDCProperties()
@@ -1584,37 +1593,34 @@ class NikonSideCar(object):
                 if xmp_property.name in self._doers:
                     self._doers[xmp_property.name](xmp_property)
                 else:
-                    _logger.warning(f"SDC property '{xmp_property.name}' is not known"
-                                    f" - ignored")
+                    _logger.warning(f"Property '{xmp_property.name}' is "
+                                    f"not known - ignored")
+
+        # Populate the public attribute with metadata and image adjustements
+        self._merge_metadata()
+        self._set_processing()
+        self._set_geoloc()
 
         # Logging the read attributes
         if _logger.getEffectiveLevel() <= logging.INFO:
-            if self.sdc is not None:
-                for k, v in self.sdc.props.items():
-                    _logger.info(f"SDC property {k}={v}")
+            if len(self.metadata) != 0:
+                for k, v in self.metadata.items():
+                    _logger.info(f"Metadata property {k}={v}")
             else:
-                _logger.info(f"No SDC property")
+                _logger.info(f"No metadata in the image")
 
-            if self.ast is not None:
-                for k, v in self.ast.props.items():
-                    _logger.info(f"AST property {k}={v}")
-                if "GPS" in self.ast.props:
-                    for k, v in self.ast.props["GPS"].props.items():
-                        _logger.info(f"AST GPS property {k}={v}")
-                if "IPTC" in self.ast.props:
-                    for k, v in self.ast.props["IPTC"].items():
-                        _logger.info(f"AST IPTC property {k}={v}")
-                if "XMLPackets" in self.ast.props:
-                    for k, v in self.ast.props["XMLPackets"].items():
-                        _logger.info(f"AST METADATA property {k}={v}")
+            if self.geolocation is not None:
+                _logger.info(f"Geolocation property: {self.geolocation}")
+                for k, v in self.geolocation.props.items():
+                    _logger.info(f"Full geolocation property {k}={v}")
             else:
-                _logger.info(f"No AST property")
+                _logger.info(f"No geolocation data in the image")
 
-            if self.nine is not None:
-                for k, v in self.nine.props.items():
-                    _logger.info(f"NINE property {k}={v}")
+            if len(self.processing) != 0:
+                for k, v in self.processing.items():
+                    _logger.info(f"Processing property {k}={v}")
             else:
-                _logger.info(f"No NINE property")
+                _logger.info(f"No processing in the image")
 
     def _set_sdc_attr(self, xmp_property: NikonXMPProperty):
         """Set the SDC attribute expressed as an XMP property.
@@ -1626,9 +1632,9 @@ class NikonSideCar(object):
             ValueError: Inappropriate value, the :attr:`ValueError.message`
                 details the error.
         """
-        if self.sdc is None:
-            self.sdc = NikonSDCProperties()
-        self.sdc.set_attr(xmp_property)
+        if self._sdc is None:
+            self._sdc = NikonSDCProperties()
+        self._sdc.set_attr(xmp_property)
 
     def _set_ast_attr(self, xmp_property: NikonXMPProperty):
         """Set the AST attribute expressed as an XMP property.
@@ -1640,9 +1646,9 @@ class NikonSideCar(object):
             ValueError: Inappropriate value, the :attr:`ValueError.message`
                 details the error.
         """
-        if self.ast is None:
-            self.ast = NikonAsteroidProperties()
-        self.ast.set_attr(xmp_property)
+        if self._ast is None:
+            self._ast = NikonAsteroidProperties()
+        self._ast.set_attr(xmp_property)
 
     def _set_nine_attr(self, xmp_property: NikonXMPProperty):
         """Set the NINE attribute expressed as an XMP property.
@@ -1654,23 +1660,64 @@ class NikonSideCar(object):
             ValueError: Inappropriate value, the :attr:`ValueError.message`
                 details the error.
         """
-        if self.nine is None:
-            self.nine = NikonNineProperties()
-        self.nine.set_attr(xmp_property)
+        if self._nine is None:
+            self._nine = NikonNineProperties()
+        self._nine.set_attr(xmp_property)
+
+    def _merge_metadata(self):
+        """Merge the metadata sets.
+
+        Image metadata come from the IPTC set (``ast:IPTC`` element) and
+        the XMP set (``ast:XMLPackets``). This method merge the two sets
+        and store the metadata in :attr:`metadata`. The priority is the
+        following order : IPTC, XMP.
+        """
+        # Copy the XMP set and overwrite with IPTC set.
+        if self._ast is not None:
+            if "XMLPackets" in self._ast.props:
+                for k, v in self._ast.props["XMLPackets"].items():
+                    self.metadata[k] = v
+            if "IPTC" in self._ast.props:
+                for k, v in self._ast.props["IPTC"].items():
+                    self.metadata[k] = v
+
+    def _set_processing(self):
+        """Set the image adjustments.
+
+        This method simply copy image adjustments in :attr:`processing`.
+        """
+        if self._nine is not None:
+            for k, v in self._nine.props.items():
+                self.processing[k] = v
+
+    def _set_geoloc(self):
+        """Set the geolocation of the image.
+
+        This method simply copy GPS data in :attr:`geolocation`.
+        """
+        if self._ast is not None:
+            if "GPS" in self._ast.props:
+                self.geolocation = self._ast.props["GPS"]
 
     def get_rating(self) -> int:
         """Return the image rating.
 
         detail the param
         """
-        return 0
+        if "xmp:Rating" in self.metadata:
+            return int(self.metadata["xmp:Rating"])
+        else:
+            return 0
 
     def get_label(self) -> int:
         """Return the image label.
 
         detail the param
         """
-        return 0
+        if "xmp:Label" in self.metadata:
+            return self.metadata["xmp:Label"]
+        else:
+            return 0
 
     def is_protected(self) -> bool:
         """Return `True` if the image is protected.
@@ -1685,8 +1732,8 @@ class NikonSideCar(object):
         detail the param
         """
         is_geotagged = False
-        if self.ast is not None and "GPS" in self.ast.props:
-            is_geotagged = self.ast.props["GPS"].is_completed()
+        if self.geolocation is not None:
+            is_geotagged = self.geolocation.is_completed()
         return is_geotagged
 
     def is_tagged(self) -> bool:

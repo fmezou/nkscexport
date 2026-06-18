@@ -35,9 +35,6 @@ Nikon sidecar file contains the following sets:
   dublin-core/dcmi-terms/>`_ and `IPTC metadata <https://www.iptc.org/std/
   photometadata/specification/IPTC-PhotoMetadata>`_.
 
-* **astype** (``http://ns.nikon.com/asteroid/Types/1.0/``): contains the
-  localisation data (GPS) and a copy of above metadata encoded in binary.
-
 * **nine** (``http://ns.nikon.com/nine/1.0/``): contains the image adjustments
   history in XML format with escaped characters (&lt;..). Theses image
   processing modules are proprietary and cannot be transferred in an other
