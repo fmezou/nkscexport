@@ -14,4 +14,3 @@
 
     nikon
     nik_adjustment
-    nik_metadata

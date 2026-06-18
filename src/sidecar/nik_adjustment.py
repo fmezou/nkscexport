@@ -43,8 +43,6 @@ import datetime
 import logging
 from xml.etree import ElementTree
 
-from library.ieee754 import IEEE754
-
 
 __all__ = [
     "NikAdjustmentError",

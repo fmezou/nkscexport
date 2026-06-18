@@ -49,6 +49,17 @@ No public specifications are available from Nikon, so the attributes
 were discovered by reading ``.nsks`` files and the help of ExifTool
 by Phil Harvey [phniktag]_.
 
+Inside properties
+-----------------
+
+An XMP property may be a simple text , a structured data identified with the
+``rdf:parseType`` attribute, or an array (see section 7.3 to 7.9 [adxmp1]_).
+
+A structured data may either a typed value or a list of sub-properties. A typed
+value have two sub-properties: its value in ``rdf:value`` element, its type in
+``astype:Type`` element. This format is a Nikon's proprietary format.
+
+
 GPS Information
 ---------------
 Nikon seems to have using DICOM specification [digps]_ for GPS Information. So

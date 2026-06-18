@@ -13,12 +13,6 @@ are as follows:
     :columns: 2
 
     * :exc:`NikonError` - Base class for sidecar parser exceptions
-    * :exc:`NikonTagValueError` - Raised when a resource is erroneous
-      (unknown tag)
-    * :exc:`NikonMissingTagError` - Raised when an expected tag is missing
-    * :exc:`NikonResourceError` - Raised when a tag value is not expected
-    * :exc:`NikonResourceTypeError` - Raised when a resource is erroneous
-      (unknown type)
 
 ``nikon``  classes
 ------------------
@@ -70,10 +64,6 @@ from sidecar.nik_adjustment import NineEdits
 
 __all__ = [
     "NikonError",
-    "NikonMissingTagError",
-    "NikonTagValueError",
-    "NikonResourceError",
-    "NikonResourceTypeError",
     "NikonGPSProperties",
     "NikonXMPProperty",
     "NikonXMPDescriptions",
@@ -105,7 +95,7 @@ NIKON_LABEL_MAP = {
     "0":"(Aucune)",
 }
 
-#: file extensions of supported image files
+#: File extensions of supported image files.
 NIKON_SUPPORTED_FORMAT = [
     ".nef", ".nrw",
     ".jpg", ".jpeg",
@@ -115,20 +105,34 @@ NIKON_SUPPORTED_FORMAT = [
     ".mpo"
 ]
 
-#: Subfolder storing the Nikon sidecar files
+#: Subfolder storing the Nikon sidecar files.
 NIKON_NKSC_SUBFOLDER = "NKSC_PARAM"
 
-#: file extension of Nikon sidecar files
+#: File extension of Nikon sidecar files.
 NIKON_NKSC_EXT = ".nksc"
 
-#: XML Namespaces used in sidecar file
-_NS = NameSpace({
-    "x": "adobe:ns:meta/",
-    "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
-    "sdc": "http://ns.nikon.com/sdc/1.0/",
-    "ast": "http://ns.nikon.com/asteroid/1.0/",
-    "astype": "http://ns.nikon.com/asteroid/Types/1.0/",
-    "nine": "http://ns.nikon.com/nine/1.0/"})
+#: XML Namespaces used in sidecar file and ``XMLPackets`` property.
+_NS = NameSpace(
+    {
+        # Namespaces used in XMP description block in sidecar files
+        "x": "adobe:ns:meta/",
+        "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+        "sdc": "http://ns.nikon.com/sdc/1.0/",
+        "ast": "http://ns.nikon.com/asteroid/1.0/",
+        "astype": "http://ns.nikon.com/asteroid/Types/1.0/",
+        "nine": "http://ns.nikon.com/nine/1.0/",
+
+        # Namespaces used in XML Packet (XMP Metadata description block)
+        "dc": "http://purl.org/dc/elements/1.1/",
+        "photoshop": "http://ns.adobe.com/photoshop/1.0/",
+        "Iptc4xmpCore": "http://iptc.org/std/Iptc4xmpCore/1.0/xmlns/",
+        "xmpRights": "http://ns.adobe.com/xap/1.0/rights/",
+        "xmp": "http://ns.adobe.com/xap/1.0/",
+        "MicrosoftPhoto": "http://ns.microsoft.com/photo/1.0/",
+        "Iptc4xmpExt": "http://iptc.org/std/Iptc4xmpExt/2008-02-29/"
+    }
+)
+
 
 # This module can be used as library or as a script, a nullHandler is
 # added to avoid output in the absence of any logging configuration.
@@ -153,86 +157,6 @@ class NikonError(Exception):
 
     def __str__(self) -> str | None:
         return self.message
-
-
-class NikonMissingTagError(NikonError):
-    """Raised when an expected tag is missing.
-
-    Args:
-        name: Name of the missing tag.
-
-    Attributes:
-        name: Name of the missing tag.
-    """
-    name: str | None
-
-    def __init__(self, name: str | None):
-        self.name = name
-        NikonError.__init__(self, f"Expected tag '{name}' is missing.")
-
-
-class NikonTagValueError(NikonError):
-    """Raised when a tag value is not expected.
-
-    Args:
-        name: Name of the tag.
-        value: Value of the erroneous tag.
-
-    Attributes:
-        name: Name of the tag.
-        value: Value of the erroneous tag.
-    """
-    name: str | None
-    value: str | None
-
-    def __init__(self, name: str, value: str | None):
-        self.name = name
-        self.value = value
-        NikonError.__init__(self, f"Unexpected value '{value}' for the "
-                                 f"tag '{name}'.")
-
-
-class NikonResourceError(NikonError):
-    """Raised when a resource is erroneous (unknown tag).
-
-    Args:
-        prop_name : Name of the property.
-        tag_name: Name of the erroneous tag.
-
-    Attributes:
-        prop_name : Name of the property
-        tag_name: Name of the erroneous tag.
-    """
-    prop_name: str | None
-    tag_name: str | None
-
-    def __init__(self, prop_name: str | None, tag_name: str | None):
-        self.prop_name = prop_name
-        self.tag_name = tag_name
-        msg = f"Unknown tag '{tag_name}' used for the resource value of "\
-              "{prop_name} property"
-        NikonError.__init__(self, msg)
-
-
-class NikonResourceTypeError(NikonError):
-    """Raised when a resource is erroneous (unknown type).
-
-    Args:
-        prop_name : Name of the property.
-        type_name: Name of the erroneous type.
-
-    Attributes:
-        prop_name : Name of the property.
-        type_name: Name of the erroneous type.
-    """
-    prop_name: str | None
-    type_name: str | None
-
-    def __init__(self, prop_name: str | None, type_name: str | None):
-        self.prop_name = prop_name
-        self.type_name = type_name
-        msg = f"Unknown type '{type_name}' used for the resource value of {prop_name} property"
-        NikonError.__init__(self, msg)
 
 
 class NikonGPSProperties:
@@ -711,8 +635,9 @@ class NikonXMPProperty:
     """Nikon XMP property.
 
     This class parses an XML element as a ``XMP`` property and decode
-    the resource. The resource may be a simple text or a structured
-    data identified with the ``rdf:parseType`` attribute.
+    the resource. The resource may be a simple text , a structured
+    data identified with the ``rdf:parseType`` attribute, or an array
+    (see section 7.3 to 7.9 [adxmp1]_)
 
     The article named ":ref:`Inside Nikon Sidecar file`" details the data
     structure and tags used by Nikon.
@@ -721,8 +646,8 @@ class NikonXMPProperty:
         element: Element containing the property.
 
     Raises:
-        NikonResourceError: A resource is erroneous (unknown tag).
-        NikonResourceTypeError: A resource is erroneous (unknown type)
+        NikonError: Generic error, the :attr:`NikonError.message` details
+            the error.
 
     Attributes:
         name: Name of the property.
@@ -741,71 +666,180 @@ class NikonXMPProperty:
             # Structure valued XMP property
             res_value = ""
             res_type = ""
-            # Get the value encoded in ascii and the type
             match element.attrib[type_name]:
                 case "Resource":
                     for item in element:
                         item_name = _NS.shorten_name(item.tag)
-                        match item_name:
+                        match item_name: #
                             case "rdf:value":
                                 res_value = item.text
                             case "astype:Type":
                                 res_type = item.text
                             case _:
-                                raise NikonResourceError(self.name, item_name)
+                                res_type = "dict"
                 case _:
-                    raise NikonResourceError(self.name, element.attrib[type_name])
+                    raise NikonError(f"Unknown parseType for property "
+                                     f"({element.attrib[type_name]})")
 
             match res_type:
-                # Binary buffer
-                case "Binary":
-                    self.value = base64.b64decode(res_value)
-                    _logger.debug(f"XMP property (Binary):"
-                                  f" {self.name}={self.value}")
+                case "Binary": # Binary buffer
+                    self._set_binary(res_value)
 
-            # Integer
-                case "Long":
-                    buffer = base64.b64decode(res_value)
-                    self.value = int.from_bytes(buffer, byteorder='little')
-                    _logger.debug(f"XMP property (Long):"
-                                  f" {self.name}={self.value}")
+                case "Long": # Integer
+                    self._set_long(res_value)
 
-                # One or more float number (IEEE754 Double precision 64-bits)
-                case "Double":
-                    buffer = base64.b64decode(res_value)
-                    vm = len(buffer) // 8
-                    if vm == 1:
-                        self.value = IEEE754(buffer).value
-                        _logger.debug(f"XMP property (Double):"
-                                      f" {self.name}={self.value}")
-                    else:
-                        self.value = []
-                        for i in range(len(buffer) // 8):
-                            self.value.append(
-                                IEEE754(buffer[i*8 : (i+1)*8]).value)
-                        _logger.debug(f"XMP property (n*Double):"
-                                      f" {self.name}={self.value}")
+                case "Double": # One or more float number
+                    self._set_double(res_value)
 
-                # ASCII string
-                case "Ascii":
-                    self.value = res_value
-                    _logger.debug(f"XMP property (Ascii):"
-                                  f" {self.name}={self.value}")
+                case "Ascii": # ASCII string
+                    self._set_ascii(res_value)
 
-                # GPSProcessingMethod : proprietary format...
-                case "GPSProcessingMethod":
-                    self.value = base64.b64decode(res_value)
-                    _logger.debug(f"XMP property (GPSProcessingMethod):"
-                                  f" {self.name}={self.value}")
+                case "GPSProcessingMethod": # GPSProcessingMethod
+                    self._set_gps_processing_method(res_value)
+
+                case "dict": # Unqualified structure value
+                    self._set_dict(element)
 
                 case _:
-                    raise NikonResourceTypeError(self.name, res_type)
+                    raise NikonError(f"Unknown type for property ({res_type})")
 
         else:
-            # Simple valued XMP property
-            self.value = element.text
-            _logger.debug(f"XMP property (XML text):"
+            match len(element):
+                case 0:
+                    self._set_simple(element) # Simple valued XMP property
+
+                case 1:
+                    name = _NS.shorten_name(element[0].tag)
+                    match name:
+                        case "rdf:Bag": # element for an unordered (resp ordered array).
+                            self._set_array(element[0])
+
+                        case "rdf:Seq": # element for an ordered array.
+                            self._set_array(element[0])
+
+                        case "rdf:Alt": # element for an alternative array.
+                            self._set_array(element[0])
+
+                case _:
+                    raise NikonError(
+                        f"Unexpected number of elements for an array: "
+                        f"actual '{len(element)}', expected 1")
+
+
+    def _set_array(self, element: ElementTree.Element):
+        """Set an array.
+
+        The XMP specifications defines three type of array (section
+        6.3.4 [adxmp1]_). This method store the array item in a `list`.
+
+        Args:
+            element: Element containing the property.
+        """
+        self.value = []
+        for li in element[0]:
+            name = _NS.shorten_name(li.tag)
+            if name == "rdf:li":
+                self.value.append(li.text)
+            else:
+                raise NikonError(
+                    f"Unexpected tag name for array content: "
+                    f"actual '{name}', expected 'rdf:li'")
+
+        _logger.debug(f"XMP property (array):"
+                      f" {self.name}={self.value}")
+
+    def _set_simple(self, element: ElementTree.Element):
+        """Set a simple value.
+
+        Args:
+            element: Element containing the property.
+        """
+        self.value = element.text
+        _logger.debug(f"XMP property (XML text):"
+                      f" {self.name}={self.value}")
+
+    def _set_binary(self, value:str):
+        """Set a binary resource.
+
+        Args:
+            value: Value of the resource expressed as binary
+            string encoded in base64 .
+        """
+        self.value = base64.b64decode(value)
+        _logger.debug(f"XMP property (Binary):"
+                      f" {self.name}={self.value}")
+
+    def _set_long(self, value:str):
+        """Set an integer resource.
+
+        Args:
+            value: Value of resource expressed as binary
+            string encoded in base64 .
+        """
+        buffer = base64.b64decode(value)
+        self.value = int.from_bytes(buffer, byteorder='little')
+        _logger.debug(f"XMP property (Long):"
+                      f" {self.name}={self.value}")
+
+    def _set_double(self, value:str):
+        """Set float number resource.
+
+        The value may define one or more float number (IEEE754 Double
+        precision 64-bits). All numbers are simply concatenated with no
+        separators.
+
+        Args:
+            value: Value of resource expressed as binary
+            string encoded in base64 .
+        """
+        buffer = base64.b64decode(value)
+        vm = len(buffer) // 8
+        if vm == 1:
+            self.value = IEEE754(buffer).value
+            _logger.debug(f"XMP property (Double):"
                           f" {self.name}={self.value}")
+        else:
+            self.value = []
+            for i in range(len(buffer) // 8):
+                self.value.append(
+                    IEEE754(buffer[i * 8: (i + 1) * 8]).value)
+            _logger.debug(f"XMP property (n*Double):"
+                          f" {self.name}={self.value}")
+
+    def _set_ascii(self, value: str):
+        """Set ACSII string resource.
+
+        Args:
+            value: Value of resource expressed as binary
+            string encoded in base64 .
+        """
+        self.value = value
+        _logger.debug(f"XMP property (Ascii):"
+                      f" {self.name}={self.value}")
+
+    def _set_gps_processing_method(self, value: str):
+        """Set GPSProcessingMethod resource (proprietary format...).
+
+        Args:
+            value: Value of integer resource expressed as binary
+            string encoded in base64 .
+        """
+        self.value = base64.b64decode(value)
+        _logger.debug(f"XMP property (GPSProcessingMethod):"
+                      f" {self.name}={self.value}")
+
+    def _set_dict(self, element: ElementTree.Element):
+        """Set structure valued resource.
+
+        Args:
+            element: Element containing the property.
+        """
+        self.value = dict()
+        for k in element:
+            name = _NS.shorten_name(k.tag)
+            self.value[name] = k.text
+        _logger.debug(f"XMP property (Structure value):"
+                      f" {self.name}={self.value}")
 
 
 class NikonXMPDescriptions:
@@ -851,8 +885,8 @@ class NikonXMPDescriptions:
         element (section 7.4 [adxmp1]_). The method set the
         :attr:`_element` attribute to ``rdf:RDF`` element in the XML tree.
         An ``x:xmpmeta`` element may be placed around the ``rdf:RDF``
-        element (aka XMP packet). (section 7.3.3 [adxmp1]_) with name of
-        the toolkit (``x:xmptk``) as attribute. This value is saved in
+        element (aka XMP packet - see section 7.3.3 [adxmp1]_) with name
+        of the toolkit (``x:xmptk``) as attribute. This value is saved in
         :attr:`xmptk`.
 
         Raises:
@@ -868,14 +902,14 @@ class NikonXMPDescriptions:
             name = _NS.expand_name("x:xmptk")
             if name in element.attrib:
                 self.xmptk = element.attrib[name]
-                _logger.debug(f"XMP Toolkit: {self.xmptk}")
+                _logger.info(f"XMP Toolkit: {self.xmptk}")
 
             name = _NS.expand_name("rdf:RDF")
             elements = element.findall(name)
             if len(elements) != 1:
                 raise NikonError(
-                    f"More than XMP Packet: actual '{len(elements)}', "
-                    f"expected 1")
+                    f"Unexpected number of XMP packet: "
+                    f"actual '{len(elements)}', expected 1")
         else:
             name = _NS.expand_name("rdf:RDF")
             elements = element.findall(name)
@@ -981,9 +1015,9 @@ class NikonSDCProperties:
                 details the error.
         """
         if xmp_property.name in self._doers:
-            self._doers[xmp_property.name](xmp_property)
             _logger.debug(f"SDC property {xmp_property.name}"
                           f"={xmp_property.value}")
+            self._doers[xmp_property.name](xmp_property)
         else:
             _logger.warning(f"SDC property '{xmp_property.name}' is not known"
                             f" - ignored")
@@ -1063,7 +1097,7 @@ class NikonAsteroidProperties:
     #: <https://www.iptc.org/std/photometadata/specification
     #: /IPTC-PhotoMetadata-2025.1.html#specification-table-template>`_
     #: defines the mapping.
-    _XMP = {
+    _IPTC_XMP = {
         "2:05": "dc:title",
         "2:25": "dc:subject",
         "2:40": "photoshop:Instructions",
@@ -1085,23 +1119,58 @@ class NikonAsteroidProperties:
     #: <https://www.iptc.org/std/photometadata/specification
     #: /IPTC-PhotoMetadata-2025.1.html#guideline-for-mapping-category-
     #: codes-to-subject-newscodes>`_
-    _SUBJECT = {
-        'ACE': '1000000',
-        'CLJ': '2000000',
-        'DIS': '3000000',
-        'FIN': '4000000',
-        'EDU': '5000000',
-        'EVN': '6000000',
-        'HTH': '7000000',
-        'HUM': '8000000',
-        'LAB': '9000000',
-        'LIF': '10000000',
-        'POL': '11000000',
-        'REL': '12000000',
-        'SCI': '13000000',
-        'SOI': '14000000',
-        'SPO': '15000000',
+    _SUBJECTS = {
+        "ACE": "1000000",
+        "CLJ": "2000000",
+        "DIS": "3000000",
+        "FIN": "4000000",
+        "EDU": "5000000",
+        "EVN": "6000000",
+        "HTH": "7000000",
+        "HUM": "8000000",
+        "LAB": "9000000",
+        "LIF": "10000000",
+        "POL": "11000000",
+        "REL": "12000000",
+        "SCI": "13000000",
+        "SOI": "14000000",
+        "SPO": "15000000"
     }
+    #: Supported XMP metadata expressed as XMP properties. This list is
+    #: subset of the XMP specification [ref] as observed from use cases
+    _XMP_META = {
+        "dc:title",
+        "dc:subject",
+        "dc:creator",
+        "dc:rights",
+        "dc:description",
+        "photoshop:Category",
+        "photoshop:SupplementalCategories",
+        "photoshop:Instructions",
+        "photoshop:DateCreated",
+        "photoshop:AuthorsPosition",
+        "photoshop:City",
+        "photoshop:State",
+        "photoshop:Country",
+        "photoshop:TransmissionReference",
+        "photoshop:Headline",
+        "photoshop:Credit",
+        "photoshop:Source",
+        "photoshop:CaptionWriter",
+        "photoshop:Urgency",
+        "Iptc4xmpCore:CreatorContactInfo",
+        "Iptc4xmpCore:CountryCode",
+        "Iptc4xmpCore:IntellectualGenre",
+        "Iptc4xmpCore:Location",
+        "Iptc4xmpCore:SubjectCode",
+        "Iptc4xmpCore:Scene",
+        "xmpRights:UsageTerms",
+        "xmp:Label",
+        "xmp:Rating",
+        "MicrosoftPhoto:Rating",
+        "Iptc4xmpExt:Event"
+    }
+
     about: str | None
     version: str | None
     props: dict
@@ -1159,9 +1228,9 @@ class NikonAsteroidProperties:
                 details the error.
         """
         if xmp_property.name in self._doers:
-            self._doers[xmp_property.name](xmp_property)
             _logger.debug(f"AST property {xmp_property.name}"
                           f"={xmp_property.value}")
+            self._doers[xmp_property.name](xmp_property)
         else:
             _logger.warning(f"AST property '{xmp_property.name}' is not known"
                             f" - ignored")
@@ -1199,7 +1268,21 @@ class NikonAsteroidProperties:
         Args:
             xmp_property: Nikon XMP property containing data.
         """
-        self.props["XMLPackets"] = xmp_property.value
+        element = ElementTree.fromstring(xmp_property.value)
+        metadata = {}
+
+        xmp_descr = NikonXMPDescriptions(element)
+        if len(xmp_descr.descriptions) != 0:
+            for prop in xmp_descr.descriptions[0]:
+                xmp_property = NikonXMPProperty(prop)
+                if xmp_property.name in self._XMP_META:
+                    metadata[xmp_property.name] = xmp_property.value
+                else:
+                    _logger.warning(f"Metadata property '{xmp_property.name}' is not known"
+                                    f" - ignored")
+
+        self.props["XMLPackets"] = metadata
+
 
     def _set_iptc(self, xmp_property: NikonXMPProperty):
         """Set the IPTC data expressed as an XMP binary property.
@@ -1227,29 +1310,30 @@ class NikonAsteroidProperties:
         buffer = xmp_property.value
         subject_code = [None]
         keywords = []
+
         while len(buffer) != 0:
             t, r, d = buffer[0], buffer[1], buffer[2]
             l = int.from_bytes(buffer[3:5])
             iim_id = f"{r:}:{d:02}"
             value = str(buffer[5:5 + l], encoding="ansi")
-            if iim_id in self._XMP:
+            if iim_id in self._IPTC_XMP:
                 match iim_id:
-                    case "2:25": # May be present one or more time.
+                    case "2:25": # Keywords may be present one or more time.
                         keywords.append(value)
                     case _:
-                        iptc[self._XMP[iim_id]] = value
+                        iptc[self._IPTC_XMP[iim_id]] = value
             else:
                 match iim_id:
-                    case "2:15":
-                        if value in self._SUBJECT:
+                    case "2:15": # Category deprecated (see note above)
+                        if value in self._SUBJECTS:
                             subject_code[0] = "IPTC"
-                            subject_code.append(f"{self._SUBJECT[value]}")
+                            subject_code.append(f"{self._SUBJECTS[value]}")
                         else:
                             _logger.warning(
                                 f"IPTC Unknown Category ({value} )- "
                                 f"ignored as this field is deprecated")
 
-                    case "2:20":
+                    case "2:20": # Supplemental Category (see note above)
                         subject_code.append(f"{value}")
 
                     case _:
@@ -1259,7 +1343,7 @@ class NikonAsteroidProperties:
 
         # Adding keywords
         if len(keywords) != 0:
-            iptc[self._XMP["2:25"]] = keywords
+            iptc[self._IPTC_XMP["2:25"]] = keywords
 
         # Mapping Category Codes to Subject NewsCodes
         # Subject Reference => Iptc4xmpCore:SubjectCode
@@ -1302,8 +1386,6 @@ class NikonNineProperties:
     Raises:
         NikonError: generic error, the :attr:`NikonError.message` details
             the error.
-        NikonMissingTagError: a tag value is not expected.
-        NikonTagValueError: an expected tag is missing
 
     Attributes:
         about: identifier of the sidecar file format. The identifier
@@ -1355,9 +1437,9 @@ class NikonNineProperties:
                 details the error.
         """
         if xmp_property.name in self._doers:
-            self._doers[xmp_property.name](xmp_property)
             _logger.debug(f"NINE property {xmp_property.name}"
                           f"={xmp_property.value}")
+            self._doers[xmp_property.name](xmp_property)
         else:
             _logger.warning(f"NINE property '{xmp_property.name}' is not known"
                             f" - ignored")
@@ -1447,12 +1529,6 @@ class NikonSideCar(object):
     Args:
         element: XML element containing the XMP Packet element.
 
-    Raises:
-        NikonError: Generic error, the :attr:`NikonError.message` details
-            the error.
-        NikonMissingTagError: A tag value is not expected.
-        NikonTagValueError: An expected tag is missing.
-
     **Public Methods**
         This class has a number of public methods listed below in alphabetical
         order.
@@ -1498,12 +1574,8 @@ class NikonSideCar(object):
         Parse the :term:`XMP` tree and populate metadata and filters dictionaries
 
         Raises:
-            NikonMissingTagError: A tag value is not expected.
-            NikonTagValueError: An expected tag is missing.
-
-        Returns:
-            bool: `True` if the execution went well. In case of failure, an
-            error log is written on the standard error (``stderr``).
+            NikonError: Generic error, the :attr:`NikonError.message` details
+                the error.
         """
         xmp_descr = NikonXMPDescriptions(self._element)
         if len(xmp_descr.descriptions) != 0:
@@ -1532,6 +1604,9 @@ class NikonSideCar(object):
                 if "IPTC" in self.ast.props:
                     for k, v in self.ast.props["IPTC"].items():
                         _logger.info(f"AST IPTC property {k}={v}")
+                if "XMLPackets" in self.ast.props:
+                    for k, v in self.ast.props["XMLPackets"].items():
+                        _logger.info(f"AST METADATA property {k}={v}")
             else:
                 _logger.info(f"No AST property")
 
