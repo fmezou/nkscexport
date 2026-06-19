@@ -267,56 +267,45 @@ class DarkBridge(object):
              A string with the metadata.
         """
         msgs = []
-        if self._nksc.sdc.props is not None:
-            appname = self._nksc.sdc.props["appname"]
-            appversion = self._nksc.sdc.props["appversion"]
+
+        if self._nksc.metadata is not None:
             msgs.append(Style.BRIGHT
-                        + f"    Application: {appname} v{appversion}"
+                        + Fore.LIGHTBLUE_EX
+                        + f"    Metadata"
+                        + Style.RESET_ALL)
+            for k, v in self._nksc.metadata.items():
+                msgs.append(Style.BRIGHT
+                            + Fore.LIGHTBLUE_EX
+                            + f"      * {k}"
+                            + Fore.BLACK
+                            + f": {v}"
+                            + Style.RESET_ALL)
+        else:
+            msgs.append(Style.BRIGHT
+                        + Fore.LIGHTRED_EX
+                        + "    No Metadata present"
                         + Style.RESET_ALL)
 
-        if self._nksc.nine.props is not None:
-            label = self._nksc.nine.props["Label"]
-            rating = self._nksc.nine.props["Rating"]
+        if self._nksc.processing is not None:
             msgs.append(Style.BRIGHT
-                        + f"    Label: {label} - Rating {rating}"
+                        + Fore.LIGHTMAGENTA_EX
+                        + f"    Adjustment"
                         + Style.RESET_ALL)
-            for k, v in self._nksc.nine.props["NineEdits"].items():
+            for k, v in self._nksc.processing.items():
                 if all:
                     if v.active:
                         msgs.append(Style.BRIGHT
-                                    + f"    Adjustment {k})"
+                                    + f"      * {k}"
                                     + Style.RESET_ALL)
                     else:
                         msgs.append(Style.DIM
-                                    + f"    Adjustment {k})"
+                                    + f"      * {k}"
                                     + Style.RESET_ALL)
                 else:
                     if v.active:
                         msgs.append(Style.BRIGHT
-                                    + f"    Adjustment {k}"
+                                    + f"      * {k}"
                                     + Style.RESET_ALL)
-
-        if self._nksc.ast.props is not None:
-            if "IPTC" in self._nksc.ast.props:
-                msgs.append(Style.BRIGHT + f"    IPTC: " + Style.RESET_ALL)
-                for k, v in self._nksc.ast.props["IPTC"].items():
-                    msgs.append(Style.BRIGHT
-                                + f"        {k}: {v}"
-                                + Style.RESET_ALL)
-            else:
-                msgs.append(Style.BRIGHT
-                            + Fore.LIGHTRED_EX
-                            + "    No IPTC Data present"
-                            + Style.RESET_ALL)
-
-            if "XMLPackets" in self._nksc.ast.props:
-                metadata = f"    Metadata: {self._nksc.ast.props["XMLPackets"]}"[:79]
-                msgs.append(Style.DIM + metadata + Style.RESET_ALL)
-            else:
-                msgs.append(Style.BRIGHT
-                            + Fore.LIGHTRED_EX
-                            + "    No Metadata present"
-                            + Style.RESET_ALL)
 
         return "\n".join(msgs)
 
