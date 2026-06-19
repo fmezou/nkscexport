@@ -30,7 +30,8 @@ Nikon sidecar file contains the following sets:
   file format (here ``nikon sidecar/1.0``).
 
 * **ast** (``http://ns.nikon.com/asteroid/1.0/``): contains image's metadata
-  serialized in a RDF packet encoded in Base64. These metadata are a subset of
+  serialized in a :term:`XMP Packet` (``ast:XMLPackets`` element) and in
+  :term:`IPTC IIM` records encoded in Base64. These metadata are a subset of
   `Dublin Core Metadata Initiative <https://www.dublincore.org/specifications/
   dublin-core/dcmi-terms/>`_ and `IPTC metadata <https://www.iptc.org/std/
   photometadata/specification/IPTC-PhotoMetadata>`_.
@@ -46,8 +47,8 @@ No public specifications are available from Nikon, so the attributes
 were discovered by reading ``.nsks`` files and the help of ExifTool
 by Phil Harvey [phniktag]_.
 
-Inside properties
------------------
+XMP properties in a nutshell
+----------------------------
 
 An XMP property may be a simple text , a structured data identified with the
 ``rdf:parseType`` attribute, or an array (see section 7.3 to 7.9 [adxmp1]_).
@@ -55,6 +56,31 @@ An XMP property may be a simple text , a structured data identified with the
 A structured data may either a typed value or a list of sub-properties. A typed
 value have two sub-properties: its value in ``rdf:value`` element, its type in
 ``astype:Type`` element. This format is a Nikon's proprietary format.
+
+IIM properties in a nutshell
+----------------------------
+
+The Information Interchange Model consists of a number of records [IIMv4]_.
+Image metadata are stored in an 'Application Record' (DataSets in the
+range 2:xx).
+
+.. table:: Layout of :term:`IPTC IIM` record
+    :name: InsideNKCS.IPTCIM
+
+    ======= ======= ======= ======= ==========
+    Byte #  1       2       3       4 - 5
+    ======= ======= ======= ======= ==========
+    Data    Tag     Record  DataSet Len [#bo]_
+    ======= ======= ======= ======= ==========
+
+Example ``Title`` field (alias XMP ``dc:title`` property)::
+
+    |0x1c|0x02|0x05|0x00 0x13|[Description] Titre|
+
+.. rubric:: Notes
+
+.. [#bo] Use Big Endian Byte Ordering (the left-most byte the most
+   significant bytes (see [IIMv4]_, p. 6.
 
 
 GPS Information
@@ -353,9 +379,6 @@ nikon::DLightingHQ
 .. [phniktag] Phil Harvey, `Nikon Tags <https://www.exiftool.org/
     TagNames/Nikon.html>`_
     , Tag Names > Nikon
-
-.. [adxmp1] Adobe, `XMP Specification Part 1 <https://github.com/adobe/
-    XMP-Toolkit-SDK/blob/main/docs/XMPSpecificationPart1.pdf>`_, pp. 5-17
 
 .. [digps] DICOM, PS3.3 2026b - Information Object Definitions, `VL
     Photographic Geolocation Module <https://dicom.nema.org/medical/

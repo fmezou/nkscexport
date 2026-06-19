@@ -843,9 +843,9 @@ class NikonXMPProperty:
 
 
 class NikonXMPDescriptions:
-    """Manage the XMP Packet header description
+    """Manage the :term:`XMP Packet` header description
 
-    This class parses an XMP Packet and checks its structure. In case of
+    This class parses an :term:`XMP Packet` and checks its structure. In case of
     error and NikonError exception is raised. :attr:`descriptions`
     attribute contains the list of description block. For the observed
     use case, there is only description block per sidecar file.
@@ -881,13 +881,13 @@ class NikonXMPDescriptions:
     def _check_xmp_packet(self):
         """Check the XMP metadata marker
         
-        This method checks the XMP packet identified by a ``rdf:RDF``
+        This method checks the :term:`XMP Packet` identified by a ``rdf:RDF``
         element (section 7.4 [adxmp1]_). The method set the
         :attr:`_element` attribute to ``rdf:RDF`` element in the XML tree.
         An ``x:xmpmeta`` element may be placed around the ``rdf:RDF``
-        element (aka XMP packet - see section 7.3.3 [adxmp1]_) with name
-        of the toolkit (``x:xmptk``) as attribute. This value is saved in
-        :attr:`xmptk`.
+        element (aka :term:`XMP Packet` - see section 7.3.3 [adxmp1]_)
+        with name of the toolkit (``x:xmptk``) as attribute. This value
+        is saved in :attr:`xmptk`.
 
         Raises:
             NikonError: Generic error, the :attr:`NikonError.message` details
@@ -1071,9 +1071,10 @@ class NikonAsteroidProperties:
     into the attribute :attr:`props` which can contain the following
     entries:
 
-    * ``XMLPackets``: `<https://www.exiftool.org/TagNames/XMP.html>`_
+    * ``XMLPackets``: Image's metadata expressed as an :term:`XMP Packet`.
     * ``GPS``: Object containing the GPS properties
-    * ``IPTC``: `<https://www.exiftool.org/TagNames/IPTC.html>`_
+    * ``IPTC``: Image's metadata using :term:`IPTC Information Interchange
+       Model`.
 
     The article named ":ref:`Inside Nikon Sidecar file`" details the data
     structure and tags used by Nikon.
@@ -1527,7 +1528,7 @@ class NikonSideCar(object):
     structure and tags used by Nikon.
 
     Args:
-        element: XML element containing the XMP Packet element.
+        element: XML element containing the :term:`XMP Packet` element.
 
     Attributes:
         metadata: unified dictionary of image metadata coming the Asteroid
