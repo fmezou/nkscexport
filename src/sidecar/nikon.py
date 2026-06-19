@@ -763,7 +763,7 @@ class NikonXMPProperty:
 
         Args:
             value: Value of the resource expressed as binary
-            string encoded in base64 .
+                string encoded in base64 .
         """
         self.value = base64.b64decode(value)
         _logger.debug(f"XMP property (Binary):"
@@ -774,7 +774,7 @@ class NikonXMPProperty:
 
         Args:
             value: Value of resource expressed as binary
-            string encoded in base64 .
+                string encoded in base64 .
         """
         buffer = base64.b64decode(value)
         self.value = int.from_bytes(buffer, byteorder='little')
@@ -790,7 +790,7 @@ class NikonXMPProperty:
 
         Args:
             value: Value of resource expressed as binary
-            string encoded in base64 .
+                string encoded in base64 .
         """
         buffer = base64.b64decode(value)
         vm = len(buffer) // 8
@@ -811,7 +811,7 @@ class NikonXMPProperty:
 
         Args:
             value: Value of resource expressed as binary
-            string encoded in base64 .
+                string encoded in base64 .
         """
         self.value = value
         _logger.debug(f"XMP property (Ascii):"
@@ -822,7 +822,7 @@ class NikonXMPProperty:
 
         Args:
             value: Value of integer resource expressed as binary
-            string encoded in base64 .
+                string encoded in base64 .
         """
         self.value = base64.b64decode(value)
         _logger.debug(f"XMP property (GPSProcessingMethod):"
@@ -1667,18 +1667,35 @@ class NikonSideCar(object):
     def _merge_metadata(self):
         """Merge the metadata sets.
 
-        Image metadata come from the IPTC set (``ast:IPTC`` element) and
+        Image metadata comes from the IPTC set (``ast:IPTC`` element) and
         the XMP set (``ast:XMLPackets``). This method merge the two sets
         and store the metadata in :attr:`metadata`. The priority is the
         following order : IPTC, XMP.
+
+        The image label and rating may be defined in the ``nine`` set
+        and in the XMP set (``ast:XMLPackets``). In the observed use
+        cases, these properties in the ``nine`` set are always set to 0
+        (probably deprecated, but there is no public information). So
+        the priority is the following order : XMP, Nine.
+
         """
+        # Default value for 'xmp:Rating' and  'xmp:Label'
+        self.metadata['xmp:Rating'] = NIKON_LABEL_MAP[self._nine.props["Rating"]]
+        self.metadata['xmp:Label'] = self._nine.props["Label"]
+
         # Copy the XMP set and overwrite with IPTC set.
         if self._ast is not None:
             if "XMLPackets" in self._ast.props:
                 for k, v in self._ast.props["XMLPackets"].items():
+                    if k in self.metadata:
+                        _logger.info(f"Overwrite metadata {k}:"
+                                     f" {self.metadata[k]} -> {v}")
                     self.metadata[k] = v
             if "IPTC" in self._ast.props:
                 for k, v in self._ast.props["IPTC"].items():
+                    if k in self.metadata:
+                        _logger.info(f"Overwrite metadata {k}:"
+                                     f" {self.metadata[k]} -> {v}")
                     self.metadata[k] = v
 
     def _set_processing(self):
@@ -1686,8 +1703,8 @@ class NikonSideCar(object):
 
         This method simply copy image adjustments in :attr:`processing`.
         """
-        if self._nine is not None:
-            for k, v in self._nine.props.items():
+        if self._nine is not None and "NineEdits" in self._nine.props:
+            for k, v in self._nine.props["NineEdits"].items():
                 self.processing[k] = v
 
     def _set_geoloc(self):
