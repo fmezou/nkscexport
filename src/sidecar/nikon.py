@@ -1685,8 +1685,8 @@ class NikonSideCar(object):
         self.metadata["appversion"] = self._sdc.props["appversion"]
 
         # Default value for 'xmp:Rating' and  'xmp:Label'
-        self.metadata["xmp:Rating"] = NIKON_LABEL_MAP[self._nine.props["Rating"]]
-        self.metadata["xmp:Label"] = self._nine.props["Label"]
+        self.metadata["xmp:Rating"] = self._nine.props["Rating"]
+        self.metadata["xmp:Label"] = NIKON_LABEL_MAP[self._nine.props["Label"]]
 
         # Copy the XMP set and overwrite with IPTC set.
         if self._ast is not None:
