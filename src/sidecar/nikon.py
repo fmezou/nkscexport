@@ -1052,7 +1052,7 @@ class NikonSDCProperties:
         Args:
             xmp_property: Nikon XMP property containing data.
         """
-        self.props['appname'] = xmp_property.value
+        self.props["appname"] = xmp_property.value
 
     def _set_appversion(self, xmp_property: NikonXMPProperty):
         """Set the version of the application that created the sidecar file.
@@ -1060,7 +1060,7 @@ class NikonSDCProperties:
         Args:
             xmp_property: Nikon XMP property containing data.
         """
-        self.props['appversion'] = xmp_property.value
+        self.props["appversion"] = xmp_property.value
 
 
 class NikonAsteroidProperties:
@@ -1680,9 +1680,13 @@ class NikonSideCar(object):
         the priority is the following order : XMP, Nine.
 
         """
+        # Add application identifiers, to avoid collision
+        self.metadata["appname"] = self._sdc.props["appname"]
+        self.metadata["appversion"] = self._sdc.props["appversion"]
+
         # Default value for 'xmp:Rating' and  'xmp:Label'
-        self.metadata['xmp:Rating'] = NIKON_LABEL_MAP[self._nine.props["Rating"]]
-        self.metadata['xmp:Label'] = self._nine.props["Label"]
+        self.metadata["xmp:Rating"] = NIKON_LABEL_MAP[self._nine.props["Rating"]]
+        self.metadata["xmp:Label"] = self._nine.props["Label"]
 
         # Copy the XMP set and overwrite with IPTC set.
         if self._ast is not None:
@@ -1759,7 +1763,7 @@ class NikonSideCar(object):
 
         detail the param
         """
-        return False
+        return "dc:subject" in self.metadata
 
     def is_filtered(self) -> bool:
         """Return `True` if the image have image adjustment.
@@ -1767,7 +1771,12 @@ class NikonSideCar(object):
         The method indicates if at least one image adjustment (filter) is
         active.
         """
-        return False
+        is_filtered = False
+        for k, v in self.processing.items():
+            if v.active:
+                is_filtered = True
+                break
+        return is_filtered
 
     def is_cropped(self) -> bool:
         """Return `True` if the image is cropped.
