@@ -39,9 +39,10 @@ Nikon sidecar file contains the following sets:
 * **nine** (``http://ns.nikon.com/nine/1.0/``): contains the image adjustments
   history in XML format with escaped characters (&lt;..). Theses image
   processing modules are proprietary and cannot be transferred in an other
-  software except for format adjustment as cropping. The `Nikon adjustments`
-  section details the supported Nikon settings and indicates whether their
-  parameters can be converted into the equivalent module of Darktable.
+  software except for format adjustment as cropping. The
+  `background_papers/inside_nksc:Nikon adjustments` section details the
+  supported Nikon settings and indicates whether their parameters can be
+  converted into the equivalent module of Darktable.
 
 No public specifications are available from Nikon, so the attributes
 were discovered by reading ``.nsks`` files and the help of ExifTool
@@ -65,7 +66,7 @@ Image metadata are stored in an 'Application Record' (DataSets in the
 range 2:xx).
 
 .. table:: Layout of :term:`IPTC IIM` record
-    :name: InsideNKCS.IPTCIM
+    :name:background_papers/inside_nksc:Layout_IPTC_IIM
 
     ======= ======= ======= ======= ==========
     Byte #  1       2       3       4 - 5
@@ -88,12 +89,13 @@ GPS Information
 Nikon seems to have using DICOM specification [digps]_ for GPS Information. So
 attributes definitions used in classes are based on this document. Data elements
 representation are defined in [direg]_ and [dienc]_. The
-:numref:`InsideNKCS.GPSAttrTable` details the GPS attribute (tagname and
-encoding currently used in Nikon sidecar files, but some properties (marked
-with a '*' do not comply with the specifications (see `Not compliant properties`)
+:numref:`background_papers/inside_nksc:GPSAttributes` details the GPS attribute
+(tagname and encoding currently used in Nikon sidecar files, but some properties
+(marked with a '*' do not comply with the specifications (see
+`background_papers/inside_nksc:Not compliant properties`)
 
 .. table:: GPS Attributes in NKSC files
-    :name: InsideNKCS.GPSAttrTable
+    :name: background_papers/inside_nksc:GPSAttributes
 
     =========================== =================== =========== ==========
     Name                        Tag name            VR [#vr]_   VM [#vm]_
@@ -166,45 +168,45 @@ THe Nikon adjustments are the following:
 .. hlist::
     :columns: 2
 
-    * `nik::GaussianBlur`
-    * `nik::GrainNoise`
-    * `nik::LCH`
-    * `nik::LevelsCurves`
-    * `nik::Straighten`
-    * `nikon::ActiveDLighting`
-    * `nikon::ApplicationData`
-    * `nikon::Brightness`
-    * `nikon::ChrAb`
-    * `nikon::ColorBalance`
-    * `nikon::ColorBooster`
-    * `nikon::ColorShift`
-    * `nikon::DLightingHQ`
-    * `nikon::DLightingHS`
-    * `nikon::Dehaze`
-    * `nikon::Diffraction`
-    * `nikon::Distortion`
-    * `nikon::DustOff`
-    * `nikon::ExposureSettings`
-    * `nikon::FishEye`
-    * `nikon::Flare`
-    * `nikon::LEGeneral`
-    * `nikon::LongChrAb`
-    * `nikon::NXHistory`
-    * `nikon::NoiseReduction`
-    * `nikon::Perspective`
-    * `nikon::PhotoEffects`
-    * `nikon::PictureControl`
-    * `nikon::PixelShiftNoiseReduction`
-    * `nikon::QuickFixContrast`
-    * `nikon::QuickFixToneCurve`
-    * `nikon::RedEye`
-    * `nikon::SizeRes`
-    * `nikon::SkinSoftening`
-    * `nikon::SkinTone`
-    * `nikon::UnsharpMask`
-    * `nikon::Vignette`
-    * `nikon::WhiteBalance`
-    * `nikon::transform`
+    * `background_papers/inside_nksc:nik::GaussianBlur`
+    * `background_papers/inside_nksc:nik::GrainNoise`
+    * `background_papers/inside_nksc:nik::LCH`
+    * `background_papers/inside_nksc:nik::LevelsCurves`
+    * `background_papers/inside_nksc:nik::Straighten`
+    * `background_papers/inside_nksc:nikon::ActiveDLighting`
+    * `background_papers/inside_nksc:nikon::ApplicationData`
+    * `background_papers/inside_nksc:nikon::Brightness`
+    * `background_papers/inside_nksc:nikon::ChrAb`
+    * `background_papers/inside_nksc:nikon::ColorBalance`
+    * `background_papers/inside_nksc:nikon::ColorBooster`
+    * `background_papers/inside_nksc:nikon::ColorShift`
+    * `background_papers/inside_nksc:nikon::DLightingHQ`
+    * `background_papers/inside_nksc:nikon::DLightingHS`
+    * `background_papers/inside_nksc:nikon::Dehaze`
+    * `background_papers/inside_nksc:nikon::Diffraction`
+    * `background_papers/inside_nksc:nikon::Distortion`
+    * `background_papers/inside_nksc:nikon::DustOff`
+    * `background_papers/inside_nksc:nikon::ExposureSettings`
+    * `background_papers/inside_nksc:nikon::FishEye`
+    * `background_papers/inside_nksc:nikon::Flare`
+    * `background_papers/inside_nksc:nikon::LEGeneral`
+    * `background_papers/inside_nksc:nikon::LongChrAb`
+    * `background_papers/inside_nksc:nikon::NXHistory`
+    * `background_papers/inside_nksc:nikon::NoiseReduction`
+    * `background_papers/inside_nksc:nikon::Perspective`
+    * `background_papers/inside_nksc:nikon::PhotoEffects`
+    * `background_papers/inside_nksc:nikon::PictureControl`
+    * `background_papers/inside_nksc:nikon::PixelShiftNoiseReduction`
+    * `background_papers/inside_nksc:nikon::QuickFixContrast`
+    * `background_papers/inside_nksc:nikon::QuickFixToneCurve`
+    * `background_papers/inside_nksc:nikon::RedEye`
+    * `background_papers/inside_nksc:nikon::SizeRes`
+    * `background_papers/inside_nksc:nikon::SkinSoftening`
+    * `background_papers/inside_nksc:nikon::SkinTone`
+    * `background_papers/inside_nksc:nikon::UnsharpMask`
+    * `background_papers/inside_nksc:nikon::Vignette`
+    * `background_papers/inside_nksc:nikon::WhiteBalance`
+    * `background_papers/inside_nksc:nikon::transform`
 
 Adjustment parameters
 ^^^^^^^^^^^^^^^^^^^^^

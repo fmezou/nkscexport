@@ -1,6 +1,6 @@
 """Convert Nikon sidecar files.
 
-TThis package is the DarkBridge core. It includes all the core classes and
+This package is the DarkBridge core. It includes all the core classes and
 functions to convert the Nikon sidecar files.
 
 The exported modules are as follows:

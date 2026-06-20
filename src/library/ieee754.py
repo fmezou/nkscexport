@@ -14,8 +14,8 @@ the standard. The implementation supports the following subset:
 The exported classes, exceptions and functions (and any other objects)
 are as follows:
 
-``ieee754`` classes
--------------------
+Classes
+-------
 .. hlist::
     :columns: 2
 
@@ -28,8 +28,8 @@ Using ``ieee754``
 >>> IEEE754(b"\\xab\\xaa\\xaa\\x3e").value
 0.3333333432674408
 
-``ieee754`` reference manual
-----------------------------
+Reference manual
+----------------
 """
 import logging
 

@@ -6,8 +6,8 @@ name based on `namespaces <https://en.wikipedia.org/wiki/XML_namespace>`_.
 The exported classes, exceptions and functions (and any other objects)
 are as follows:
 
-``namespace`` classes
----------------------
+Classes
+-------
 .. hlist::
     :columns: 2
 
@@ -24,8 +24,8 @@ Using ``namespace``
 >>> ns.shorten_name("{adobe:ns:meta/}xmptk")
 'x:xmptk'
 
-``namespace`` reference manual
-------------------------------
+Reference manual
+----------------
 """
 import logging
 

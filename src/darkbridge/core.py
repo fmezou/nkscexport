@@ -8,21 +8,21 @@ wrinting the result in a XMP sidecar file compliant with Darktable.
 The exported classes, exceptions and functions (and any other objects)
 are as follows:
 
-``core`` exceptions
--------------------
+Exceptions
+----------
 
 Todo:
     Review the list after completing
 
-``core``  classes
------------------
+Classes
+-------
 .. hlist::
     :columns: 2
 
     * :class:`DarkBridge`- Convert sidecar files
 
-``core`` constants
-------------------
+Constants
+---------
 
 Todo:
     Review the list after completing
@@ -33,8 +33,8 @@ Using ``core``
 Todo:
     Describe how using the module
 
-``core`` reference manual
--------------------------
+Reference manual
+----------------
 """
 import glob
 import logging
@@ -101,7 +101,7 @@ class BaseDisplay(object):
     ``Display`` Reference
     ---------------------
     """
-    #: Supported verbs defining the ongoing operation
+    #: Supported verbs defining the ongoing operation.
     VERBS = ["list", "convert"]
     verb: str
     filenames: list[str]
@@ -126,10 +126,10 @@ class BaseDisplay(object):
 
         Args:
             verb: Name of the launched operation. The possible values
-               defined in `Display.VERBS`: ``list`` for listing the
-               metadata, ``convert`` for converting to Darktable sidecar
-               files. Any other value should raise a ValueError
-               exception.
+               defined in `darkbridge.core.BaseDisplay.VERBS`: ``list``
+               for listing the metadata, ``convert`` for converting to
+               Darktable sidecar files. Any other value should raise a
+               `ValueError` exception.
             total: Number of image files in the processing pipe.
         """
         raise NotImplementedError
@@ -139,7 +139,7 @@ class BaseDisplay(object):
 
         Args:
             index: Index of the last image files. The index cannot be
-                greater than :arg:`total`.
+                greater than ``total`` parameter.
         """
         raise NotImplementedError
 
@@ -148,7 +148,7 @@ class BaseDisplay(object):
 
         Args:
             index: Index of the current image files. The index cannot be
-                greater than :arg:`total`.
+                greater than ``total`` parameter.
             path: Path of the current image file.
             nksc: Object containing the metadata and processing data of
                 the current image.
@@ -182,9 +182,6 @@ class DefaultDisplay(BaseDisplay):
     Note:
         The attributes below are specific to this concrete class. For
         the attributes of the base class, see :class:`BaseDisplay`
-
-    Reference
-    ---------
     """
     total: int
     def __init__(self, filenames: list[str], recursive: bool,
@@ -251,7 +248,7 @@ class DefaultDisplay(BaseDisplay):
 
         Args:
             index: Index of the last image files. The index cannot be
-                greater than :arg:`total`.
+                greater than ``total`` parameter.
         """
         match self.verb:
             case 'list':
@@ -271,7 +268,7 @@ class DefaultDisplay(BaseDisplay):
 
         Args:
             index: Index of the current image files. The index cannot be
-                greater than :arg:`total`.
+                greater than ``total`` parameter.
             path: Path of the current image file.
             nksc: Object containing the metadata and processing data of
                 the current image.

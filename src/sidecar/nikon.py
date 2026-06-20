@@ -1,21 +1,21 @@
 """Handle Nikon sidecar files (read only)
 
 The `sidecar.nikon` module implements handlers for the Nikon sidecar
-file. The article named ":ref:`Inside Nikon Sidecar file`" details the
-data structure and tags used by Nikon.
+file. The article named :ref:`background_papers/inside_nksc:Inside Nikon
+Sidecar file` details the data structure and tags used by Nikon.
 
 The exported classes, exceptions and functions (and any other objects)
 are as follows:
 
-``nikon`` exceptions
---------------------
+Exceptions
+----------
 .. hlist::
     :columns: 2
 
     * :exc:`NikonError` - Base class for sidecar parser exceptions
 
-``nikon``  classes
-------------------
+Classes
+-------
 .. hlist::
     :columns: 2
 
@@ -30,8 +30,8 @@ are as follows:
     * :class:`NikonNineProperties`- Nikon Nine properties container
     * :class:`NikonSideCar`- Nikon sidecar file.
 
-``nikon`` constants
--------------------
+Constants
+---------
 
 Todo:
     Review the list after the completion of implement
@@ -53,8 +53,8 @@ Using ``nikon``
 Todo:
     Describe how using the module
 
-``nikon`` reference manual
---------------------------
+Reference manual
+----------------
 """
 import base64
 import logging
@@ -216,9 +216,10 @@ class NikonGPSProperties:
     This class can be used in a formatted string and returns the latitude
     and longitude.
 
-    The article named ":ref:`Inside Nikon Sidecar file`" details the data
-    structure and tags used by Nikon. In a nutshell, Nikon seems to have
-    using DICOM specification (see :ref:`InsideNKCS.GPSAttrTable`).
+    The article named :ref:`background_papers/inside_nksc:Inside Nikon
+    Sidecar file` details the data structure and tags used by Nikon. In
+    a nutshell, Nikon seems to have using DICOM specification (see
+    :ref:`background_papers/inside_nksc:GPSAttributes`).
 
     Raises:
         ValueError: argument has the right type but an
@@ -642,8 +643,8 @@ class NikonXMPProperty:
     data identified with the ``rdf:parseType`` attribute, or an array
     (see section 7.3 to 7.9 [adxmp1]_)
 
-    The article named ":ref:`Inside Nikon Sidecar file`" details the data
-    structure and tags used by Nikon.
+    The article named ":ref:`background_papers/inside_nksc:Inside Nikon
+    Sidecar file`" details the data structure and tags used by Nikon.
 
     Args:
         element: Element containing the property.
@@ -853,8 +854,8 @@ class NikonXMPDescriptions:
     attribute contains the list of description block. For the observed
     use case, there is only description block per sidecar file.
 
-    The article named ":ref:`Inside Nikon Sidecar file`" details the data
-    structure and tags used by Nikon.
+    The article named ":ref:`background_papers/inside_nksc:Inside Nikon
+    Sidecar file`" details the data structure and tags used by Nikon.
 
     Args:
         element: XML element containing the XMP Packet with its wrapper(
@@ -969,8 +970,8 @@ class NikonSDCProperties:
     * ``appversion``: Version identifier of the application that
       created the sidecar file.
 
-    The article named ":ref:`Inside Nikon Sidecar file`" details the data
-    structure and tags used by Nikon.
+    The article named ":ref:`background_papers/inside_nksc:Inside Nikon
+    Sidecar file`" details the data structure and tags used by Nikon.
 
     Attributes:
         about: Identifier of properties set. The identifier have to be
@@ -1077,10 +1078,10 @@ class NikonAsteroidProperties:
     * ``XMLPackets``: Image's metadata expressed as an :term:`XMP Packet`.
     * ``GPS``: Object containing the GPS properties
     * ``IPTC``: Image's metadata using :term:`IPTC Information Interchange
-       Model`.
+      Model`.
 
-    The article named ":ref:`Inside Nikon Sidecar file`" details the data
-    structure and tags used by Nikon.
+    The article named ":ref:`background_papers/inside_nksc:Inside Nikon
+    Sidecar file`" details the data structure and tags used by Nikon.
 
     Args:
         element: XML element containing the ``rdf:Description`` tag.
@@ -1381,11 +1382,11 @@ class NikonNineProperties:
     * ``Label``:  the image label
     * ``Rating``: the image rating
 
-    The article named ":ref:`Inside Nikon Sidecar file`" details the data
-    structure and tags used by Nikon.
+    The article named ":ref:`background_papers/inside_nksc:Inside Nikon
+    Sidecar file`" details the data structure and tags used by Nikon.
 
     Note:
-        In the observed use cases, ``Label``and ``Rating` properties are
+        In the observed use cases, ``Label`` and ``Rating`` properties are
             always set to 0 (probably deprecated, but there is no public
             information).
 
@@ -1526,13 +1527,13 @@ class NikonSideCar(object):
     image on the one hand, and the image processing stack on the other.
     The NKSC files are in XML/XMP, so we walk in the RDF tree.
 
-    The article named ":ref:`Inside Nikon Sidecar file`" details the data
-    structure and tags used by Nikon.
+    The article named ":ref:`background_papers/inside_nksc:Inside Nikon
+    Sidecar file`" details the data structure and tags used by Nikon.
 
     This class parse a sidecar file and extract ``xmpmeta`` tags.
 
-    The article named ":ref:`Inside Nikon Sidecar file`" details the data
-    structure and tags used by Nikon.
+    The article named ":ref:`background_papers/inside_nksc:Inside Nikon
+    Sidecar file`" details the data structure and tags used by Nikon.
 
     Args:
         element: XML element containing the :term:`XMP Packet` element.

@@ -89,6 +89,10 @@ napoleon_numpy_docstring = False
 # https://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html
 autodoc_member_order = "groupwise"
 
+# -- Options "sphinx.ext.autosectionlabel" ------------------------------------
+# https://www.sphinx-doc.org/en/master/usage/extensions/autosectionlabel.html
+autosectionlabel_prefix_document = True
+
 # -- Options "sphinx.ext.graphviz" --------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/extensions/graphviz.html
 graphviz_output_format = "svg"

@@ -2,29 +2,28 @@
 
 The `sidecar.nik_adjustment` module implements handlers for the Nikon image
 adjustments stored in Nikon sidecar files.file. The article named
-":ref:`Inside Nikon Sidecar file`" details the data structure and tags
-used by Nikon.
+":ref:`background_papers/inside_nksc:Inside Nikon Sidecar file`" details
+the data structure and tags used by Nikon.
 
 The exported classes, exceptions and functions (and any other objects)
 are as follows:
 
-``nk_adjustments`` exceptions
------------------------------
+Exceptions
+----------
 .. hlist::
     :columns: 2
 
     * sample todo
 
-``nk_adjustments``  classes
----------------------------
+Classes
+-------
 .. hlist::
     :columns: 2
 
     * :class:`NikBaseAdjustment`- Base class for Nikon image's adjustment class
 
-``nk_adjustments`` constants
-----------------------------
-
+Constants
+---------
 Todo:
     Review the list after the completion of implement
 
@@ -39,8 +38,8 @@ Using ``nk_adjustments``
 Todo:
     Describe how using the module
 
-``nk_adjustments`` reference manual
------------------------------------
+Reference manual
+----------------
 """
 import base64
 import datetime
@@ -174,8 +173,9 @@ class NikBaseAdjustment:
         proprietary format), the method is permissive and not checks the
         data set.
 
-        The article named ":ref:`Inside Nikon Sidecar file`" details
-        the data structure and tags used by Nikon.
+        The article named ":ref:`background_papers/inside_nksc:Inside
+        Nikon Sidecar file`" details the data structure and tags used by
+        Nikon.
 
         Particular use cases
 
