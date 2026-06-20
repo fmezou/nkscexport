@@ -32,7 +32,9 @@ are as follows:
 
 ``nikon`` constants
 -------------------
-.. todo:: review the list after the completion of implement
+
+Todo:
+    Review the list after the completion of implement
 
 .. hlist::
     :columns: 2
@@ -47,7 +49,9 @@ are as follows:
 
 Using ``nikon``
 ---------------
-.. todo:: describe how using the module
+
+Todo:
+    Describe how using the module
 
 ``nikon`` reference manual
 --------------------------
@@ -113,25 +117,25 @@ NIKON_NKSC_EXT = ".nksc"
 
 #: XML Namespaces used in sidecar file and ``XMLPackets`` property.
 _NS = NameSpace(
-    {
-        # Namespaces used in XMP description block in sidecar files
-        "x": "adobe:ns:meta/",
-        "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
-        "sdc": "http://ns.nikon.com/sdc/1.0/",
-        "ast": "http://ns.nikon.com/asteroid/1.0/",
-        "astype": "http://ns.nikon.com/asteroid/Types/1.0/",
-        "nine": "http://ns.nikon.com/nine/1.0/",
+        {
+            # Namespaces used in XMP description block in sidecar files
+            "x": "adobe:ns:meta/",
+            "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+            "sdc": "http://ns.nikon.com/sdc/1.0/",
+            "ast": "http://ns.nikon.com/asteroid/1.0/",
+            "astype": "http://ns.nikon.com/asteroid/Types/1.0/",
+            "nine": "http://ns.nikon.com/nine/1.0/",
 
-        # Namespaces used in XML Packet (XMP Metadata description block)
-        "dc": "http://purl.org/dc/elements/1.1/",
-        "photoshop": "http://ns.adobe.com/photoshop/1.0/",
-        "Iptc4xmpCore": "http://iptc.org/std/Iptc4xmpCore/1.0/xmlns/",
-        "xmpRights": "http://ns.adobe.com/xap/1.0/rights/",
-        "xmp": "http://ns.adobe.com/xap/1.0/",
-        "MicrosoftPhoto": "http://ns.microsoft.com/photo/1.0/",
-        "Iptc4xmpExt": "http://iptc.org/std/Iptc4xmpExt/2008-02-29/"
-    }
-)
+            # Namespaces used in XML Packet (XMP Metadata description block)
+            "dc": "http://purl.org/dc/elements/1.1/",
+            "photoshop": "http://ns.adobe.com/photoshop/1.0/",
+            "Iptc4xmpCore": "http://iptc.org/std/Iptc4xmpCore/1.0/xmlns/",
+            "xmpRights": "http://ns.adobe.com/xap/1.0/rights/",
+            "xmp": "http://ns.adobe.com/xap/1.0/",
+            "MicrosoftPhoto": "http://ns.microsoft.com/photo/1.0/",
+            "Iptc4xmpExt": "http://iptc.org/std/Iptc4xmpExt/2008-02-29/"
+        }
+    )
 
 
 # This module can be used as library or as a script, a nullHandler is
@@ -618,8 +622,7 @@ class NikonGPSProperties:
         as two number expressed in decimal degree (5 precision digits)
         and the reference as suffix.
 
-        Example::
-
+        Example:
             lat: ll.lllll (r), long: lll.lllll (r)
         """
         s = ""
@@ -1064,7 +1067,7 @@ class NikonSDCProperties:
 
 
 class NikonAsteroidProperties:
-    """Nikon Asteroid properties container.
+    """Nikon Asteroid (AST) properties container.
 
     This class parse a sidecar file and extract ``ast`` tags (namespace
     'http://ns.nikon.com/asteroid/1.0/'). The properties read are copied
@@ -1091,7 +1094,7 @@ class NikonAsteroidProperties:
             have to be ``core-asteroid-tags``.
         version: version identifier of the sidecar format (currently
             ``11.0.0.3000``)
-        props: Dictionary of properties of the SDC set.
+        props: Dictionary of properties of the AST set.
     """
     _ID = "core-asteroid-tags"
     #: Mapping IPTC properties to XMP properties, `IPTC Specification
@@ -1367,19 +1370,24 @@ class NikonAsteroidProperties:
         self.props["GPS"].set_attr(xmp_property)
 
 class NikonNineProperties:
-    """Nikon Nine properties container.
+    """Nikon NINE properties container.
 
     This class parse a sidecar file and extract ``nine`` tags (namespace
     'http://ns.nikon.com/nine/1.0/').The properties read are copied
     into the attribute :attr:`props` which can contain the following
     entries:
 
-    * ``NineEdits``: `<https://www.exiftool.org/TagNames/Nikon.html#NineEdits>`_
-    * ``Label``:  todo
-    * ``Rating``: todo
+    * ``NineEdits``: dictionary of image's adjustments.
+    * ``Label``:  the image label
+    * ``Rating``: the image rating
 
     The article named ":ref:`Inside Nikon Sidecar file`" details the data
     structure and tags used by Nikon.
+
+    Note:
+        In the observed use cases, ``Label``and ``Rating` properties are
+            always set to 0 (probably deprecated, but there is no public
+            information).
 
     Args:
         element: XML element containing the ``rdf:Description`` tag.
@@ -1393,12 +1401,12 @@ class NikonNineProperties:
             have to be ``nine-tags``.
         version: version identifier of the sidecar format (currently
             ``2.0.0``)
-        props: Dictionary of properties of the SDC set.
+        props: Dictionary of properties of the NINE set.
     """
     _ID = "nine-tags"
     about: str | None
     version: str | None
-    trim: str | None
+    props: dict
     def __init__(self):
         # Table of doers method for processing properties
         self._doers = {
@@ -1411,7 +1419,6 @@ class NikonNineProperties:
         }
         self.about = None
         self.version= None
-        self.trim = None
         self.props = {}
 
     def get_xmp_props(self):
@@ -1476,7 +1483,7 @@ class NikonNineProperties:
             xmp_property: Nikon XMP property containing data.
 
         Raises:
-            NikAdjustmentError: Generic error, the :attr:`NikFilterError.message`
+            NikAdjustmentError: Generic error, the :attr:`NikAdjustmentError.message`
                 details the error.
         """
         tree = ElementTree.fromstring(xmp_property.value)
@@ -1580,8 +1587,7 @@ class NikonSideCar(object):
 
 
     def parse(self):
-        """
-        Parse the :term:`XMP` tree and populate metadata and filters dictionaries
+        """Parse the :term:`XMP Packet`.
 
         Raises:
             NikonError: Generic error, the :attr:`NikonError.message` details
@@ -1678,7 +1684,6 @@ class NikonSideCar(object):
         cases, these properties in the ``nine`` set are always set to 0
         (probably deprecated, but there is no public information). So
         the priority is the following order : XMP, Nine.
-
         """
         # Add application identifiers, to avoid collision
         self.metadata["appname"] = self._sdc.props["appname"]
@@ -1765,18 +1770,21 @@ class NikonSideCar(object):
         """
         return "dc:subject" in self.metadata
 
-    def is_filtered(self) -> bool:
+    def is_adjusted(self) -> bool:
         """Return `True` if the image have image adjustment.
 
         The method indicates if at least one image adjustment (filter) is
         active.
+
+        Todo:
+            Reduire le spectre des filtres (lié aux traitement d'image)
         """
-        is_filtered = False
+        is_adjusted = False
         for k, v in self.processing.items():
             if v.active:
-                is_filtered = True
+                is_adjusted = True
                 break
-        return is_filtered
+        return is_adjusted
 
     def is_cropped(self) -> bool:
         """Return `True` if the image is cropped.

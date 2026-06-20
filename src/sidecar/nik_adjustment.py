@@ -20,11 +20,13 @@ are as follows:
 .. hlist::
     :columns: 2
 
-    * :class:`NikBaseFilter`- Base class for Nikon Filter class
+    * :class:`NikBaseAdjustment`- Base class for Nikon image's adjustment class
 
 ``nk_adjustments`` constants
 ----------------------------
-.. todo:: review the list after the completion of implement
+
+Todo:
+    Review the list after the completion of implement
 
 .. hlist::
     :columns: 2
@@ -33,7 +35,9 @@ are as follows:
 
 Using ``nk_adjustments``
 ------------------------
-.. todo:: describe how using the module
+
+Todo:
+    Describe how using the module
 
 ``nk_adjustments`` reference manual
 -----------------------------------
@@ -97,7 +101,7 @@ _logger.addHandler(logging.NullHandler())
 
 
 class NikAdjustmentError(Exception):
-    """Base class for filter parser exceptions.
+    """Base class for image's adjustment parser exceptions.
 
     Args:
         message: (optional) Human readable string describing the
@@ -115,19 +119,20 @@ class NikAdjustmentError(Exception):
 
 
 class NikBaseAdjustment:
-    """Base class for Nikon Filter class
+    """Base class for Nikon image's adjustment class
     
     Args:
         element: XML element containing the metadata.
 
     Raises:
-        NikFilterError: Generic error, the :attr:`NikFilterError.message`
+        NikAdjustmentError: Generic error, the :attr:`NikAdjustmentError.message`
             details the error.
 
     Attributes:
-        active : `True` indicate that the filter will be applied on the image
-            associated to the sidecar files when opening in NX Studio.
-        params: filter's parameters as a dictionnary.
+        active : `True` indicate that the image's adjustments will be
+            applied on the image associated to the sidecar files when
+            opening in NX Studio.
+        params: image's adjustment parameters as a dictionnary.
     """
     active: bool
     params: dict
@@ -160,13 +165,14 @@ class NikBaseAdjustment:
                                          f"({child.text})")
 
     def _set_params(self, element: ElementTree.Element):
-        """Set filter parameters.
+        """Set image's adjustment parameters.
 
-        This method parses an XML element as a filter parameters block
-        and store it in the parameters' dictionary :attr:`params`
-        according to its explicit or implicit type. As filter
-        parameter are not documented (Nikon proprietary format), the
-        method is permissive and not checks the data set.
+        This method parses an XML element as a image's adjustment
+        parameters block and store it in the parameters' dictionary
+        :attr:`params` according to its explicit or implicit type. As
+        image's adjustment parameterq are not documented (Nikon
+        proprietary format), the method is permissive and not checks the
+        data set.
 
         The article named ":ref:`Inside Nikon Sidecar file`" details
         the data structure and tags used by Nikon.
@@ -178,7 +184,7 @@ class NikBaseAdjustment:
             element: Element containing the parameter block.
 
         Raises:
-            NikFilterError: Generic error, the :attr:`NikFilterError.message`
+            NikAdjustmentError: Generic error, the :attr:`NikAdjustmentError.message`
                 details the error.
         """
         for child in element:
@@ -270,7 +276,7 @@ class NikBaseAdjustment:
             element: Element containing the parameter.
 
         Raises:
-            NikFilterError: Generic error, the :attr:`NikFilterError.message`
+            NikAdjustmentError: Generic error, the :attr:`NikAdjustmentError.message`
                 details the error.
         """
         year = 1900
@@ -325,7 +331,7 @@ class NikBaseAdjustment:
             element: Element containing the parameter.
 
         Raises:
-            NikFilterError: Generic error, the :attr:`NikFilterError.message`
+            NikAdjustmentError: Generic error, the :attr:`NikAdjustmentError.message`
                 details the error.
         """
         data = None
@@ -367,7 +373,7 @@ class NikBaseAdjustment:
             element: Element containing the parameter.
 
         Raises:
-            NikFilterError: Generic error, the :attr:`NikFilterError.message`
+            NikAdjustmentError: Generic error, the :attr:`NikAdjustmentError.message`
                 details the error.
         """
         map = None
@@ -405,7 +411,7 @@ class NikBaseAdjustment:
             element: Element containing the parameter.
 
         Raises:
-            NikFilterError: Generic error, the :attr:`NikFilterError.message`
+            NikAdjustmentError: Generic error, the :attr:`NikAdjustmentError.message`
                 details the error.
         """
         points = None
@@ -430,23 +436,23 @@ class NikBaseAdjustment:
     def __repr__(self):
         """Return a printable string representation.
 
-        The representation is the name of the filter (class name) and if
-        the filter is active or not.
+        The representation is the name of the image's adjustment (class
+        name) and if the adjustment is active or not.
         """
         return f"{self.__class__.__name__} object: active={self.active}"
 
     def is_dt_ready(self):
-        """Return if this filter may be used in Darktable.
+        """Return if this image's adjustment may be used in Darktable.
 
         The ....
 
         Returns:
-            `True` if this filter may be used in Darktable.
+            `True` if this image's adjustment may be used in Darktable.
         """
         raise NotImplementedError
 
-    def get_dt_filter(self):
-        """Return the filter parameters for Darktable.
+    def get_dt_module(self):
+        """Return the image's adjustment parameters for Darktable.
 
         The ....
 
@@ -573,18 +579,18 @@ class NikPixelShiftNoiseReduction(NikBaseAdjustment):
 class NikDLightingHQ(NikBaseAdjustment):
     pass
 
-class NineEdits():
+class NineEdits:
     """Nikon NineEdits (aka adjustments) container
 
      Args:
          element: XML element containing the ``NineEdits`` property.
 
      Raises:
-         NikAdjustmentError: Generic error, the :attr:`NikFilterError.message`
+         NikAdjustmentError: Generic error, the :attr:`NikAdjustmentError.message`
              details the error.
 
      Attributes:
-         active : `True` indicate that the filter will be applied on the image
+         active: `True` indicate that the filter will be applied on the image
              associated to the sidecar files when opening in NX Studio.
          params: filter's parameters as a dictionnary.
      """
@@ -600,7 +606,7 @@ class NineEdits():
                             k = child.attrib["id"]
                             self.adjustments[k] = _MAP_ADJUSTMENT_ID[k](child)
                         else:
-                            raise NikAdjustmentError(f"Unknown filter: {k}")
+                            raise NikAdjustmentError(f"Unknown adjustment: {k}")
 
                     case _:
                         raise NikAdjustmentError(f"Unsupported tag value "

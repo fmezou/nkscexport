@@ -39,7 +39,7 @@ Nikon sidecar file contains the following sets:
 * **nine** (``http://ns.nikon.com/nine/1.0/``): contains the image adjustments
   history in XML format with escaped characters (&lt;..). Theses image
   processing modules are proprietary and cannot be transferred in an other
-  software except for format filter as cropping. The `Nikon adjustments`
+  software except for format adjustment as cropping. The `Nikon adjustments`
   section details the supported Nikon settings and indicates whether their
   parameters can be converted into the equivalent module of Darktable.
 
