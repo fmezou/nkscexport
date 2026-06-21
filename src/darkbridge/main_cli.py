@@ -3,11 +3,14 @@
 Synopsis
 --------
 
-usage: :samp:`darkbridge [-h] [-l LOG_LEVEL] [-v] {convert,list} ...`
+usage: :samp:`darkbridge [-h] [-l LOG_LEVEL] [-v] {convert,list,search} ...`
 
 usage: :samp:`darkbridge list [-h] [-a] [-d] [-r] [filename ...]`
 
 usage: :samp:`darkbridge convert [-h] [-f] [-n] [-r] [filename ...]`
+
+usage: :samp:`darkbridge search [-h] (-p PROCESSING | -m META) [-c] [-r]
+[filename ...]`
 
 Description
 -----------
@@ -41,6 +44,11 @@ The options are as follows:
 
     List metadata from Nikon sidecar files. Existance of darktable
     sidecar file is ignored when this option is used.
+
+.. option:: search
+
+    Search an image adjustment (processing) or a metadata into Nikon
+    sidecar files.
 
 .. option:: -h, --help
 
@@ -79,6 +87,23 @@ The options are as follows:
 .. option:: -n, --dry-run
 
     Run in preview mode without any sidecar writing.
+
+
+.. option:: -p, --processing PROCESSING
+
+    Name of the image adjustment (processing) to search. The search
+    return the processing's name where substring 'PROCESSING' is found
+    and if it is an active processing.
+
+.. option:: -m, --meta META
+
+    Name of the metadata's field to search. The search return the name
+    of the field where substring 'META' is found. The search focuses on
+    the field name and not the content of the field.
+
+.. option:: -c, --count
+
+    Only a count of selected images is displayed.
 
 .. option:: -r, --recursive
 
@@ -133,19 +158,19 @@ from pathlib import Path
 import colorama
 
 from darkbridge.core import DarkBridge
-from darkbridge.core import BaseDisplay
+from darkbridge.core import DefaultDisplay
 from sidecar.nikon import NikonSideCar
 from darkbridge.version import version
 
 
-class CLIDisplay(BaseDisplay):
+class CLIDisplay(DefaultDisplay):
     """Concrete class for managing display of image's metadata.
 
     This concrete class implements the default behavior for displaying
-    image's metadata. The display is simply based on standard output.
+    image's metadata. The display is simply based on standard output
+    with colored text.
 
     Attributes:
-        verb: Name of the launched operation.
         total: Number of image files in the processing pipe.
         path: Path of the current image file.
         nksc: Object containing the metadata and processing data of
@@ -154,114 +179,126 @@ class CLIDisplay(BaseDisplay):
     Note:
         The attributes below are specific to this concrete class. For
         the attributes of the base class, see :class:`BaseDisplay`
-
-    Reference
-    ---------
     """
-    total: int
-    def __init__(self, filenames: list[str], recursive: bool,
-                 dry_run: bool, force: bool,
-                 all: bool, detailed: bool):
-        super().__init__(filenames, recursive,
-                         dry_run, force, all, detailed)
-        self.total = 0
-        self.path = None
-        self.nksc = None
+    def __init__(self, filenames: list[str], recursive: bool):
+        super().__init__(filenames, recursive)
 
-    def show_start(self, verb: str, total: int):
-        """Display starting information at the operation launching.
-
-        Args:
-            verb: Name of the launched operation.
-            total: Number of image files in the processing pipe.
-        """
-        self.total = total
-        self.verb = verb
-        match self.verb:
-            case 'list':
-                modes = ["(mode:"]
-                if self.recursive:
-                    modes.append("recursive")
-                if self.all:
-                    modes.append("all")
-                if self.detailed:
-                    modes.append("detailed")
-                if len(modes) > 1:
-                    modes.append(")")
-                    mode = " ".join(modes)
-                else:
-                    mode = ""
-                print(f"List metadata from '{self.filenames}' {mode}"
-                      f" - Number of files: {total}")
-                _logger.debug(f"List metadata from '{self.filenames=}' {mode}"
-                              f" - Number of files: {total}")
-
-            case 'convert':
-                modes = ["(mode:"]
-                if self.recursive:
-                    modes.append("recursive")
-                if self.force:
-                    modes.append("forced")
-                if self.dry_run:
-                    modes.append("dry_run")
-                if len(modes) > 1:
-                    modes.append(")")
-                    mode = " ".join(modes)
-                else:
-                    mode = ""
-                print(f"Convert sidecar files from '{self.filenames}' {mode}"
-                      f" - Number of files: {total}")
-                _logger.debug(f"Convert sidecar files from '{self.filenames=}'"
-                              f" {modes} - Number of files: {total}")
-
-    def show_complete(self, index: int):
-        """Display ending information at the operation completion.
-
-        Args:
-            index: Index of the last image files. The index cannot be
-                greater than :arg:`total`.
-        """
-        match self.verb:
-            case 'list':
-                print(f"List metadata from '{self.filenames}' completed"
-                      f" - Number of files processed: {index}")
-                _logger.debug(f"List metadata from '{self.filenames=}' completed"
-                              f" - Number of files processed: {index}")
-
-            case 'convert':
-                print(f"Convert sidecar files from '{self.filenames}' completed"
-                      f" - Number of files processed: {index}")
-                _logger.debug(f"Convert sidecar files from '{self.filenames=}' completed"
-                              f" - Number of files processed: {index}")
-
-    def show(self, index: int, path: Path, nksc: NikonSideCar):
-        """Display sidecar contents during an operation.
+    def show_meta(self, index: int, path: Path, nksc: NikonSideCar, all: bool):
+        """Display sidecar contents.
 
         Args:
             index: Index of the current image files. The index cannot be
-                greater than :arg:`total`.
+                greater than ``total`` parameter.
+            path: Path of the current image file.
+            nksc: Object containing the metadata and processing data of
+                the current image.
+            all: `True` includes all image's adjustments (see
+                :meth:`DarkBridge.list`).
+        """
+        msgs = []
+        print(colorama.Fore.GREEN
+              + colorama.Style.BRIGHT
+              + f"[{index}/{self.total}] Image {path.name:30}"
+              + colorama.Style.RESET_ALL)
+
+        if nksc.metadata is not None:
+            msgs.append(colorama.Style.BRIGHT
+                        + colorama.Fore.LIGHTBLUE_EX
+                        + f"    Metadata"
+                        + colorama.Style.RESET_ALL)
+            for k, v in nksc.metadata.items():
+                msgs.append(colorama.Style.BRIGHT
+                            + colorama.Fore.LIGHTBLUE_EX
+                            + f"      * {k}"
+                            + colorama.Fore.BLACK
+                            + f": {v}"
+                            + colorama.Style.RESET_ALL)
+        else:
+            msgs.append(colorama.Style.BRIGHT
+                        + colorama.Fore.LIGHTRED_EX
+                        + "    No Metadata present"
+                        + colorama.Style.RESET_ALL)
+
+        if nksc.processing is not None:
+            msgs.append(colorama.Style.BRIGHT
+                        + colorama.Fore.LIGHTMAGENTA_EX
+                        + f"    Adjustment"
+                        + colorama.Style.RESET_ALL)
+            for k, v in nksc.processing.items():
+                if all:
+                    if v.active:
+                        msgs.append(colorama.Style.BRIGHT
+                                    + f"      * {k}"
+                                    + colorama.Style.RESET_ALL)
+                    else:
+                        msgs.append(colorama.Style.DIM
+                                    + f"      * {k}"
+                                    + colorama.Style.RESET_ALL)
+                else:
+                    if v.active:
+                        msgs.append(colorama.Style.BRIGHT
+                                    + f"      * {k}"
+                                    + colorama.Style.RESET_ALL)
+
+        print("\n".join(msgs))
+
+    def show_meta_overview(self, index: int, path: Path, nksc: NikonSideCar):
+        """Display an overview of sidecar contents.
+
+        Args:
+            index: Index of the current image files. The index cannot be
+                greater than ``total`` parameter.
             path: Path of the current image file.
             nksc: Object containing the metadata and processing data of
                 the current image.
         """
-        self.path = path
-        self.nksc = nksc
-        if self.detailed:
-            print(colorama.Fore.GREEN
-                  +colorama.Style.BRIGHT
-                  +f"[{index}/{self.total}] Image {path.name:30}"
-                  +colorama.Style.RESET_ALL)
-            print(f"{self._get_metadata(self.all)}")
+        msgs = []
+        rate = nksc.get_rating()
+        if rate == -1:
+            msgs.append(" [XXXXX]")
         else:
-            print(colorama.Fore.GREEN
-                  +colorama.Style.BRIGHT
-                  +f"[{index}/{self.total}] Image {path.name:30}"
-                  +colorama.Style.RESET_ALL
-                  +": "
-                  +colorama.Fore.MAGENTA
-                  +colorama.Style.BRIGHT
-                  +f"{self._get_summary()}"
-                  +colorama.Style.RESET_ALL)
+            msgs.append(f" [{'*'*rate:5}]")
+
+        label = nksc.get_label()
+        if label != -1:
+            msgs.append(f" [{label}]")
+
+        if nksc.is_geotagged():
+            msgs.append(" [G]")
+
+        if nksc.is_tagged():
+            msgs.append(" [T]")
+
+        if nksc.is_protected():
+            msgs.append(" [Lck]")
+
+        if nksc.is_adjusted():
+            msgs.append(" [F]")
+
+        if nksc.is_exposure_comp():
+            msgs.append(".[+/-]")
+
+        if nksc.is_bw():
+            msgs.append(".[BW]")
+
+        if nksc.is_cropped():
+            msgs.append(".[Crp]")
+
+        if nksc.is_perpective_adj():
+            msgs.append(".[H/V]")
+
+        if nksc.is_denoised():
+            msgs.append(".[NR]")
+
+        print(colorama.Fore.GREEN
+              + colorama.Style.BRIGHT
+              + f"[{index}/{self.total}] Image {path.name:30}"
+              + colorama.Style.RESET_ALL
+              + ": "
+              + colorama.Fore.MAGENTA
+              + colorama.Style.BRIGHT
+              + f"{"".join(msgs)}"
+              + colorama.Style.RESET_ALL)
 
     def ignore(self, path: Path):
         """Indicate that an image's file is ignored.
@@ -278,104 +315,6 @@ class CLIDisplay(BaseDisplay):
               + f"image file or no sidecar file exists"
               + colorama.Style.RESET_ALL,
               file=sys.stderr)
-
-    def _get_summary(self) -> str:
-        """Return a summary of image metadata
-
-        Returns:
-            A string with the metadata summary.
-        """
-        msgs = []
-        rate = self.nksc.get_rating()
-        if rate == -1:
-            msgs.append(" [XXXXX]")
-        else:
-            msgs.append(f" [{'*'*rate:5}]")
-
-        label = self.nksc.get_label()
-        if label != -1:
-            msgs.append(f" [{label}]")
-
-        if self.nksc.is_geotagged():
-            msgs.append(" [G]")
-
-        if self.nksc.is_tagged():
-            msgs.append(" [T]")
-
-        if self.nksc.is_protected():
-            msgs.append(" [Lck]")
-
-        if self.nksc.is_adjusted():
-            msgs.append(" [F]")
-
-        if self.nksc.is_exposure_comp():
-            msgs.append(".[+/-]")
-
-        if self.nksc.is_bw():
-            msgs.append(".[BW]")
-
-        if self.nksc.is_cropped():
-            msgs.append(".[Crp]")
-
-        if self.nksc.is_perpective_adj():
-            msgs.append(".[H/V]")
-
-        if self.nksc.is_denoised():
-            msgs.append(".[NR]")
-
-        return "".join(msgs)
-
-    def _get_metadata(self, all: bool) -> str:
-        """Return a summary of image metadata
-
-        Args:
-            all: `True` includes all image's adjustments, `False` enumerates only
-                active image's adjustments.
-
-        Returns:
-             A string with the metadata.
-        """
-        msgs = []
-        if self.nksc.metadata is not None:
-            msgs.append(colorama.Style.BRIGHT
-                        + colorama.Fore.LIGHTBLUE_EX
-                        + f"    Metadata"
-                        + colorama.Style.RESET_ALL)
-            for k, v in self.nksc.metadata.items():
-                msgs.append(colorama.Style.BRIGHT
-                            + colorama.Fore.LIGHTBLUE_EX
-                            + f"      * {k}"
-                            + colorama.Fore.BLACK
-                            + f": {v}"
-                            + colorama.Style.RESET_ALL)
-        else:
-            msgs.append(colorama.Style.BRIGHT
-                        + colorama.Fore.LIGHTRED_EX
-                        + "    No Metadata present"
-                        + colorama.Style.RESET_ALL)
-
-        if self.nksc.processing is not None:
-            msgs.append(colorama.Style.BRIGHT
-                        + colorama.Fore.LIGHTMAGENTA_EX
-                        + f"    Adjustment"
-                        + colorama.Style.RESET_ALL)
-            for k, v in self.nksc.processing.items():
-                if all:
-                    if v.active:
-                        msgs.append(colorama.Style.BRIGHT
-                                    + f"      * {k}"
-                                    + colorama.Style.RESET_ALL)
-                    else:
-                        msgs.append(colorama.Style.DIM
-                                    + f"      * {k}"
-                                    + colorama.Style.RESET_ALL)
-                else:
-                    if v.active:
-                        msgs.append(colorama.Style.BRIGHT
-                                    + f"      * {k}"
-                                    + colorama.Style.RESET_ALL)
-
-        return "\n".join(msgs)
 
 
 def main():
@@ -411,13 +350,13 @@ def main():
     subparsers = parser.add_subparsers(
         required = True,
         dest = 'verb',
-        help="Common commands for converting or listing metadata. "
+        help="Common commands for converting, listing or searching metadata. "
              "'%(prog)s {command} -h' to get help for a specific command."
     )
     # Convert command
     convert_parser = subparsers.add_parser(
         "convert",
-        help='Converts Nikon sidecar files into Darktable sidecar files.'
+        help="Converts Nikon sidecar files into Darktable sidecar files."
     )
     convert_parser.add_argument(
         "-f", "--force",
@@ -453,38 +392,86 @@ def main():
                "used."
     )
     # List command
-    list_parser = subparsers.add_parser(
+    list = subparsers.add_parser(
         "list",
-        help="List metadata from Nikon sidecar files. Existance of darktable"
+        help="List metadata from Nikon sidecar files. Existance of darktable "
              "sidecar file is ignored when this option is used."
     )
-    list_parser.add_argument(
+    list.add_argument(
         "-a", "--all",
         default = False,
         action = "store_true",
         help = "Include all the metadata, not only the active one or "
                "not empty."
     )
-    list_parser.add_argument(
+    list.add_argument(
         "-d", "--detailed",
         default = False,
         action = "store_true",
-        help = "List active image's adjustments (aka. image processing)"
-               "specified in sidecar files. This option list only the active"
-               "image's adjustments, unless if ``--all`` option is specified."
-               "Transferable image's adjustments are colored in green. If this "
-               "option is not present, A '[F]' is added in metadata to indicate "
-               "that at least an image's adjustment is active. In this case, "
-               "``--all`` option is ignored."
+        help = "List active image's adjustments (aka. image processing) "
+               "specified in sidecar files. This option list only the active "
+               "image's adjustments, unless if ``--all`` option is specified. "
+               "Transferable image's adjustments are colored in green. If "
+               "this option is not present, A '[F]' is added in metadata to "
+               "indicate that at least an image's adjustment is active. In "
+               "this case, '--all' option is ignored."
     )
-    list_parser.add_argument(
+    list.add_argument(
         "-r", "--recursive",
         default = False,
         action = "store_true",
         help = "Make a recursive search of images files in subfolders."
     )
     # Positional arguments
-    list_parser.add_argument(
+    list.add_argument(
+        "filename",
+        default = "./*",
+        nargs = "*",
+        type = str, #pathlib.Path,
+        help = "Files or directories to parse. For each item that name a "
+               "supported image file, darkbridge parses the associated Nikon "
+               "sidecar file and copy metadata in the darktable sidecar file. "
+               "For each item that name a directory, darkbridge list supported "
+               "images files contained in the directory, and parses each files. "
+               "If no file are given, the content of the current directory is "
+               "used."
+    )
+    # search command - the search focuses on metadata or processing,
+    # but not both
+    search = subparsers.add_parser(
+        "search",
+        help="Search an image adjustment (processing) or a metadata into Nikon "
+             "sidecar files."
+    )
+    group = search.add_mutually_exclusive_group(required=True)
+    group.add_argument(
+        "-p", "--processing",
+        action = "store",
+        help = "Name of the image adjustment (processing) to search. The "
+               "search return the processing's name where substring "
+               "'PROCESSING' is found and if it is an active processing."
+    )
+    group.add_argument(
+        "-m", "--meta",
+        action = "store",
+        help = "Name of the metadata's field to search. The search return the "
+               "name of the field where substring 'META' is found. The search "
+               "focuses on the field name and not the content of the field."
+    )
+    search.add_argument(
+        "-c", "--count",
+        default = False,
+        action = "store_true",
+        help = "Only a count of selected images is displayed."
+    )
+    search.add_argument(
+        "-r", "--recursive",
+        default = False,
+        action = "store_true",
+        help = "Make a recursive search of images files in subfolders."
+    )
+    # Positional arguments
+    search.add_argument(
         "filename",
         default = "./*",
         nargs = "*",
@@ -544,26 +531,23 @@ def main():
 
     _logger.info(
         f"Starting {parser.prog} v{version} on {datetime.datetime.now():%c}")
+    display = CLIDisplay(args.filename, args.recursive)
+    bridge = DarkBridge(args.filename, args.recursive, display)
     match args.verb:
         case 'list':
-            display = CLIDisplay(args.filename, args.recursive,
-                                 False, False,
-                                 args.all, args.detailed)
-            bridge = DarkBridge(args.filename, args.recursive,
-                                False, False,
-                                args.all, args.detailed,
-                                display)
-            result = bridge.list()
+            result = bridge.list(args.all, args.detailed)
 
         case 'convert':
-            display = CLIDisplay(args.filename, args.recursive,
-                                 args.dry_run, args.force,
-                                 False, False)
-            bridge = DarkBridge(args.filename, args.recursive,
-                                args.dry_run, args.force,
-                                False, False,
-                                display)
-            result = bridge.convert()
+            result = bridge.convert(args.dry_run, args.force)
+
+        case 'search':
+            raise NotImplementedError(f"Be patient: "
+                                      f"'{args.verb}' work in progress")
+
+        case _:
+            # impossible case
+            raise NotImplementedError (f"Impossible case: "
+                                       f"unknown verb '{args.verb}'")
 
     _logger.info(
         f"{parser.prog} v{version} completed on {datetime.datetime.now():%c}")
