@@ -33,6 +33,80 @@ Using ``core``
 Todo:
     Describe how using the module
 
+
+verbosity level
+^^^^^^^^^^^^^^^
+
+The verbosity level impacts the leval of detail of each output. Verbosity
+is a integer number between 0 and 3. Any other values are ignored and
+considered as 0.
+
+:meth:`DarkBridge.list` -- list metadata and image adjustement
+
+.. table:: verbosity level for list output
+
+    +-------+-----------------------------------------------------------+
+    | Level | output content (based on :class:DefaultDisplay`) [#co]_   |
+    +=======+===========================================================+
+    | 0     | write image name and a set of indicators.                 |
+    |       | Example:                                                  |
+    +-------+-----------------------------------------------------------+
+    | 1     | write relevant metadata (i.e. non-empty) and active image |
+    |       | adjustments.                                              |
+    +-------+-----------------------------------------------------------+
+    | 2     | write metadata's content and image adjustment parameters  |
+    +-------+-----------------------------------------------------------+
+    | 3     | write all metadata and image's adjustment whatever its    |
+    |       | status.                                                   |
+    +-------+-----------------------------------------------------------+
+
+:meth:`DarkBridge.convert` -- list convert Nikon sidecar files
+
+.. table:: verbosity level for convert output
+
+    +-------+-----------------------------------------------------------+
+    | Level | output content (based on :class:DefaultDisplay`) [#co]_   |
+    +=======+===========================================================+
+    | 0     | write image name processed.                               |
+    |       | Example:                                                  |
+    +-------+-----------------------------------------------------------+
+    | 1     | write image name, metadata and active image adjustement   |
+    |       | processed.                                                |
+    +-------+-----------------------------------------------------------+
+    | 2     | write image name, metadata content and active image       |
+    |       | adjustement's parameters processed.                       |
+    +-------+-----------------------------------------------------------+
+    | 3     | write image name, metadata and image's adjustment         |
+    |       | parameters processed whatever its status                  |
+    +-------+-----------------------------------------------------------+
+
+
+:meth:`DarkBridge.search_meta`, :meth:`DarkBridge.search_processing`
+-- search a metadata or an image adjustement
+
+.. table:: verbosity level for search output
+
+    +-------+-----------------------------------------------------------+
+    | Level | output content (based on :class:DefaultDisplay`) [#co]_   |
+    +=======+===========================================================+
+    | 0     | write the number of image files matching search criterias |
+    |       | Example:                                                  |
+    +-------+-----------------------------------------------------------+
+    | 1     | write image name, metadata and/or active image            |
+    |       | adjustments matching search criterias.                    |
+    +-------+-----------------------------------------------------------+
+    | 2     | write image name, metadata's content and image adjustment |
+    |       | parameters  matching search criterias.                    |
+    +-------+-----------------------------------------------------------+
+    | 3     | ignored                                                   |
+    +-------+-----------------------------------------------------------+
+
+Notes:
+    .. [#co] The ``display`` parameter of the :class:`DarkBridge` allow to
+        customize output (see :class:`BaseDisplay` and :class:`DefaultDisplay`
+        for more details.
+
+
 Reference manual
 ----------------
 """
@@ -78,55 +152,26 @@ class BaseDisplay(object):
     * :meth:`show_meta_findings` -- Display the result of a search (unitary)
     * :meth:`complete_search` -- Display the searching completion.
 
-    Args:
-        filenames: List of images filenames (see :class:`DarkBridge`)
-        recursive: `True` make a recursive search (see :class:`DarkBridge`)
-
-    Attributes:
-        filenames: see ``filenames`` parameter.
-        recursive: see ``recursive`` parameter.
-        dry_run: see ``dry_run`` parameter.
-        force: see ``force`` parameter.
-        detailed: see ``detailed`` parameter.
-        all: see ``all`` parameter.
-        pattern: see ``pattern`` parameter.
-        count: see ``count`` parameter.
-
-    Raise:
-        ValueError: Inappropriate value, the :attr:`ValueError.message`
-            details the error.
-
     ``Display`` Reference
     ---------------------
     """
-    #: Supported verbs defining the ongoing operation.
-    verb: str
-    filenames: list[str]
-    recursive: bool
-    dry_run: bool
-    force: bool
-    detailed: bool
-    all: bool
-    pattern: str
-    count: bool
-    def __init__(self, filenames: list[str], recursive: bool):
-        # Store paramaters as public attributes to simplify the code reading
-        self.filenames = filenames
-        self.recursive = recursive
-        self.dry_run = False
-        self.force = False
-        self.detailed = False
-        self.all = False
-        self.pattern = ""
-        self.count = False
+    def __init__(self):
+        pass
 
-    def start_convert(self, dry_run: bool, force: bool, total: int):
+    def start_convert(self, filenames: list[str], recursive: bool,
+                      dry_run: bool, force: bool, verbosity: int, total: int):
         """Display the conversion launching.
 
         Args:
+            filenames: List of images _filenames (see :class:`DarkBridge`)
+            recursive: `True` make a _recursive search (see :class:`DarkBridge`)
             dry_run: `True` runs in preview mode (see :meth:`DarkBridge.convert`)
             force: `True` overwrites existing sidecar files (see
                 :meth:`DarkBridge.convert`).
+            verbosity: level of verbosity for the command output. The
+                level should be 0 to 3 (see
+                :ref:`dev_guide/darkbridge/core:verbosity level` for more
+                details)
             total: Number of image files in the processing pipe.
         """
         raise NotImplementedError
@@ -136,7 +181,7 @@ class BaseDisplay(object):
 
         Args:
             index: Index of the current image files. The index cannot be
-                greater than ``total`` parameter.
+                greater than ``_total`` parameter.
             path: Path of the current image file.
             nksc: Object containing the metadata and processing data of
                 the current image.
@@ -148,42 +193,31 @@ class BaseDisplay(object):
 
         Args:
             index: Index of the last image files. The index cannot be
-                greater than ``total`` parameter.
+                greater than ``_total`` parameter.
         """
         raise NotImplementedError
 
-    def start_list(self, detailed: bool, all: bool, total: int):
+    def start_list(self, filenames: list[str], recursive: bool,
+                   verbosity:int, total:int):
         """Display the listing launching.
 
         Args:
-            detailed: `True` includes active image's adjustments specified
-                in sidecar files. `False` displays a summary of metadata.
-            all: `True` includes all image's adjustments, `False`
-                enumerates only active image's adjustments.
+            filenames: List of images _filenames (see :class:`DarkBridge`)
+            recursive: `True` make a _recursive search (see :class:`DarkBridge`)
+            verbosity: level of verbosity for the command output. The
+                level should be 0 to 3 (see
+                :ref:`dev_guide/darkbridge/core:verbosity level` for more
+                details)
             total: Number of image files in the processing pipe.
         """
         raise NotImplementedError
 
-    def show_meta(self, index: int, path: Path, nksc: NikonSideCar, all: bool):
+    def show_meta(self, index: int, path: Path, nksc: NikonSideCar):
         """Display sidecar contents.
 
         Args:
             index: Index of the current image files. The index cannot be
-                greater than ``total`` parameter.
-            path: Path of the current image file.
-            nksc: Object containing the metadata and processing data of
-                the current image.
-            all: `True` includes all image's adjustments (see
-                :meth:`DarkBridge.list`).
-        """
-        raise NotImplementedError
-
-    def show_meta_overview(self, index: int, path: Path, nksc: NikonSideCar):
-        """Display an overview of sidecar contents.
-
-        Args:
-            index: Index of the current image files. The index cannot be
-                greater than ``total`` parameter.
+                greater than ``_total`` parameter.
             path: Path of the current image file.
             nksc: Object containing the metadata and processing data of
                 the current image.
@@ -195,16 +229,22 @@ class BaseDisplay(object):
 
         Args:
             index: Index of the last image files. The index cannot be
-                greater than ``total`` parameter.
+                greater than ``_total`` parameter.
         """
         raise NotImplementedError
 
-    def start_search(self, pattern: str, count: bool, total: int):
+    def start_search(self, filenames: list[str], recursive: bool,
+                     pattern: str, verbosity:int, total: int):
         """Display the searching launching.
 
         Args:
+            filenames: List of images _filenames (see :class:`DarkBridge`)
+            recursive: `True` make a _recursive search (see :class:`DarkBridge`)
             pattern: Substring to find in metadata field names.
-            count: `True` displays only a count of selected images.
+            verbosity: level of verbosity for the command output. The
+                level should be 0 to 3 (see
+                :ref:`dev_guide/darkbridge/core:verbosity level` for more
+                details)
             total: Number of image files in the processing pipe.
         """
         raise NotImplementedError
@@ -212,12 +252,11 @@ class BaseDisplay(object):
     def show_findings(self, index: int, path: Path, nksc: NikonSideCar):
         """Display the result of a search (unitary)
 
-        This method is called when the finding should be displayed (`count`
-        parameters to `False`).
+        This method is called when the finding should be displayed.
 
         Args:
             index: Index of the current image files. The index cannot be
-                greater than ``total`` parameter.
+                greater than ``_total`` parameter.
             path: Path of the current image file.
             nksc: Object containing the metadata and processing data of
                 the current image.
@@ -229,9 +268,9 @@ class BaseDisplay(object):
 
         Args:
             index: Index of the last image files. The index cannot be
-                greater than ``total`` parameter.
+                greater than ``_total`` parameter.
             found: Number of image's files where metadata or processing name
-                match the pattern
+                match the _pattern
         """
         raise NotImplementedError
 
@@ -252,51 +291,59 @@ class DefaultDisplay(BaseDisplay):
 
     This concrete class implements the default behavior for displaying
     image's metadata. The display is simply based on standard output.
-
-    Attributes:
-        total: Number of image files in the processing pipe.
-        path: Path of the current image file.
-        nksc: Object containing the metadata and processing data of
-            the current image.
-
-    Note:
-        The attributes below are specific to this concrete class. For
-        the attributes of the base class, see :class:`BaseDisplay`
     """
-    total: int
-    def __init__(self, filenames: list[str], recursive: bool):
-        super().__init__(filenames, recursive)
-        self.total = 0
-        self.path = None
-        self.nksc = None
+    _total: int
+    def __init__(self):
+        super().__init__()
 
-    def start_convert(self, dry_run: bool, force: bool, total: int):
+        # Store paramaters as attributes
+        self._filenames = None
+        self._recursive = False
+        self._dry_run = False
+        self._force = False
+        self._pattern = ""
+        self._verbosity = 0
+        self._total = 0
+        self._path = None
+        self._nksc = None
+
+    def start_convert(self, filenames: list[str], recursive: bool,
+                      dry_run: bool, force: bool, verbosity: int, total: int):
         """Display the conversion launching.
 
         Args:
+            filenames: List of images _filenames (see :class:`DarkBridge`)
+            recursive: `True` make a _recursive search (see :class:`DarkBridge`)
             dry_run: `True` runs in preview mode (see :meth:`DarkBridge.convert`)
             force: `True` overwrites existing sidecar files (see
                 :meth:`DarkBridge.convert`).
+            verbosity: level of verbosity for the command output. The
+                level should be 0 to 3 (see
+                :ref:`dev_guide/darkbridge/core:verbosity level` for more
+                details)
             total: Number of image files in the processing pipe.
         """
-        self.total = total
-        self.dry_run = dry_run
-        self.force = force
+        self._filenames = filenames
+        self._recursive = recursive
+        self._total = total
+        self._dry_run = dry_run
+        self._force = force
+        self._verbosity = verbosity
         modes = ["(mode:"]
-        if self.recursive:
-            modes.append("recursive")
+        if self._recursive:
+            modes.append("_recursive")
         if force:
             modes.append("forced")
         if dry_run:
-            modes.append("dry_run")
+            modes.append("_dry_run")
         if len(modes) > 1:
             modes.append(")")
             mode = " ".join(modes)
         else:
             mode = ""
-        print(f"Convert sidecar files from '{self.filenames}' {mode}"
+        print(f"Convert sidecar files from '{self._filenames}' {mode}"
               f" - Number of files: {total}")
-        _logger.debug(f"Convert sidecar files from '{self.filenames=}'"
+        _logger.debug(f"Convert sidecar files from '{self._filenames=}'"
                       f" {mode} - Number of files: {total}")
 
     def show_convert(self, index: int, path: Path, nksc: NikonSideCar):
@@ -304,7 +351,7 @@ class DefaultDisplay(BaseDisplay):
 
         Args:
             index: Index of the current image files. The index cannot be
-                greater than ``total`` parameter.
+                greater than ``_total`` parameter.
             path: Path of the current image file.
             nksc: Object containing the metadata and processing data of
                 the current image.
@@ -316,85 +363,143 @@ class DefaultDisplay(BaseDisplay):
 
         Args:
             index: Index of the last image files. The index cannot be
-                greater than ``total`` parameter.
+                greater than ``_total`` parameter.
         """
-        print(f"Convert sidecar files from '{self.filenames}' completed"
+        print(f"Convert sidecar files from '{self._filenames}' completed"
               f" - Number of files processed: {index}")
-        _logger.debug(f"Convert sidecar files from '{self.filenames=}' completed"
+        _logger.debug(f"Convert sidecar files from '{self._filenames=}' completed"
                       f" - Number of files processed: {index}")
 
-    def start_list(self, detailed: bool, all: bool, total: int):
+    def start_list(self, filenames: list[str], recursive: bool,
+                   verbosity:int, total:int):
         """Display the listing launching.
 
         Args:
-            detailed: `True` includes active image's adjustments specified
-                in sidecar files. `False` displays a summary of metadata.
-            all: `True` includes all image's adjustments, `False`
-                enumerates only active image's adjustments.
+            filenames: List of images _filenames (see :class:`DarkBridge`)
+            recursive: `True` make a _recursive search (see :class:`DarkBridge`)
+            verbosity: level of verbosity for the command output. The
+                level should be 0 to 3 (see
+                :ref:`dev_guide/darkbridge/core:verbosity level` for more
+                details)
             total: Number of image files in the processing pipe.
         """
-        self.total = total
-        self.detailed = detailed
-        self.all = all
+        self._filenames = filenames
+        self._recursive = recursive
+        self._total = total
+        self._verbosity = verbosity
 
         modes = ["(mode:"]
-        if self.recursive:
+        if self._recursive:
             modes.append("recursive")
-        if all:
-            modes.append("all")
-        if detailed:
-            modes.append("detailed")
-        if len(modes) > 1:
-            modes.append(")")
-            mode = " ".join(modes)
-        else:
-            mode = ""
-        print(f"List metadata from '{self.filenames}' {mode}"
+        modes.append(f"verbosity: {verbosity})")
+        mode = " ".join(modes)
+
+        print(f"List metadata from '{self._filenames}' {mode}"
               f" - Number of files: {total}")
-        _logger.debug(f"List metadata from '{self.filenames=}' {mode}"
+        _logger.debug(f"List metadata from '{self._filenames=}' {mode}"
                       f" - Number of files: {total}")
 
-    def show_meta(self, index: int, path: Path, nksc: NikonSideCar, all: bool):
+    def show_meta(self, index: int, path: Path, nksc: NikonSideCar):
         """Display sidecar contents.
 
         Args:
             index: Index of the current image files. The index cannot be
-                greater than ``total`` parameter.
+                greater than ``_total`` parameter.
             path: Path of the current image file.
             nksc: Object containing the metadata and processing data of
                 the current image.
-            all: `True` includes all image's adjustments (see
-                :meth:`DarkBridge.list`).
         """
-        msgs = []
-        print(f"[{index}/{self.total}] Image {path.name:30}")
-        if nksc.metadata is not None:
-            msgs.append(f"    Metadata")
-            for k, v in nksc.metadata.items():
-                msgs.append(f"      * {k}: {v}")
-        else:
-            msgs.append("    No Metadata present")
+        match self._verbosity:
+            case 1:
+                self._show_meta_v1(index, path, nksc)
 
-        if nksc.processing is not None:
-            msgs.append(f"    Adjustment")
-            for k, v in nksc.processing.items():
-                if all:
-                    if v.active:
-                        msgs.append(f"      * [X] {k} ")
-                    else:
-                        msgs.append(f"      * [ ] {k} ")
-                else:
-                    if v.active:
-                        msgs.append(f"      * {k}")
+            case 2:
+                self._show_meta_v2(index, path, nksc)
 
-        print("\n".join(msgs))
+            case 3:
+                self._show_meta_v3(index, path, nksc)
 
-    def show_meta_overview(self, index: int, path: Path, nksc: NikonSideCar):
-        """Display an overview of sidecar contents.
+            case _:
+                self._show_meta_v0(index, path, nksc)
+
+    def complete_list(self, index: int):
+        """Display the listing completion.
+
+        Args:
+            index: Index of the last image files. The index cannot be
+                greater than ``_total`` parameter.
+        """
+        print(f"List metadata from '{self._filenames}' completed"
+              f" - Number of files processed: {index}")
+        _logger.debug(f"List metadata from '{self._filenames=}' completed"
+                      f" - Number of files processed: {index}")
+
+    def start_search(self, filenames: list[str], recursive: bool,
+                     pattern: str, verbosity:int, total: int):
+        """Display the searching launching.
+
+        Args:
+            filenames: List of images _filenames (see :class:`DarkBridge`)
+            recursive: `True` make a _recursive search (see :class:`DarkBridge`)
+            pattern: Substring to find in metadata field names.
+            verbosity: level of verbosity for the command output. The
+                level should be 0 to 3 (see
+                :ref:`dev_guide/darkbridge/core:verbosity level` for more
+                details)
+            total: Number of image files in the processing pipe.
+        """
+        self._filenames = filenames
+        self._recursive = recursive
+        self._pattern = pattern
+        self._verbosity = verbosity
+        self._total = total
+        raise NotImplementedError
+
+    def show_findings(self, index: int, path: Path, nksc: NikonSideCar):
+        """Display the result of a search (unitary)
+
+        This method is called when the finding should be displayed.
 
         Args:
             index: Index of the current image files. The index cannot be
-                greater than ``total`` parameter.
+                greater than ``_total`` parameter.
+            path: Path of the current image file.
+            nksc: Object containing the metadata and processing data of
+                the current image.
+        """
+        raise NotImplementedError
+
+    def complete_search(self, index: int, found: int):
+        """Display the searching completion.
+
+        Args:
+            index: Index of the last image files. The index cannot be
+                greater than ``_total`` parameter.
+            found: Number of image's files where metadata or processing name
+                match the _pattern
+        """
+        raise NotImplementedError
+
+
+    def ignore(self, path: Path):
+        """Indicate that an image's file is ignored.
+
+        An image's files is ignored when it is not a supported image file
+        or no sidecar file exists.
+
+        Args:
+            path: Path of the current image file.
+        """
+        print(f"File '{path.name}' ignored as it is not a supported "
+              f"image file or no sidecar file exists",
+              file=sys.stderr)
+
+    def _show_meta_v0(self, index: int, path: Path, nksc: NikonSideCar):
+        """Display an overview of sidecar contents (verbosity 0).
+
+        Args:
+            index: Index of the current image files. The index cannot be
+                greater than ``_total`` parameter.
             path: Path of the current image file.
             nksc: Object containing the metadata and processing data of
                 the current image.
@@ -437,80 +542,111 @@ class DefaultDisplay(BaseDisplay):
         if nksc.is_denoised():
             msgs.append(".[NR]")
 
-        print(f"[{index}/{self.total}] Image {path.name:30}: "
+        print(f"[{index}/{self._total}] Image {path.name:30}: "
               f"{"".join(msgs)}")
 
-    def complete_list(self, index: int):
-        """Display the listing completion.
-
-        Args:
-            index: Index of the last image files. The index cannot be
-                greater than ``total`` parameter.
-        """
-        print(f"List metadata from '{self.filenames}' completed"
-              f" - Number of files processed: {index}")
-        _logger.debug(f"List metadata from '{self.filenames=}' completed"
-                      f" - Number of files processed: {index}")
-
-    def start_search(self, pattern: str, count: bool, total: int):
-        """Display the searching launching.
-
-        Args:
-            pattern: Substring to find in metadata field names.
-            count: `True` displays only a count of selected images.
-            total: Number of image files in the processing pipe.
-        """
-        raise NotImplementedError
-
-    def show_findings(self, index: int, path: Path, nksc: NikonSideCar):
-        """Display the result of a search (unitary)
-
-        This method is called when the finding should be displayed (`count`
-        parameters to `False`).
+    def _show_meta_v1(self, index: int, path: Path, nksc: NikonSideCar):
+        """Display sidecar contents (verbosity 1).
 
         Args:
             index: Index of the current image files. The index cannot be
-                greater than ``total`` parameter.
+                greater than ``_total`` parameter.
             path: Path of the current image file.
             nksc: Object containing the metadata and processing data of
                 the current image.
         """
-        raise NotImplementedError
+        msgs = []
+        print(f"[{index}/{self._total}] Image {path.name:30}")
+        if nksc.metadata is not None:
+            msgs.append(f"    Metadata")
+            for k, v in nksc.metadata.items():
+                if len(v) != 0:
+                    msgs.append(f"      * {k}")
+        else:
+            msgs.append("    No Metadata present")
 
-    def complete_search(self, index: int, found: int):
-        """Display the searching completion.
+        if nksc.processing is not None:
+            msgs.append(f"    Adjustment")
+            for k, v in nksc.processing.items():
+                    if v.active:
+                        msgs.append(f"      * {k} ")
+
+        print("\n".join(msgs))
+
+    def _show_meta_v2(self, index: int, path: Path, nksc: NikonSideCar):
+        """Display sidecar contents (verbosity 2).
 
         Args:
-            index: Index of the last image files. The index cannot be
-                greater than ``total`` parameter.
-            found: Number of image's files where metadata or processing name
-                match the pattern
-        """
-        raise NotImplementedError
-
-
-    def ignore(self, path: Path):
-        """Indicate that an image's file is ignored.
-
-        An image's files is ignored when it is not a supported image file
-        or no sidecar file exists.
-
-        Args:
+            index: Index of the current image files. The index cannot be
+                greater than ``_total`` parameter.
             path: Path of the current image file.
+            nksc: Object containing the metadata and processing data of
+                the current image.
         """
-        print(f"File '{path.name}' ignored as it is not a supported "
-              f"image file or no sidecar file exists",
-              file=sys.stderr)
+        msgs = []
+        print(f"[{index}/{self._total}] Image {path.name:30}")
+        if nksc.metadata is not None:
+            msgs.append(f"    Metadata")
+            for k, v in nksc.metadata.items():
+                if len(v) != 0:
+                    msgs.append(f"      * {k}: {v}")
+        else:
+            msgs.append("    No Metadata present")
+
+        if nksc.processing is not None:
+            msgs.append(f"    Adjustment")
+            for k, v in nksc.processing.items():
+                if v.active:
+                    msgs.append(f"      * {k} ")
+                    for n, p in v.params.items():
+                        msgs.append(f"          * {n}: {p} ")
+
+        print("\n".join(msgs))
+
+    def _show_meta_v3(self, index: int, path: Path, nksc: NikonSideCar):
+        """Display sidecar contents (verbosity 3).
+
+        Args:
+            index: Index of the current image files. The index cannot be
+                greater than ``_total`` parameter.
+            path: Path of the current image file.
+            nksc: Object containing the metadata and processing data of
+                the current image.
+        """
+        msgs = []
+        print(f"[{index}/{self._total}] Image {path.name:30}")
+        if nksc.metadata is not None:
+            msgs.append(f"    Metadata")
+            for k, v in nksc.metadata.items():
+                msgs.append(f"      * {k}: {v}")
+        else:
+            msgs.append("    No Metadata present")
+
+        if nksc.processing is not None:
+            msgs.append(f"    Adjustment")
+            for k, v in nksc.processing.items():
+                if v.active:
+                    msgs.append(f"      * [X] {k} ")
+                else:
+                    msgs.append(f"      * [ ] {k} ")
+                for n, p in v.params.items():
+                    msgs.append(f"          * {n}: {p} ")
+
+        print("\n".join(msgs))
 
 
 class DarkBridge(object):
-    """Convert sidecar files from Nikon NX Studio (.nksc) in sidecar files
+    """Convert sidecar files from Nikon NX Studio (._nksc) in sidecar files
     compliant with Darktable.
 
     Args:
+        verbosity: level of verbosity for the command output. The
+            level should be 0 to 3 (see
+            :ref:`dev_guide/darkbridge/core:verbosity level` for more
+            details).
         pathname: List of pathname of images files list based on patterns
             as defined by `glob.glob` function.
-        recursive: `True` make a recursive search of images files in
+        recursive: `True` make a _recursive search of images files in
             subfolders.
 
 
@@ -530,18 +666,20 @@ class DarkBridge(object):
     Reference
     ---------
     """
+    _verbosity: int
     _pathname: list[str]
     _recursive: bool
     _paths: list[list[Path]]
     _nksc: None | NikonSideCar # current NKSC file
     _display: BaseDisplay
-    def __init__(self, pathname: list[str], recursive: bool,
+    def __init__(self, verbosity: int, pathname: list[str], recursive: bool,
                  display: BaseDisplay | None = None):
+        self._verbosity = verbosity
         self._pathname = pathname
         self._recursive = recursive
         self._paths = []
         self._nksc = None
-        self._display = DefaultDisplay(pathname, recursive)
+        self._display = DefaultDisplay()
         if display is not None:
             self._display = display
 
@@ -553,7 +691,7 @@ class DarkBridge(object):
             path: Path of the image file.
 
         Returns:
-            A list of two paths: the path of the image file and the path
+            A list of two paths: the _path of the image file and the _path
             of the Nikon sidecar file. `None` if the image file is not
             supported or without sidecar file.
         """
@@ -620,19 +758,12 @@ class DarkBridge(object):
         """
         raise NotImplementedError
 
-    def list(self, all: bool, detailed: bool) -> bool:
+    def list(self) -> bool:
         """Entry point to launch metadata listing.
 
         This method searches sidecar files in the required folders (and
         subfolders if :attr:`_recursive` is ``True``), reads the
         metadata and list metadata for each file.
-
-        Args:
-            detailed: `True` includes active image's adjustments specified
-                in sidecar files. `False` displays a summary of metadata.
-                In this case, the ``all`` parameter is ignored.
-            all: `True` includes all image's adjustments, `False`
-                enumerates only active image's adjustments.
 
         Returns:
             `True` if the execution went well. In case of failure, an
@@ -641,7 +772,7 @@ class DarkBridge(object):
         self._build_filelist()
         numfiles = len(self._paths)
         index = 0
-        self._display.start_list(detailed, all, numfiles)
+        self._display.start_list(self._pathname, self._recursive, self._verbosity, numfiles)
         for path in self._paths:
             index += 1
             _logger.info(f"[{index}/{numfiles}] Parsing of '{path[1].name}'...")
@@ -651,20 +782,17 @@ class DarkBridge(object):
             self._nksc = NikonSideCar(tree.getroot())
             if self._nksc is not None:
                 self._nksc.parse()
-                if detailed:
-                    self._display.show_meta(index, path[0], self._nksc, all)
-                else:
-                    self._display.show_meta_overview(index, path[0], self._nksc)
+                self._display.show_meta(index, path[0], self._nksc)
             file.close()
         self._display.complete_list(index)
         return True
 
     def search_meta(self, pattern: str, count: bool) -> bool:
-        """Entry point to search a pattern in metadata
+        """Entry point to search a _pattern in metadata
 
         This method searches sidecar files in the required folders (and
         subfolders if :attr:`_recursive` is ``True``), reads the
-        metadata and indicate if the pattern is found in metada.
+        metadata and indicate if the _pattern is found in metada.
 
         Args:
             pattern: Substring to find in metadata field names.
@@ -677,11 +805,11 @@ class DarkBridge(object):
         raise NotImplementedError
 
     def search_processing(self, pattern: str, count: bool) -> bool:
-        """Entry point to search a pattern in processing
+        """Entry point to search a _pattern in processing
 
         This method searches sidecar files in the required folders (and
         subfolders if :attr:`_recursive` is ``True``), reads the
-        metadata and indicate if the pattern is found in active
+        metadata and indicate if the _pattern is found in active
         processing.
 
         Args:

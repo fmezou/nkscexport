@@ -63,22 +63,18 @@ The options are as follows:
     current directory. If this option is not present or set to NOSET, no
     logfile is created
 
-.. option:: -v, --version
+.. option::  -v, --verbose
+
+    Increase the verbosity of report. By default, the report is
+    a summary with image name and a set of indicators. A single
+    ``-v`` lists relevant metadata (i.e. non-empty) and active image
+    adjustments. A second ``-v`` (or ``-vv``) list metadata's content
+    and image adjustment parameters. A third ``-v`` or ``-vvv``) list
+    all metadata and image's adjustment whatever its status.
+
+.. option:: -V, --version
 
     Show program's version number and exit
-
-.. option:: -a, --all
-
-    Include all the metadata, not only the active one or not empty.
-
-.. option:: -d, --detailed
-
-    List active image's adjustments (aka. image processing) specified in
-    sidecar files. This option list only the active image's adjustments,
-    unless if ``--all`` option is specified. Transferable image's
-    adjustments are colored in green. If this option is not present,
-    A '[F]' is added in metadata to indicate that at least an image's
-    adjustment is active. In this case, ``--all`` option is ignored.
 
 .. option:: -f, --force
 
@@ -100,10 +96,6 @@ The options are as follows:
     Name of the metadata's field to search. The search return the name
     of the field where substring 'META' is found. The search focuses on
     the field name and not the content of the field.
-
-.. option:: -c, --count
-
-    Only a count of selected images is displayed.
 
 .. option:: -r, --recursive
 
@@ -170,84 +162,60 @@ class CLIDisplay(DefaultDisplay):
     image's metadata. The display is simply based on standard output
     with colored text.
 
-    Attributes:
-        total: Number of image files in the processing pipe.
-        path: Path of the current image file.
-        nksc: Object containing the metadata and processing data of
-            the current image.
-
     Note:
         The attributes below are specific to this concrete class. For
-        the attributes of the base class, see :class:`BaseDisplay`
+        the attributes of the base class, see :class:`DefaultDisplay`
     """
-    def __init__(self, filenames: list[str], recursive: bool):
-        super().__init__(filenames, recursive)
+    def __init__(self):
+        super().__init__()
 
-    def show_meta(self, index: int, path: Path, nksc: NikonSideCar, all: bool):
+    def show_meta(self, index: int, path: Path, nksc: NikonSideCar):
         """Display sidecar contents.
 
         Args:
             index: Index of the current image files. The index cannot be
-                greater than ``total`` parameter.
+                greater than ``_total`` parameter.
             path: Path of the current image file.
             nksc: Object containing the metadata and processing data of
                 the current image.
-            all: `True` includes all image's adjustments (see
-                :meth:`DarkBridge.list`).
         """
-        msgs = []
-        print(colorama.Fore.GREEN
+        match self._verbosity:
+            case 1:
+                self._show_meta_v1(index, path, nksc)
+
+            case 2:
+                self._show_meta_v2(index, path, nksc)
+
+            case 3:
+                self._show_meta_v3(index, path, nksc)
+
+            case _:
+                self._show_meta_v0(index, path, nksc)
+
+
+    def ignore(self, path: Path):
+        """Indicate that an image's file is ignored.
+
+        An image's files is ignored when it is not a supported image file
+        or no sidecar file exists.
+
+        Args:
+            path: Path of the current image file.
+        """
+        print(colorama.Fore.LIGHTRED_EX
               + colorama.Style.BRIGHT
-              + f"[{index}/{self.total}] Image {path.name:30}"
-              + colorama.Style.RESET_ALL)
+              + f"File '{path.name}' ignored as it is not a supported "
+              + f"image file or no sidecar file exists"
+              + colorama.Style.RESET_ALL,
+              file=sys.stderr)
 
-        if nksc.metadata is not None:
-            msgs.append(colorama.Style.BRIGHT
-                        + colorama.Fore.LIGHTBLUE_EX
-                        + f"    Metadata"
-                        + colorama.Style.RESET_ALL)
-            for k, v in nksc.metadata.items():
-                msgs.append(colorama.Style.BRIGHT
-                            + colorama.Fore.LIGHTBLUE_EX
-                            + f"      * {k}"
-                            + colorama.Fore.BLACK
-                            + f": {v}"
-                            + colorama.Style.RESET_ALL)
-        else:
-            msgs.append(colorama.Style.BRIGHT
-                        + colorama.Fore.LIGHTRED_EX
-                        + "    No Metadata present"
-                        + colorama.Style.RESET_ALL)
 
-        if nksc.processing is not None:
-            msgs.append(colorama.Style.BRIGHT
-                        + colorama.Fore.LIGHTMAGENTA_EX
-                        + f"    Adjustment"
-                        + colorama.Style.RESET_ALL)
-            for k, v in nksc.processing.items():
-                if all:
-                    if v.active:
-                        msgs.append(colorama.Style.BRIGHT
-                                    + f"      * {k}"
-                                    + colorama.Style.RESET_ALL)
-                    else:
-                        msgs.append(colorama.Style.DIM
-                                    + f"      * {k}"
-                                    + colorama.Style.RESET_ALL)
-                else:
-                    if v.active:
-                        msgs.append(colorama.Style.BRIGHT
-                                    + f"      * {k}"
-                                    + colorama.Style.RESET_ALL)
-
-        print("\n".join(msgs))
-
-    def show_meta_overview(self, index: int, path: Path, nksc: NikonSideCar):
-        """Display an overview of sidecar contents.
+    def _show_meta_v0(self, index: int, path: Path, nksc: NikonSideCar):
+        """Display an overview of sidecar contents (verbosity 0).
 
         Args:
             index: Index of the current image files. The index cannot be
-                greater than ``total`` parameter.
+                greater than ``_total`` parameter.
             path: Path of the current image file.
             nksc: Object containing the metadata and processing data of
                 the current image.
@@ -292,7 +260,7 @@ class CLIDisplay(DefaultDisplay):
 
         print(colorama.Fore.GREEN
               + colorama.Style.BRIGHT
-              + f"[{index}/{self.total}] Image {path.name:30}"
+              + f"[{index}/{self._total}] Image {path.name:30}"
               + colorama.Style.RESET_ALL
               + ": "
               + colorama.Fore.MAGENTA
@@ -300,21 +268,162 @@ class CLIDisplay(DefaultDisplay):
               + f"{"".join(msgs)}"
               + colorama.Style.RESET_ALL)
 
-    def ignore(self, path: Path):
-        """Indicate that an image's file is ignored.
-
-        An image's files is ignored when it is not a supported image file
-        or no sidecar file exists.
+    def _show_meta_v1(self, index: int, path: Path, nksc: NikonSideCar):
+        """Display sidecar contents (verbosity 1).
 
         Args:
+            index: Index of the current image files. The index cannot be
+                greater than ``_total`` parameter.
             path: Path of the current image file.
+            nksc: Object containing the metadata and processing data of
+                the current image.
         """
-        print(colorama.Fore.LIGHTRED_EX
+        msgs = []
+        print(colorama.Fore.GREEN
               + colorama.Style.BRIGHT
-              + f"File '{path.name}' ignored as it is not a supported "
-              + f"image file or no sidecar file exists"
-              + colorama.Style.RESET_ALL,
-              file=sys.stderr)
+              + f"[{index}/{self._total}] Image {path.name:30}"
+              + colorama.Style.RESET_ALL)
+
+        if nksc.metadata is not None:
+            msgs.append(colorama.Style.BRIGHT
+                        + colorama.Fore.LIGHTBLUE_EX
+                        + f"    Metadata"
+                        + colorama.Style.RESET_ALL)
+            for k, v in nksc.metadata.items():
+                if len(v) != 0:
+                    msgs.append(colorama.Style.BRIGHT
+                                + colorama.Fore.LIGHTBLUE_EX
+                                + f"      * {k}"
+                                + colorama.Style.RESET_ALL)
+        else:
+            msgs.append(colorama.Style.BRIGHT
+                        + colorama.Fore.LIGHTRED_EX
+                        + "    No Metadata present"
+                        + colorama.Style.RESET_ALL)
+
+        if nksc.processing is not None:
+            msgs.append(colorama.Style.BRIGHT
+                        + colorama.Fore.LIGHTMAGENTA_EX
+                        + f"    Adjustment"
+                        + colorama.Style.RESET_ALL)
+            for k, v in nksc.processing.items():
+                if v.active:
+                    msgs.append(colorama.Style.BRIGHT
+                                + f"      * {k}"
+                                + colorama.Style.RESET_ALL)
+
+        print("\n".join(msgs))
+
+    def _show_meta_v2(self, index: int, path: Path, nksc: NikonSideCar):
+        """Display sidecar contents (verbosity 2).
+
+        Args:
+            index: Index of the current image files. The index cannot be
+                greater than ``_total`` parameter.
+            path: Path of the current image file.
+            nksc: Object containing the metadata and processing data of
+                the current image.
+        """
+        msgs = []
+        print(colorama.Fore.GREEN
+              + colorama.Style.BRIGHT
+              + f"[{index}/{self._total}] Image {path.name:30}"
+              + colorama.Style.RESET_ALL)
+
+        if nksc.metadata is not None:
+            msgs.append(colorama.Style.BRIGHT
+                        + colorama.Fore.LIGHTBLUE_EX
+                        + f"    Metadata"
+                        + colorama.Style.RESET_ALL)
+            for k, v in nksc.metadata.items():
+                if len(v) != 0:
+                    msgs.append(colorama.Style.BRIGHT
+                                + colorama.Fore.LIGHTBLUE_EX
+                                + f"      * {k}"
+                                + colorama.Fore.BLACK
+                                + f": {v}"
+                                + colorama.Style.RESET_ALL)
+        else:
+            msgs.append(colorama.Style.BRIGHT
+                        + colorama.Fore.LIGHTRED_EX
+                        + "    No Metadata present"
+                        + colorama.Style.RESET_ALL)
+
+        if nksc.processing is not None:
+            msgs.append(colorama.Style.BRIGHT
+                        + colorama.Fore.LIGHTMAGENTA_EX
+                        + f"    Adjustment"
+                        + colorama.Style.RESET_ALL)
+            for k, v in nksc.processing.items():
+                if v.active:
+                    msgs.append(colorama.Style.BRIGHT
+                                + f"      * {k}"
+                                + colorama.Style.RESET_ALL)
+                    for n, p in v.params.items():
+                        msgs.append(f"          * {n}: {p} ")
+
+        print("\n".join(msgs))
+
+    def _show_meta_v3(self, index: int, path: Path, nksc: NikonSideCar):
+        """Display sidecar contents (verbosity 3).
+
+        Args:
+            index: Index of the current image files. The index cannot be
+                greater than ``_total`` parameter.
+            path: Path of the current image file.
+            nksc: Object containing the metadata and processing data of
+                the current image.
+        """
+        msgs = []
+        print(colorama.Fore.GREEN
+              + colorama.Style.BRIGHT
+              + f"[{index}/{self._total}] Image {path.name:30}"
+              + colorama.Style.RESET_ALL)
+
+        if nksc.metadata is not None:
+            msgs.append(colorama.Style.BRIGHT
+                        + colorama.Fore.LIGHTBLUE_EX
+                        + f"    Metadata"
+                        + colorama.Style.RESET_ALL)
+            for k, v in nksc.metadata.items():
+                msgs.append(colorama.Style.BRIGHT
+                            + colorama.Fore.LIGHTBLUE_EX
+                            + f"      * {k}"
+                            + colorama.Fore.BLACK
+                            + f": {v}"
+                            + colorama.Style.RESET_ALL)
+        else:
+            msgs.append(colorama.Style.BRIGHT
+                        + colorama.Fore.LIGHTRED_EX
+                        + "    No Metadata present"
+                        + colorama.Style.RESET_ALL)
+
+        if nksc.processing is not None:
+            msgs.append(colorama.Style.BRIGHT
+                        + colorama.Fore.LIGHTMAGENTA_EX
+                        + f"    Adjustment"
+                        + colorama.Style.RESET_ALL)
+            for k, v in nksc.processing.items():
+                if v.active:
+                    msgs.append(colorama.Style.BRIGHT
+                                + f"      * [X] {k}"
+                                + colorama.Style.RESET_ALL)
+                    for n, p in v.params.items():
+                        msgs.append(colorama.Style.BRIGHT
+                                    + f"          * {n}: {p} "
+                                    + colorama.Style.RESET_ALL)
+                else:
+                    msgs.append(colorama.Style.DIM
+                                + f"      * [ ] {k}"
+                                + colorama.Style.RESET_ALL)
+                    for n, p in v.params.items():
+                        msgs.append(colorama.Style.DIM
+                                    + f"          * {n}: {p} "
+                                    + colorama.Style.RESET_ALL)
+
+        print("\n".join(msgs))
+
+
 
 
 def main():
@@ -398,25 +507,6 @@ def main():
              "sidecar file is ignored when this option is used."
     )
     list.add_argument(
-        "-a", "--all",
-        default = False,
-        action = "store_true",
-        help = "Include all the metadata, not only the active one or "
-               "not empty."
-    )
-    list.add_argument(
-        "-d", "--detailed",
-        default = False,
-        action = "store_true",
-        help = "List active image's adjustments (aka. image processing) "
-               "specified in sidecar files. This option list only the active "
-               "image's adjustments, unless if ``--all`` option is specified. "
-               "Transferable image's adjustments are colored in green. If "
-               "this option is not present, A '[F]' is added in metadata to "
-               "indicate that at least an image's adjustment is active. In "
-               "this case, '--all' option is ignored."
-    )
-    list.add_argument(
         "-r", "--recursive",
         default = False,
         action = "store_true",
@@ -459,12 +549,6 @@ def main():
                "focuses on the field name and not the content of the field."
     )
     search.add_argument(
-        "-c", "--count",
-        default = False,
-        action = "store_true",
-        help = "Only a count of selected images is displayed."
-    )
-    search.add_argument(
         "-r", "--recursive",
         default = False,
         action = "store_true",
@@ -486,6 +570,16 @@ def main():
     )
     # common options
     parser.add_argument(
+        "-v", "--verbose",
+        action = "count",
+        default = 0,
+        help = "Increase the verbosity of report. By default, the report is "
+               "a summary with image name and a set of indicators. A single "
+               "'-v' lists relevant metadata (i.e. non-empty) and active image "
+               "adjustments. A second '-v' (or '-vv') list metadata's content "
+               "and image adjustment parameters. A third '-v' or '-vvv') list "
+               "all metadata and image's adjustment whatever its status.")
+    parser.add_argument(
         "-l", "--log-level",
         default = "NOTSET",
         action = "store",
@@ -498,7 +592,7 @@ def main():
                "NOSET, no logfile is created"
     )
     parser.add_argument(
-        "-v", "--version",
+        "-V", "--version",
         action = "version",
         version = "%(prog)s version " + version
     )
@@ -531,11 +625,11 @@ def main():
 
     _logger.info(
         f"Starting {parser.prog} v{version} on {datetime.datetime.now():%c}")
-    display = CLIDisplay(args.filename, args.recursive)
-    bridge = DarkBridge(args.filename, args.recursive, display)
+    display = None #CLIDisplay()
+    bridge = DarkBridge(args.verbose, args.filename, args.recursive, display)
     match args.verb:
         case 'list':
-            result = bridge.list(args.all, args.detailed)
+            result = bridge.list()
 
         case 'convert':
             result = bridge.convert(args.dry_run, args.force)

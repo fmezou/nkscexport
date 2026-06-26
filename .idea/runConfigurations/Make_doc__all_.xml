@@ -14,7 +14,7 @@
     <option name="RUN_TOOL" value="" />
     <option name="docutils_input_file" value="source" />
     <option name="docutils_output_file" value="_build/html" />
-    <option name="docutils_params" value="--doctree-dir ./_build/.doctrees -a -E" />
+    <option name="docutils_params" value="-v --doctree-dir ./_build/.doctrees -a -E" />
     <option name="docutils_task" value="html" />
     <option name="docutils_open_in_browser" value="false" />
     <method v="2" />

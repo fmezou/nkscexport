@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="darkbridge (simple list)" type="PythonConfigurationType" factoryName="Python">
+  <configuration default="false" name="darkbridge (verbosity 2)" type="PythonConfigurationType" factoryName="Python">
     <module name="darkbridge" />
     <option name="ENV_FILES" value="" />
     <option name="INTERPRETER_OPTIONS" value="" />
@@ -16,7 +16,7 @@
     <option name="DEBUG_JUST_MY_CODE" value="false" />
     <option name="RUN_TOOL" value="" />
     <option name="SCRIPT_NAME" value="main_cli.py" />
-    <option name="PARAMETERS" value="--log-level DEBUG list ..\..\images_samples\full_XMP.IPTC.NEF" />
+    <option name="PARAMETERS" value="-v -v --log-level DEBUG list ..\..\images_samples\full_XMP.IPTC.NEF" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />

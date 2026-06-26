@@ -6,7 +6,7 @@
 import sys
 from pathlib import Path
 
-# Python files and docs are in sperate folder, so source path is added
+# Python files and docs are in seperate folder, so source path is added
 sys.path.insert(0, str(Path('..', '..', 'src').resolve()))
 
 # -- Project information -----------------------------------------------------
