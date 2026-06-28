@@ -9,7 +9,6 @@
     :synopsis: Handle sidecar files.
 
 .. toctree::
-    :hidden:
     :maxdepth: 1
 
     nikon

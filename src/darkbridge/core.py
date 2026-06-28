@@ -38,8 +38,9 @@ verbosity level
 ^^^^^^^^^^^^^^^
 
 The verbosity level impacts the leval of detail of each output. Verbosity
-is a integer number between 0 and 3. Any other values are ignored and
-considered as 0.
+is a positive integer number between 0 and 3. Any values greater than 3
+(or 2 for search) is considered the maximun level (i.e. 3 for list,
+2 for search).
 
 :meth:`DarkBridge.list` -- list metadata and image adjustement
 
@@ -110,14 +111,13 @@ Notes:
 Reference manual
 ----------------
 """
-import glob
 import logging
-import pathlib
 import sys
 from pathlib import Path
-from xml.etree import ElementTree
 
 from sidecar.nikon import *
+from sidecar.nik_adjustment import NikBaseAdjustment
+
 
 __all__ = [
     "BaseDisplay",
@@ -132,7 +132,7 @@ _logger = logging.getLogger(__name__)
 _logger.addHandler(logging.NullHandler())
 
 
-class BaseDisplay(object):
+class BaseDisplay:
     """Base class for managing display of image's metadata.
 
     This class is an abstract class used by :class:`DarkBridge` to display
@@ -249,7 +249,8 @@ class BaseDisplay(object):
         """
         raise NotImplementedError
 
-    def show_findings(self, index: int, path: Path, nksc: NikonSideCar):
+    def show_findings(self, index: int, path: Path, nksc: NikonSideCar,
+                      findings: dict):
         """Display the result of a search (unitary)
 
         This method is called when the finding should be displayed.
@@ -260,17 +261,19 @@ class BaseDisplay(object):
             path: Path of the current image file.
             nksc: Object containing the metadata and processing data of
                 the current image.
+            findings: Dictionnary of metadata or image's adjustment
+                matching the ``pattern``.
         """
         raise NotImplementedError
 
-    def complete_search(self, index: int, found: int):
+    def complete_search(self, index: int, matching: int):
         """Display the searching completion.
 
         Args:
             index: Index of the last image files. The index cannot be
                 greater than ``_total`` parameter.
-            found: Number of image's files where metadata or processing name
-                match the _pattern
+            matching: Number of image's files where metadata or processing
+                name match the pattern
         """
         raise NotImplementedError
 
@@ -396,7 +399,7 @@ class DefaultDisplay(BaseDisplay):
 
         print(f"List metadata from '{self._filenames}' {mode}"
               f" - Number of files: {total}")
-        _logger.debug(f"List metadata from '{self._filenames=}' {mode}"
+        _logger.info(f"List metadata from '{self._filenames=}' {mode}"
                       f" - Number of files: {total}")
 
     def show_meta(self, index: int, path: Path, nksc: NikonSideCar):
@@ -410,17 +413,17 @@ class DefaultDisplay(BaseDisplay):
                 the current image.
         """
         match self._verbosity:
+            case 0:
+                self._show_meta_v0(index, path, nksc)
+
             case 1:
                 self._show_meta_v1(index, path, nksc)
 
             case 2:
                 self._show_meta_v2(index, path, nksc)
 
-            case 3:
-                self._show_meta_v3(index, path, nksc)
-
             case _:
-                self._show_meta_v0(index, path, nksc)
+                self._show_meta_v3(index, path, nksc)
 
     def complete_list(self, index: int):
         """Display the listing completion.
@@ -431,7 +434,7 @@ class DefaultDisplay(BaseDisplay):
         """
         print(f"List metadata from '{self._filenames}' completed"
               f" - Number of files processed: {index}")
-        _logger.debug(f"List metadata from '{self._filenames=}' completed"
+        _logger.info(f"List metadata from '{self._filenames=}' completed"
                       f" - Number of files processed: {index}")
 
     def start_search(self, filenames: list[str], recursive: bool,
@@ -453,9 +456,21 @@ class DefaultDisplay(BaseDisplay):
         self._pattern = pattern
         self._verbosity = verbosity
         self._total = total
-        raise NotImplementedError
 
-    def show_findings(self, index: int, path: Path, nksc: NikonSideCar):
+        modes = ["(mode:"]
+        if self._recursive:
+            modes.append("recursive")
+        modes.append(f"verbosity: {verbosity})")
+        mode = " ".join(modes)
+
+        print(f"Search '{pattern}' in metadata from '{self._filenames}' {mode}"
+              f" - Number of files: {total}")
+        _logger.info(
+            f"Search '{pattern}' in metadata from '{self._filenames}' {mode}"
+            f" - Number of files: {total}")
+
+    def show_findings(self, index: int, path: Path, nksc: NikonSideCar,
+                      findings: dict):
         """Display the result of a search (unitary)
 
         This method is called when the finding should be displayed.
@@ -466,20 +481,30 @@ class DefaultDisplay(BaseDisplay):
             path: Path of the current image file.
             nksc: Object containing the metadata and processing data of
                 the current image.
+            findings: Dictionnary of metadata or image's adjustment
+                matching the ``pattern``.
         """
-        raise NotImplementedError
+        match self._verbosity:
+            case 0: # By default, no display
+                pass
 
-    def complete_search(self, index: int, found: int):
+            case 1:
+                self._show_findings_v1(index, path, nksc, findings)
+
+            case _:
+                self._show_findings_v2(index, path, nksc, findings)
+
+    def complete_search(self, index: int, matching: int):
         """Display the searching completion.
 
         Args:
             index: Index of the last image files. The index cannot be
                 greater than ``_total`` parameter.
-            found: Number of image's files where metadata or processing name
-                match the _pattern
+            matching: Number of image's files where metadata or processing name
+                match the pattern
         """
-        raise NotImplementedError
-
+        print(f"Found {matching} images - Number of files: {index}")
+        _logger.info(f"Found {matching} images - Number of files: {index}")
 
     def ignore(self, path: Path):
         """Indicate that an image's file is ignored.
@@ -634,8 +659,61 @@ class DefaultDisplay(BaseDisplay):
 
         print("\n".join(msgs))
 
+    def _show_findings_v1(self, index: int, path: Path, nksc: NikonSideCar,
+                          findings: dict):
+        """Display the result of a search (verbosity 1).
 
-class DarkBridge(object):
+        This method is called when the finding should be displayed.
+
+        Args:
+            index: Index of the current image files. The index cannot be
+                greater than ``_total`` parameter.
+            path: Path of the current image file.
+            nksc: Object containing the metadata and processing data of
+                the current image.
+            findings: Dictionnary of metadata or image's adjustment
+                matching the ``pattern``.
+        """
+        msgs = []
+        print(f"[{index}/{self._total}] Image {path.name:30}")
+        if nksc.metadata is not None:
+            msgs.append(f"    Matching")
+            for k, v in findings.items():
+                msgs.append(f"      * {k}")
+
+        print("\n".join(msgs))
+
+    def _show_findings_v2(self, index: int, path: Path, nksc: NikonSideCar,
+                          findings: dict):
+        """Display the result of a search (verbosity 2).
+
+        This method is called when the finding should be displayed.
+
+        Args:
+            index: Index of the current image files. The index cannot be
+                greater than ``_total`` parameter.
+            path: Path of the current image file.
+            nksc: Object containing the metadata and processing data of
+                the current image.
+            findings: Dictionnary of metadata or image's adjustment
+                matching the ``pattern``.
+        """
+        msgs = []
+        print(f"[{index}/{self._total}] Image {path.name:30}")
+        if nksc.metadata is not None:
+            msgs.append(f"    Matching")
+            for k, v in findings.items():
+                if isinstance(v, NikBaseAdjustment):
+                    msgs.append(f"      * {k}")
+                    for n, p in v.params.items():
+                        msgs.append(f"          * {n}: {p} ")
+                else:
+                    msgs.append(f"      * {k}: {v}")
+
+        print("\n".join(msgs))
+
+
+class DarkBridge:
     """Convert sidecar files from Nikon NX Studio (._nksc) in sidecar files
     compliant with Darktable.
 
@@ -669,9 +747,12 @@ class DarkBridge(object):
     _verbosity: int
     _pathname: list[str]
     _recursive: bool
-    _paths: list[list[Path]]
-    _nksc: None | NikonSideCar # current NKSC file
     _display: BaseDisplay
+    # list of path pair to process:  first item is the path of the image file,
+    # second item is the path of the Nikon sidecar file.
+    _paths: list[list[Path]]
+    # current NKSC file
+    _nksc: None | NikonSideCar
     def __init__(self, verbosity: int, pathname: list[str], recursive: bool,
                  display: BaseDisplay | None = None):
         self._verbosity = verbosity
@@ -683,19 +764,14 @@ class DarkBridge(object):
         if display is not None:
             self._display = display
 
-    def _filter_filelist(self, path: Path) -> None | list[Path]:
-        """ Filter the file list by removing no supported images files or
-        images files without sidecar files.
+    def _append_path(self, path: Path) -> None | list[Path]:
+        """Add the path in the list of files to process.
+
+        Only supported images files with a sidecar file are considered.
 
         Args:
-            path: Path of the image file.
-
-        Returns:
-            A list of two paths: the _path of the image file and the _path
-            of the Nikon sidecar file. `None` if the image file is not
-            supported or without sidecar file.
+            path: filesystem path of the image file to add.
         """
-        paths_set = None
         # check the suffix (maybe lower case or upper case)
         if path.is_file():
             if path.suffix.lower() in NIKON_SUPPORTED_FORMAT:
@@ -703,12 +779,13 @@ class DarkBridge(object):
                 name = path.name + NIKON_NKSC_EXT
                 nksc_path = (path.parent / NIKON_NKSC_SUBFOLDER / name)
                 if nksc_path.exists():
-                    paths_set = [path, nksc_path]
+                    self._paths.append([path, nksc_path])
                 else:
                     _logger.info(
                         f"Sidecar image file '{nksc_path.name}' not exist. "
                         f"Image file '{path.name}' ignored")
             else:
+                self._display.ignore(path)
                 _logger.warning(
                     f"Image file not supported. "
                     f"Image file '{path.name}' ignored")
@@ -716,27 +793,34 @@ class DarkBridge(object):
             _logger.info(
                 f"Not a file. '{path.name}' ignored")
 
-        return paths_set
-
-    def _build_filelist(self) -> bool:
+    def _build_filelist(self) -> int:
         """ Build the images files list based on patterns as defined in
         `glob.glob` function.
 
+        The method returns a list of unique image files. If the selection
+        pattern covers the same directory, the files are included only
+        once.
+
         Returns:
-            `True` if the execution went well. In case of failure, an
-            error is written on console.
+            Number of filesystem path of image files to process
         """
+        fq_pathname = []
         self._paths = []
         for pathname in self._pathname:
-            names = glob.glob(pathname, recursive=self._recursive)
-            for name in names:
-                img_path = pathlib.Path(name).resolve()
-                paths = self._filter_filelist(img_path)
-                if paths is not None:
-                    self._paths.append(paths)
+            p = Path(pathname)
+            if self._recursive:
+                paths = p.parent.rglob(p.name)
+            else:
+                paths = p.parent.glob(p.name)
+            for path in paths:
+                img_path = path.resolve()
+                if img_path.as_uri() in fq_pathname:
+                    _logger.info(f"Image file already processed: "
+                                 f"'{img_path.name}' ignored")
                 else:
-                    self._display.ignore(img_path)
-        return True
+                    self._append_path(img_path)
+                    fq_pathname.append(img_path.as_uri())
+        return len(self._paths)
 
     def convert(self,dry_run: bool, force: bool) -> bool:
         """Entry point to launch conversions to Darktable sidecar files
@@ -769,55 +853,92 @@ class DarkBridge(object):
             `True` if the execution went well. In case of failure, an
             error is written on console.
         """
-        self._build_filelist()
-        numfiles = len(self._paths)
+        numfiles = self._build_filelist()
         index = 0
         self._display.start_list(self._pathname, self._recursive, self._verbosity, numfiles)
         for path in self._paths:
             index += 1
             _logger.info(f"[{index}/{numfiles}] Parsing of '{path[1].name}'...")
-
-            file = path[1].open()
-            tree = ElementTree.parse(file)
-            self._nksc = NikonSideCar(tree.getroot())
+            self._nksc = NikonSideCar(path[1])
             if self._nksc is not None:
                 self._nksc.parse()
                 self._display.show_meta(index, path[0], self._nksc)
-            file.close()
         self._display.complete_list(index)
         return True
 
-    def search_meta(self, pattern: str, count: bool) -> bool:
-        """Entry point to search a _pattern in metadata
+    def search_meta(self, pattern: str) -> bool:
+        """Entry point to search a pattern in metadata
 
         This method searches sidecar files in the required folders (and
         subfolders if :attr:`_recursive` is ``True``), reads the
-        metadata and indicate if the _pattern is found in metada.
+        metadata and indicate if the pattern is found in metada.
 
         Args:
             pattern: Substring to find in metadata field names.
-            count: `True` displays only a count of selected images.
 
         Returns:
             `True` if the execution went well. In case of failure, an
             error is written on console.
         """
-        raise NotImplementedError
+        numfiles = self._build_filelist()
+        index = 0
+        matching = 0
+        self._display.start_search(self._pathname, self._recursive, pattern,
+                                   self._verbosity, numfiles)
+        for path in self._paths:
+            index += 1
+            found = False
+            _logger.info(f"[{index}/{numfiles}] Parsing of '{path[1].name}'...")
+            self._nksc = NikonSideCar(path[1])
+            if self._nksc is not None:
+                self._nksc.parse()
+                findings = {}
+                for k, v in self._nksc.metadata.items():
+                    if pattern in k and len(v) != 0:
+                        found = True
+                        findings[k] = v
+                        _logger.info(f"Metadata '{k}' match with '{pattern}'")
+                if found:
+                    self._display.show_findings(index, path[0], self._nksc, findings)
+                    matching += 1
+        self._display.complete_search(index, matching)
+        return True
 
-    def search_processing(self, pattern: str, count: bool) -> bool:
-        """Entry point to search a _pattern in processing
+    def search_processing(self, pattern: str) -> bool:
+        """Entry point to search a pattern in processing
 
         This method searches sidecar files in the required folders (and
         subfolders if :attr:`_recursive` is ``True``), reads the
-        metadata and indicate if the _pattern is found in active
+        metadata and indicate if the pattern is found in active
         processing.
 
         Args:
             pattern: Substring to find in processing names.
-            count: `True` displays only a count of selected images.
 
         Returns:
             `True` if the execution went well. In case of failure, an
             error is written on console.
         """
-        raise NotImplementedError
+        numfiles = self._build_filelist()
+        index = 0
+        matching = 0
+        self._display.start_search(self._pathname, self._recursive, pattern,
+                                   self._verbosity, numfiles)
+        for path in self._paths:
+            index += 1
+            found = False
+            _logger.info(f"[{index}/{numfiles}] Parsing of '{path[1].name}'...")
+            self._nksc = NikonSideCar(path[1])
+            if self._nksc is not None:
+                self._nksc.parse()
+                findings = {}
+                for k, v in self._nksc.processing.items():
+                    if pattern in k and v.active:
+                        found = True
+                        findings[k] = v
+                        _logger.info(f"Processing '{k}' match with '{pattern}'")
+                if found:
+                    self._display.show_findings(index, path[0], self._nksc, findings)
+                    matching += 1
+        self._display.complete_search(index, matching)
+        return True

@@ -13,5 +13,6 @@ The exported modules are as follows:
     * :mod:`sidecar.nikon` - Handle Nikon sidecar files (read only)
 """
 __all__ = [
-    "nikon"
+    "nikon",
+    "nik_adjustment"
 ]

@@ -152,6 +152,7 @@ import colorama
 from darkbridge.core import DarkBridge
 from darkbridge.core import DefaultDisplay
 from sidecar.nikon import NikonSideCar
+from sidecar.nik_adjustment import NikBaseAdjustment
 from darkbridge.version import version
 
 
@@ -406,6 +407,7 @@ class CLIDisplay(DefaultDisplay):
             for k, v in nksc.processing.items():
                 if v.active:
                     msgs.append(colorama.Style.BRIGHT
+                                + colorama.Fore.LIGHTMAGENTA_EX
                                 + f"      * [X] {k}"
                                 + colorama.Style.RESET_ALL)
                     for n, p in v.params.items():
@@ -414,6 +416,7 @@ class CLIDisplay(DefaultDisplay):
                                     + colorama.Style.RESET_ALL)
                 else:
                     msgs.append(colorama.Style.DIM
+                                + colorama.Fore.LIGHTMAGENTA_EX
                                 + f"      * [ ] {k}"
                                 + colorama.Style.RESET_ALL)
                     for n, p in v.params.items():
@@ -423,7 +426,114 @@ class CLIDisplay(DefaultDisplay):
 
         print("\n".join(msgs))
 
+    def show_findings(self, index: int, path: Path, nksc: NikonSideCar,
+                      findings: dict):
+        """Display the result of a search (unitary)
 
+        This method is called when the finding should be displayed.
+
+        Args:
+            index: Index of the current image files. The index cannot be
+                greater than ``_total`` parameter.
+            path: Path of the current image file.
+            nksc: Object containing the metadata and processing data of
+                the current image.
+            findings: Dictionnary of metadata or image's adjustment
+                matching the ``pattern``.
+        """
+        match self._verbosity:
+            case 0: # By default, no display
+                pass
+
+            case 1:
+                self._show_findings_v1(index, path, nksc, findings)
+
+            case _:
+                self._show_findings_v2(index, path, nksc, findings)
+
+    def _show_findings_v1(self, index: int, path: Path, nksc: NikonSideCar,
+                          findings: dict):
+        """Display the result of a search (verbosity 1).
+
+        This method is called when the finding should be displayed.
+
+        Args:
+            index: Index of the current image files. The index cannot be
+                greater than ``_total`` parameter.
+            path: Path of the current image file.
+            nksc: Object containing the metadata and processing data of
+                the current image.
+            findings: Dictionnary of metadata or image's adjustment
+                matching the ``pattern``.
+        """
+        msgs = []
+        print(colorama.Fore.GREEN
+              + colorama.Style.BRIGHT
+              + f"[{index}/{self._total}] Image {path.name:30}"
+              + colorama.Style.RESET_ALL)
+
+        if nksc.metadata is not None:
+            msgs.append(colorama.Style.BRIGHT
+                        + f"    Matching"
+                        + colorama.Style.RESET_ALL)
+            for k, v in findings.items():
+                if isinstance(v, NikBaseAdjustment):
+                    msgs.append(colorama.Style.BRIGHT
+                                + colorama.Fore.LIGHTMAGENTA_EX
+                                + f"      * {k}"
+                                + colorama.Style.RESET_ALL)
+                else:
+                    msgs.append(colorama.Style.BRIGHT
+                                + colorama.Fore.LIGHTBLUE_EX
+                                + f"      * {k}"
+                                + colorama.Style.RESET_ALL)
+
+        print("\n".join(msgs))
+
+    def _show_findings_v2(self, index: int, path: Path, nksc: NikonSideCar,
+                          findings: dict):
+        """Display the result of a search (verbosity 2).
+
+        This method is called when the finding should be displayed.
+
+        Args:
+            index: Index of the current image files. The index cannot be
+                greater than ``_total`` parameter.
+            path: Path of the current image file.
+            nksc: Object containing the metadata and processing data of
+                the current image.
+            findings: Dictionnary of metadata or image's adjustment
+                matching the ``pattern``.
+        """
+        msgs = []
+        print(colorama.Fore.GREEN
+              + colorama.Style.BRIGHT
+              + f"[{index}/{self._total}] Image {path.name:30}"
+              + colorama.Style.RESET_ALL)
+
+        if nksc.metadata is not None:
+            msgs.append(colorama.Style.BRIGHT
+                        + f"    Matching"
+                        + colorama.Style.RESET_ALL)
+            for k, v in findings.items():
+                if isinstance(v, NikBaseAdjustment):
+                    msgs.append(colorama.Style.BRIGHT
+                                + colorama.Fore.LIGHTMAGENTA_EX +
+                                f"      * {k}"
+                                + colorama.Style.RESET_ALL)
+                    for n, p in v.params.items():
+                        msgs.append(colorama.Style.BRIGHT
+                                    + f"          * {n}: {p} "
+                                    + colorama.Style.RESET_ALL)
+                else:
+                    msgs.append(colorama.Style.BRIGHT
+                                + colorama.Fore.LIGHTBLUE_EX
+                                + f"      * {k}"
+                                + colorama.Fore.BLACK
+                                + f": {v}"
+                                + colorama.Style.RESET_ALL)
+
+        print("\n".join(msgs))
 
 
 def main():
@@ -625,8 +735,8 @@ def main():
 
     _logger.info(
         f"Starting {parser.prog} v{version} on {datetime.datetime.now():%c}")
-    display = None #CLIDisplay()
-    bridge = DarkBridge(args.verbose, args.filename, args.recursive, display)
+    bridge = DarkBridge(args.verbose, args.filename, args.recursive,
+                        CLIDisplay())
     match args.verb:
         case 'list':
             result = bridge.list()
@@ -635,8 +745,10 @@ def main():
             result = bridge.convert(args.dry_run, args.force)
 
         case 'search':
-            raise NotImplementedError(f"Be patient: "
-                                      f"'{args.verb}' work in progress")
+            if args.meta:
+                result = bridge.search_meta(args.meta)
+            if args.processing:
+                result = bridge.search_processing(args.processing)
 
         case _:
             # impossible case

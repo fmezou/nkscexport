@@ -59,6 +59,7 @@ Reference manual
 import base64
 import logging
 import datetime as dt
+from pathlib import Path
 from xml.etree import ElementTree
 
 from library.ieee754 import IEEE754
@@ -1520,7 +1521,7 @@ class NikonNineProperties:
             f"({xmp_property.value}) is ignored ")
 
 
-class NikonSideCar(object):
+class NikonSideCar:
     """Nikon Side car file.
 
     This class parses a sidecar file to extract the metadata of the
@@ -1536,7 +1537,8 @@ class NikonSideCar(object):
     Sidecar file`" details the data structure and tags used by Nikon.
 
     Args:
-        element: XML element containing the :term:`XMP Packet` element.
+        path: filesystem path of the Nikon Sidecar files containing the
+            :term:`XMP Packet` element.
 
     Attributes:
         metadata: unified dictionary of image metadata coming the Asteroid
@@ -1560,9 +1562,10 @@ class NikonSideCar(object):
     metadata: dict | None
     processing: dict | None
     geolocation: NikonGPSProperties | None
-    def __init__(self, element: ElementTree.Element):
+    def __init__(self, path: Path):
         self._doers = {}
-        self._element = element
+        self._path = path
+        self._element = None
         self._sdc = None
         self._ast = None
         self._nine = None
@@ -1585,6 +1588,11 @@ class NikonSideCar(object):
         c = NikonNineProperties()
         for k in c.get_xmp_props():
             self._doers[k] = self._set_nine_attr
+
+        # Parses the sidecar file into an element tree for further analysis
+        file = path.open()
+        self._element = ElementTree.parse(file).getroot()
+        file.close()
 
 
     def parse(self):
