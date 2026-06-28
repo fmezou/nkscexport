@@ -358,6 +358,7 @@ class CLIDisplay(DefaultDisplay):
             for k, v in nksc.processing.items():
                 if v.active:
                     msgs.append(colorama.Style.BRIGHT
+                                + colorama.Fore.LIGHTMAGENTA_EX
                                 + f"      * {k}"
                                 + colorama.Style.RESET_ALL)
                     for n, p in v.params.items():
@@ -411,9 +412,7 @@ class CLIDisplay(DefaultDisplay):
                                 + f"      * [X] {k}"
                                 + colorama.Style.RESET_ALL)
                     for n, p in v.params.items():
-                        msgs.append(colorama.Style.BRIGHT
-                                    + f"          * {n}: {p} "
-                                    + colorama.Style.RESET_ALL)
+                        msgs.append(f"          * {n}: {p} ")
                 else:
                     msgs.append(colorama.Style.DIM
                                 + colorama.Fore.LIGHTMAGENTA_EX
@@ -522,9 +521,7 @@ class CLIDisplay(DefaultDisplay):
                                 f"      * {k}"
                                 + colorama.Style.RESET_ALL)
                     for n, p in v.params.items():
-                        msgs.append(colorama.Style.BRIGHT
-                                    + f"          * {n}: {p} "
-                                    + colorama.Style.RESET_ALL)
+                        msgs.append(f"          * {n}: {p} ")
                 else:
                     msgs.append(colorama.Style.BRIGHT
                                 + colorama.Fore.LIGHTBLUE_EX

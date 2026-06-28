@@ -676,10 +676,9 @@ class DefaultDisplay(BaseDisplay):
         """
         msgs = []
         print(f"[{index}/{self._total}] Image {path.name:30}")
-        if nksc.metadata is not None:
-            msgs.append(f"    Matching")
-            for k, v in findings.items():
-                msgs.append(f"      * {k}")
+        msgs.append(f"    Matching")
+        for k, v in findings.items():
+            msgs.append(f"      * {k}")
 
         print("\n".join(msgs))
 
@@ -700,15 +699,14 @@ class DefaultDisplay(BaseDisplay):
         """
         msgs = []
         print(f"[{index}/{self._total}] Image {path.name:30}")
-        if nksc.metadata is not None:
-            msgs.append(f"    Matching")
-            for k, v in findings.items():
-                if isinstance(v, NikBaseAdjustment):
-                    msgs.append(f"      * {k}")
-                    for n, p in v.params.items():
-                        msgs.append(f"          * {n}: {p} ")
-                else:
-                    msgs.append(f"      * {k}: {v}")
+        msgs.append(f"    Matching")
+        for k, v in findings.items():
+            if isinstance(v, NikBaseAdjustment):
+                msgs.append(f"      * {k}")
+                for n, p in v.params.items():
+                    msgs.append(f"          * {n}: {p} ")
+            else:
+                msgs.append(f"      * {k}: {v}")
 
         print("\n".join(msgs))
 
