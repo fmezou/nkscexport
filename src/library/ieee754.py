@@ -1,35 +1,57 @@
 """Handle IEEE754 floating-point format.
 
-The `library.ieee754` module reads float numbers in a `IEEE754`_
+The :mod:`library.ieee754` module reads float numbers in a `IEEE754`_
 representation. This module do not implement the full specification of
-the standard. The implementation supports the following subset:
+the standard and only read IEEE754 representation. The implementation
+supports the following subset:
 
 * 32 bits - simple (binary32)
 * 64 bits - double (binary64)
-* read from IEEE754 (not write) 
 
 .. _IEEE754: https://en.wikipedia.org/wiki/IEEE_754
 
-
-The exported classes, exceptions and functions (and any other objects)
-are as follows:
-
-Classes
--------
-.. hlist::
-    :columns: 2
-
-    * :class:`IEEE754`- IEEE754 float number
-
-
 Using ``ieee754``
 -----------------
+The simple examples below shows how converting a IEEE754 representation of
+a float number expressed as a binary string in a `float` object.
 
+We can read simple precision float number as shown below.
+
+>>> from library.ieee754 import IEEE754
 >>> IEEE754(b"\\xab\\xaa\\xaa\\x3e").value
 0.3333333432674408
+>>> IEEE754(b"\\xab\\xaa\\xaa\\x3e").value
+0.3333333432674408
+>>> IEEE754(b"\\x00\\x00\\x00\\x00").value
+0.0
+>>> IEEE754(b"\\x00\\x00\\x80\\x7f").value
+inf
 
-Reference manual
-----------------
+And the same with double precision.
+
+>>> IEEE754( b"\\x00\\x00\\x00\\x00\\x00\\x00\\xf0\\x3f").value
+1.0
+>>> IEEE754(b"\\x00\\x00\\x00\\x00\\x00\\x00\\xf0\\xff").value
+-inf
+>>> IEEE754(b"\\x55\\x55\\x55\\x55\\x55\\x55\\xd5\\x3f").value
+0.3333333333333333
+
+The module supports only simple and double precision based on the lenght
+of the binary string; Any value other than 4 bytes (32 bits) or 8 bytes
+(64 bits) raise an :exc:`KeyError` Exception. The example below have a 56 bits
+lenght binary string.
+
+>>> IEEE754(b"\\x55\\x55\\x55\\x55\\x55\\x55\\xd5").value
+KeyError: 'Unsupported IEEE754 Precision (56 bits)'
+
+Reference
+---------
+
+.. autoclass:: IEEE754
+   :member-order: bysource
+   :members:
+   :private-members:
+   :show-inheritance:
 """
 import logging
 
@@ -45,7 +67,7 @@ _logger = logging.getLogger(__name__)
 _logger.addHandler(logging.NullHandler())
 
 # Predefined layout of IEEE 754 representation, key is the word
-# width in bit (32 or 64), and the layout of each part (sign, exponent,
+# width in bit (32 or 64) with layout of each part (sign, exponent,
 # fraction) with the position# of the least significant bit (lsb) and
 # its width in bits
 _LAYOUT = {

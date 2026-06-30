@@ -6,7 +6,7 @@
 import sys
 from pathlib import Path
 
-# Python files and docs are in seperate folder, so source path is added
+# Python files and docs are in separate folder, so source path is added
 sys.path.insert(0, str(Path('..', '..', 'src').resolve()))
 
 # -- Project information -----------------------------------------------------
@@ -66,10 +66,12 @@ html_logo = "_static/darkbridge_assets/darkbridge-logo.svg"
 html_favicon = "_static/darkbridge_assets/favicon.ico"
 html_static_path = ["_static"]
 html_show_sourcelink = False
+html_last_updated_fmt = ""
 # -- Theme options
 #  https://pypi.org/project/sphinx-rtd-theme/
 html_theme_options = {
-#    "github_url" : "https://github.com/fmezou/darkbridge"
+    "prev_next_buttons_location": "both",
+    "style_external_links": True
 }
 
 # Extension options -----------------------------------------------------------

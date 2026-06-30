@@ -1,31 +1,51 @@
 """Handle XML namespaces.
 
-The `library.namespace` module manage XML name by expanding or shortening
-name based on `namespaces <https://en.wikipedia.org/wiki/XML_namespace>`_.
-
-The exported classes, exceptions and functions (and any other objects)
-are as follows:
-
-Classes
--------
-.. hlist::
-    :columns: 2
-
-    * :class:`NameSpace` -- XML Namespace basic tools
-
+The :mod:`library.namespace` module manage XML name by expanding or
+shortening name based on `namespaces <https://en.wikipedia.org/
+wiki/XML_namespace>`_. It is mainly used to keep XML name in a short form to
+smooth the name of metadata or image adjustment in report or source code.
 
 Using ``namespace``
 -------------------
 
->>> from library.namespace import NameSpace
->>> ns = NameSpace({"x": "adobe:ns:meta/"})
->>> ns.expand_name("x:xmptk")
-'{adobe:ns:meta/}xmptk'
->>> ns.shorten_name("{adobe:ns:meta/}xmptk")
-'x:xmptk'
+For this short tutorial, we have a dummy XML document which use the namespace
+``http://ns.nikon.com/nine/1.0/`` associated to the ``nine`` prefix used as
+sample.
 
-Reference manual
-----------------
+.. code-block:: XML
+   :caption: XML dummy document
+
+    <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+        <rdf:Description rdf:about=""
+                         xmlns:nine="http://ns.nikon.com/nine/1.0/">
+            <nine:about>nine-tags</nine:about>
+            <nine:version>2.0.0</nine:version>
+        </rdf:Description>
+    </rdf:RDF>
+
+We create an instance of :class:`NameSpace` with the pair prefix, URI as
+declared with ``xmlns`` attribute (here nine=
+"http://ns.nikon.com/nine/1.0/"). This pair is expressed as a dictionnary
+with the prefix as key.
+
+>>> from library.namespace import NameSpace
+>>> ns = NameSpace({"nine": "http://ns.nikon.com/nine/1.0/"})
+
+We can expand or shorten the XML name.
+
+>>> ns.expand_name("nine:about")
+'{http://ns.nikon.com/nine/1.0/}about'
+>>> ns.shorten_name("{http://ns.nikon.com/nine/1.0/}about")
+'nine:about'
+
+Reference
+---------
+
+.. autoclass:: NameSpace
+   :member-order: bysource
+   :members:
+   :private-members:
+   :show-inheritance:
 """
 import logging
 
@@ -51,7 +71,7 @@ class NameSpace:
     Args:
         namespaces: Dictionary containing the nanapace prefix and assiocted
             namespace uri as defined in ``xmlns`` attribute. Example:
-            ``ns = {"x": "adobe:ns:meta/"}``
+            ``{"nine": "http://ns.nikon.com/nine/1.0/"}``
     """
     _ns: dict
     _rev_ns: dict

@@ -1,48 +1,98 @@
 """Darkbridge core module
 
 The :mod:`darkbridge.core` module schedules operations to convert the
-sidecar files. Main task are filtering/checking the supported image
+sidecar files. Main tasks are filtering/checking the supported image
 files, parsing the Nikon sidecar files, transforming the metadata and
-wrinting the result in a XMP sidecar file compliant with Darktable.
+writing the result in a XMP sidecar file compliant with Darktable.
+Furthermore, this module displays the sidecar content in a 'human-readable'
+way, and allows to search a metadata or image adjustment by name in a
+file tree structure.
 
-The exported classes, exceptions and functions (and any other objects)
-are as follows:
-
-Exceptions
-----------
-
-Todo:
-    Review the list after completing
-
-Classes
--------
-.. hlist::
-    :columns: 2
-
-    * :class:`DarkBridge`- Convert sidecar files
-
-Constants
----------
-
-Todo:
-    Review the list after completing
+This module is built around two set of features: the first one is the core
+scheduler (:class:`DarkBridge`) to process the sidecar file, the second one
+is the display manager (:class:`DefaultDisplay`).
 
 Using ``core``
 --------------
 
-Todo:
-    Describe how using the module
+For this short tutorial, we have a photo in NEF format named 'full_XMP.IPTC.NEF'
+in the folder named 'images_samples' and is associated sidecar file
+('images_samples/NKSC_PARAM/full_XMP.IPTC.NEF.nksc'). We create an instance of
+:class:`DarkBridge`) with a level of verbosity set to 2 to have field names
+and contents.
 
+>>> from darkbridge.core import DarkBridge
+>>> bridge = DarkBridge(2, ["images_samples\\full_XMP.IPTC.NEF"], False, None)
 
-verbosity level
-^^^^^^^^^^^^^^^
+We can list the metadata and image adjustement with :meth:`DarkBridge.list`.
+The following output has been truncated to fit in the page.
+
+>>> bridge.list()
+List metadata from '['images_samples\\full_XMP.IPTC.NEF']'...
+[1/1] Image full_XMP.IPTC.NEF
+    Metadata
+      * appname: NX Studio
+      * appversion: 1.10 W
+      * xmp:Rating: 5
+      * xmp:Label: Rose
+      * dc:title: [Description] Titre
+      * dc:subject: ['Mot-clé #1', 'Mot-clé #2', 'Mot-clé #3']
+      ...
+      * Iptc4xmpExt:Event: ['[Description] Evénement']
+    Adjustment
+      * nikon::PictureControl
+          * Export: b'NCP\\x00\\x00\\x00\\x00\\x01\\x00\\x00\\x00$0100STANDARD...'
+          * SelectedPictureControl: 0
+          * AutoContrast: 255
+          * AutoSaturation: 255
+          * SelectedPictureControlVersion2: 0
+          * SavedPicConProcess: 1
+          * PictureControl: 0
+      ...
+List metadata from '['images_samples\\full_XMP.IPTC.NEF']' completed...
+
+We can search if a metadata has been entered with :meth:`DarkBridge.search_meta`
+(``dc:subject`` here, that contains the keyword).
+
+>>> bridge.search_meta("dc:subject")
+Search 'dc:subject' in metadata from '['images_samples\\full_XMP.IPTC.NEF']'...
+[1/1] Image full_XMP.IPTC.NEF
+    Matching
+      * dc:subject: ['Mot-clé #1', 'Mot-clé #2', 'Mot-clé #3']
+Found 1 images - Number of files: 1
+
+We can search if an image adjustement is active with :meth:`DarkBridge.search_processing`
+(``PictureControl`` here).
+
+>>> bridge.search_processing("PictureControl")
+Search 'PictureControl' in metadata from '['images_samples\\full_XMP.IPTC...
+[1/1] Image full_XMP.IPTC.NEF
+    Matching
+      * nikon::PictureControl
+          * Export: b'NCP\\x00\\x00\\x00\\x00\\x01\\x00\\x00\\x00$0100STANDARD...'
+          * SelectedPictureControl: 0
+          * AutoContrast: 255
+          * AutoSaturation: 255
+          * SelectedPictureControlVersion2: 0
+          * SavedPicConProcess: 1
+          * PictureControl: 0
+Found 1 images - Number of files: 1
+
+The output in the examples above are the default one made by the
+:class:`DefaultDisplay`. You can create a new class derived from the
+:class:`BaseDisplay` or :class:`DefaultDisplay` to customize the output
+(adding some colors, see :class:`darkbridge.main_cli.CLIDisplay` for
+an example).
+
+About verbosity level...
+------------------------
 
 The verbosity level impacts the leval of detail of each output. Verbosity
 is a positive integer number between 0 and 3. Any values greater than 3
-(or 2 for search) is considered the maximun level (i.e. 3 for list,
+(or 2 for search) is considered the maximum level (i.e. 3 for list,
 2 for search).
 
-:meth:`DarkBridge.list` -- list metadata and image adjustement
+* :meth:`DarkBridge.list` -- list metadata and image adjustement
 
 .. table:: verbosity level for list output
 
@@ -61,7 +111,7 @@ is a positive integer number between 0 and 3. Any values greater than 3
     |       | status.                                                   |
     +-------+-----------------------------------------------------------+
 
-:meth:`DarkBridge.convert` -- list convert Nikon sidecar files
+* :meth:`DarkBridge.convert` -- list convert Nikon sidecar files
 
 .. table:: verbosity level for convert output
 
@@ -82,8 +132,8 @@ is a positive integer number between 0 and 3. Any values greater than 3
     +-------+-----------------------------------------------------------+
 
 
-:meth:`DarkBridge.search_meta`, :meth:`DarkBridge.search_processing`
--- search a metadata or an image adjustement
+* :meth:`DarkBridge.search_meta`, :meth:`DarkBridge.search_processing`
+  -- search a metadata or an image adjustement
 
 .. table:: verbosity level for search output
 
@@ -108,8 +158,32 @@ Notes:
         for more details.
 
 
-Reference manual
-----------------
+Reference
+---------
+
+Display objects
+^^^^^^^^^^^^^^^
+
+.. autoclass:: BaseDisplay
+   :member-order: bysource
+   :members:
+   :private-members:
+   :show-inheritance:
+
+.. autoclass:: DefaultDisplay
+   :member-order: bysource
+   :members:
+   :private-members:
+   :show-inheritance:
+
+Scheduler object
+^^^^^^^^^^^^^^^^
+
+.. autoclass:: DarkBridge
+   :member-order: bysource
+   :members:
+   :private-members:
+   :show-inheritance:
 """
 import logging
 import sys
@@ -151,9 +225,6 @@ class BaseDisplay:
     * :meth:`start_search` -- Display the searching launching
     * :meth:`show_meta_findings` -- Display the result of a search (unitary)
     * :meth:`complete_search` -- Display the searching completion.
-
-    ``Display`` Reference
-    ---------------------
     """
     def __init__(self):
         pass
@@ -170,8 +241,8 @@ class BaseDisplay:
                 :meth:`DarkBridge.convert`).
             verbosity: level of verbosity for the command output. The
                 level should be 0 to 3 (see
-                :ref:`dev_guide/darkbridge/core:verbosity level` for more
-                details)
+                :ref:`dev_guide/darkbridge/core:about verbosity level...`
+                for more details)
             total: Number of image files in the processing pipe.
         """
         raise NotImplementedError
@@ -206,8 +277,8 @@ class BaseDisplay:
             recursive: `True` make a _recursive search (see :class:`DarkBridge`)
             verbosity: level of verbosity for the command output. The
                 level should be 0 to 3 (see
-                :ref:`dev_guide/darkbridge/core:verbosity level` for more
-                details)
+                :ref:`dev_guide/darkbridge/core:about verbosity level...`
+                for more details)
             total: Number of image files in the processing pipe.
         """
         raise NotImplementedError
@@ -243,8 +314,8 @@ class BaseDisplay:
             pattern: Substring to find in metadata field names.
             verbosity: level of verbosity for the command output. The
                 level should be 0 to 3 (see
-                :ref:`dev_guide/darkbridge/core:verbosity level` for more
-                details)
+                :ref:`dev_guide/darkbridge/core:about verbosity level...`
+                for more details)
             total: Number of image files in the processing pipe.
         """
         raise NotImplementedError
@@ -322,8 +393,8 @@ class DefaultDisplay(BaseDisplay):
                 :meth:`DarkBridge.convert`).
             verbosity: level of verbosity for the command output. The
                 level should be 0 to 3 (see
-                :ref:`dev_guide/darkbridge/core:verbosity level` for more
-                details)
+                :ref:`dev_guide/darkbridge/core:about verbosity level...`
+                for more details)
             total: Number of image files in the processing pipe.
         """
         self._filenames = filenames
@@ -382,8 +453,8 @@ class DefaultDisplay(BaseDisplay):
             recursive: `True` make a _recursive search (see :class:`DarkBridge`)
             verbosity: level of verbosity for the command output. The
                 level should be 0 to 3 (see
-                :ref:`dev_guide/darkbridge/core:verbosity level` for more
-                details)
+                :ref:`dev_guide/darkbridge/core:about verbosity level...`
+                for more details)
             total: Number of image files in the processing pipe.
         """
         self._filenames = filenames
@@ -447,8 +518,8 @@ class DefaultDisplay(BaseDisplay):
             pattern: Substring to find in metadata field names.
             verbosity: level of verbosity for the command output. The
                 level should be 0 to 3 (see
-                :ref:`dev_guide/darkbridge/core:verbosity level` for more
-                details)
+                :ref:`dev_guide/darkbridge/core:about verbosity level...`
+                for more details)
             total: Number of image files in the processing pipe.
         """
         self._filenames = filenames
@@ -718,29 +789,13 @@ class DarkBridge:
     Args:
         verbosity: level of verbosity for the command output. The
             level should be 0 to 3 (see
-            :ref:`dev_guide/darkbridge/core:verbosity level` for more
-            details).
+            :ref:`dev_guide/darkbridge/core:about verbosity level...`
+            for more details).
         pathname: List of pathname of images files list based on patterns
-            as defined by `glob.glob` function.
+            as defined by :meth:`Path.glob` function (see
+            `pathlib-pattern-language` for more details)
         recursive: `True` make a _recursive search of images files in
             subfolders.
-
-
-    Using darkbridge
-    ----------------
-
-    This class is the scheduler and handles elementary operations to
-    complete the expected task.
-
-    The easiest way of using this class is to call the `convert` or
-    `list` methods. The first searches sidecar files in the required
-    folders (and subfolders if required), reads the metadata and create
-    or modify the sidecar files in XMP format at the same level as the
-    original image file. The second do the same, but only displays
-    metadata stored in Nikon sidecar files.
-
-    Reference
-    ---------
     """
     _verbosity: int
     _pathname: list[str]

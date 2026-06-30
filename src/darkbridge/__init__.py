@@ -3,13 +3,12 @@
 This package is the DarkBridge core. It includes all the core classes and
 functions to convert the Nikon sidecar files.
 
-The exported modules are as follows:
+.. toctree::
+    :name: darkbridge_toc
+    :maxdepth: 1
 
-.. hlist::
-    :columns: 2
-
-    * :mod:`darkbridge.core` - Convert Nikon sidecar files
-    * :mod:`darkbridge.version` - Store project metadata
+    core
+    version
 """
 from darkbridge.version import version
 

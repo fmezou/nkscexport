@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Make doc (all)" type="docs" factoryName="Sphinx task">
+  <configuration default="false" name="Make doc (all)" type="docs" factoryName="Sphinx task" focusToolWindowBeforeRun="true">
     <module name="darkbridge" />
     <option name="ENV_FILES" value="" />
     <option name="INTERPRETER_OPTIONS" value="" />

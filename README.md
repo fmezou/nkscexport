@@ -8,10 +8,12 @@ DarkBridge
 ==========
 **Bridge Nikon sidecars to Darktable, seamlessly.**
 
-DarkBridge is a utility that converts Nikon NX Studio `.nksc` sidecar 
-files into sidecar files compatible with Darktable.
-It helps photographers migrate adjustment data from Nikon’s workflow to 
-Darktable without manually recreating edits.
+**DarkBridge** is a utility that converts Nikon NX Studio `.nksc` sidecar 
+files into sidecar files compatible with Darktable.It helps photographers 
+migrate adjustment data from Nikon’s workflow to Darktable without manually 
+recreating edits. Furthermore, **DarkBridge** displays the sidecar content in a
+'human-readable' way, and allows to search a metadata or image adjustment by
+name in a file tree structure.
 
 [NX Studio][nxst] (and the previous software as View-NX2, ViewNX-i, Capture 
 NX-D) may save image adjustments to "sidecar" files in an `NKSC_PARAM` folder 

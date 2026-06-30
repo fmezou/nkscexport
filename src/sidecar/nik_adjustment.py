@@ -1,45 +1,346 @@
 """Handle Nikon adjustments
 
-The `sidecar.nik_adjustment` module implements handlers for the Nikon image
-adjustments stored in Nikon sidecar files.file. The article named
+The :mod:`sidecar.nik_adjustment` module implements handlers for the Nikon
+image adjustments stored in Nikon sidecar files.file. The article named
 ":ref:`background_papers/inside_nksc:Inside Nikon Sidecar file`" details
 the data structure and tags used by Nikon.
 
-The exported classes, exceptions and functions (and any other objects)
-are as follows:
+Each image adjustments, as declarated in the observed sidecar file have
+its own class to later implement the convert Nikon parameters to
+Darktable module parameters if it possible. Nevertheless, all these
+classes are derived from the base class :class:`NikBaseAdjustment`. This
+base class offers the interface contract and a set of common methods for
+decoding parameters expressed as XMP properties.
 
-Exceptions
-----------
-.. hlist::
-    :columns: 2
+Using ``nk_adjustment``
+-----------------------
 
-    * sample todo
+For this short tutorial, we have a dummy content of nine:NineEdits XMP
+property used as sample.
 
-Classes
--------
-.. hlist::
-    :columns: 2
+.. code-block:: XML
+   :caption: dummy nine:NineEdits XMP property
 
-    * :class:`NikBaseAdjustment`- Base class for Nikon image's adjustment class
+    <userData>
+        <filter id="nikon::NoiseReduction">
+            <active>true</active>
+            <parameters>
+                <integer name="NoiseReduction.version">13</integer>
+                <integer name="NoiseReduction.endableMore">0</integer>
+            </parameters>
+        </filter>
+        <filter id="nikon::transform">
+            <active>true</active>
+            <parameters>
+                <integer name="Rotation">0</integer>
+                <integer name="PreRotation">0</integer>
+                <bool name="Flip">false</bool>
+            </parameters>
+        </filter>
+        <filter id="nikon::DLightingHQ">
+            <active>false</active>
+            <parameters>
+                <shadowAdjustment>50</shadowAdjustment>
+                <highlightAdjustment>1</highlightAdjustment>
+                <colorBoost>60</colorBoost>
+            </parameters>
+        </filter>
+    </userData>
 
-Constants
+We use a linearized form of the XMP property expressed as a string.
+
+>>> prop = ('<userData><filter id="nikon::NoiseReduction"><active>true</active>'
+...         '<parameters><integer name="NoiseReduction.version">13</integer>'
+...         '<integer name="NoiseReduction.endableMore">0</integer></parameters>'
+...         '</filter><filter id="nikon::transform"><active>true</active>'
+...         '<parameters><integer name="Rotation">0</integer>'
+...         '<integer name="PreRotation">0</integer><bool name="Flip">false</bool>'
+...         '</parameters></filter><filter id="nikon::DLightingHQ"><active>false'
+...         '</active><parameters><shadowAdjustment>50</shadowAdjustment>'
+...         '<highlightAdjustment>1</highlightAdjustment><colorBoost>60'
+...         '</colorBoost></parameters></filter></userData>')
+
+We create an instance of :class:`NineEdits` with the above string.
+
+>>> from sidecar.nik_adjustment import NineEdits
+>>> from xml.etree import ElementTree
+>>> tree = ElementTree.fromstring(prop)
+>>> procs = NineEdits(tree).adjustments
+
+We can list the image ajustements declarated in the XMP property.
+
+>>> procs
+{'nikon::NoiseReduction': NikNoiseReduction object: active=True, 'nikon::transform': Niktransform object: active=True, 'nikon::DLightingHQ': NikDLightingHQ object: active=False}
+
+We can access to the status (active or not) and its parameters for each image
+ajustement by using its shortname as key.
+
+>>> procs['nikon::NoiseReduction']
+NikNoiseReduction object: active=True
+>>> procs['nikon::NoiseReduction'].active
+True
+>>> procs['nikon::NoiseReduction'].params
+{'NoiseReduction.version': 13.0, 'NoiseReduction.endableMore': 0.0}
+
+Reference
 ---------
-Todo:
-    Review the list after the completion of implement
 
-.. hlist::
-    :columns: 2
+Exception
+^^^^^^^^^
 
-    * :const:`NIKON_RATING_MAP` - Correspondence note Nikon → note XMP
+.. autoexception:: NikAdjustmentError
+   :member-order: bysource
+   :members:
+   :private-members:
+   :show-inheritance:
 
-Using ``nk_adjustments``
-------------------------
+Image adjustment objects
+^^^^^^^^^^^^^^^^^^^^^^^^
+.. autoclass:: NineEdits
+   :member-order: bysource
+   :members:
+   :private-members:
+   :show-inheritance:
 
-Todo:
-    Describe how using the module
+.. autoclass:: NikBaseAdjustment
+   :member-order: bysource
+   :members:
+   :private-members:
+   :show-inheritance:
 
-Reference manual
-----------------
+.. autoclass:: NikColorShift
+   :member-order: bysource
+   :members:
+   :private-members:
+   :show-inheritance:
+
+.. autoclass:: NikDLightingHS
+   :member-order: bysource
+   :members:
+   :private-members:
+   :show-inheritance:
+
+.. autoclass:: NikWhiteBalance
+   :member-order: bysource
+   :members:
+   :private-members:
+   :show-inheritance:
+
+.. autoclass:: NikStraighten
+   :member-order: bysource
+   :members:
+   :private-members:
+   :show-inheritance:
+
+.. autoclass:: NikPictureControl
+   :member-order: bysource
+   :members:
+   :private-members:
+   :show-inheritance:
+
+.. autoclass:: NikQuickFixToneCurve
+   :member-order: bysource
+   :members:
+   :private-members:
+   :show-inheritance:
+
+.. autoclass:: NikGaussianBlur
+   :member-order: bysource
+   :members:
+   :private-members:
+   :show-inheritance:
+
+.. autoclass:: NikLEGeneral
+   :member-order: bysource
+   :members:
+   :private-members:
+   :show-inheritance:
+
+.. autoclass:: NikFishEye
+   :member-order: bysource
+   :members:
+   :private-members:
+   :show-inheritance:
+
+.. autoclass:: NikDehaze
+   :member-order: bysource
+   :members:
+   :private-members:
+   :show-inheritance:
+
+.. autoclass:: NikColorBalance
+   :member-order: bysource
+   :members:
+   :private-members:
+   :show-inheritance:
+
+.. autoclass:: NikFlare
+   :member-order: bysource
+   :members:
+   :private-members:
+   :show-inheritance:
+
+.. autoclass:: NikSkinTone
+   :member-order: bysource
+   :members:
+   :private-members:
+   :show-inheritance:
+
+.. autoclass:: NikVignette
+   :member-order: bysource
+   :members:
+   :private-members:
+   :show-inheritance:
+
+.. autoclass:: NikPerspective
+   :member-order: bysource
+   :members:
+   :private-members:
+   :show-inheritance:
+
+.. autoclass:: NikChrAb
+   :member-order: bysource
+   :members:
+   :private-members:
+   :show-inheritance:
+
+.. autoclass:: NikUnsharpMask
+   :member-order: bysource
+   :members:
+   :private-members:
+   :show-inheritance:
+
+.. autoclass:: NikColorBooster
+   :member-order: bysource
+   :members:
+   :private-members:
+   :show-inheritance:
+
+.. autoclass:: NikNXHistory
+   :member-order: bysource
+   :members:
+   :private-members:
+   :show-inheritance:
+
+.. autoclass:: NikSkinSoftening
+   :member-order: bysource
+   :members:
+   :private-members:
+   :show-inheritance:
+
+.. autoclass:: NikLevelsCurves
+   :member-order: bysource
+   :members:
+   :private-members:
+   :show-inheritance:
+
+.. autoclass:: NikRedEye
+   :member-order: bysource
+   :members:
+   :private-members:
+   :show-inheritance:
+
+.. autoclass:: NikDiffraction
+   :member-order: bysource
+   :members:
+   :private-members:
+   :show-inheritance:
+
+.. autoclass:: NikDistortion
+   :member-order: bysource
+   :members:
+   :private-members:
+   :show-inheritance:
+
+.. autoclass:: NikApplicationData
+   :member-order: bysource
+   :members:
+   :private-members:
+   :show-inheritance:
+
+.. autoclass:: NikLongChrAb
+   :member-order: bysource
+   :members:
+   :private-members:
+   :show-inheritance:
+
+.. autoclass:: NikExposureSettings
+   :member-order: bysource
+   :members:
+   :private-members:
+   :show-inheritance:
+
+.. autoclass:: NikLCH
+   :member-order: bysource
+   :members:
+   :private-members:
+   :show-inheritance:
+
+.. autoclass:: NikQuickFixContrast
+   :member-order: bysource
+   :members:
+   :private-members:
+   :show-inheritance:
+
+.. autoclass:: NikGrainNoise
+   :member-order: bysource
+   :members:
+   :private-members:
+   :show-inheritance:
+
+.. autoclass:: NikDustOff
+   :member-order: bysource
+   :members:
+   :private-members:
+   :show-inheritance:
+
+.. autoclass:: Niktransform
+   :member-order: bysource
+   :members:
+   :private-members:
+   :show-inheritance:
+
+.. autoclass:: NikSizeRes
+   :member-order: bysource
+   :members:
+   :private-members:
+   :show-inheritance:
+
+.. autoclass:: NikPhotoEffects
+   :member-order: bysource
+   :members:
+   :private-members:
+   :show-inheritance:
+
+.. autoclass:: NikBrightness
+   :member-order: bysource
+   :members:
+   :private-members:
+   :show-inheritance:
+
+.. autoclass:: NikActiveDLighting
+   :member-order: bysource
+   :members:
+   :private-members:
+   :show-inheritance:
+
+.. autoclass:: NikNoiseReduction
+   :member-order: bysource
+   :members:
+   :private-members:
+   :show-inheritance:
+
+.. autoclass:: NikPixelShiftNoiseReduction
+   :member-order: bysource
+   :members:
+   :private-members:
+   :show-inheritance:
+
+.. autoclass:: NikDLightingHQ
+   :member-order: bysource
+   :members:
+   :private-members:
+   :show-inheritance:
 """
 import base64
 import datetime
@@ -88,7 +389,8 @@ __all__ = [
     "NikActiveDLighting",
     "NikNoiseReduction",
     "NikPixelShiftNoiseReduction",
-    "NikDLightingHQ"
+    "NikDLightingHQ",
+    "NineEdits"
 ]
 
 

@@ -89,13 +89,14 @@ The options are as follows:
 
     Name of the image adjustment (processing) to search. The search
     return the processing's name where substring 'PROCESSING' is found
-    and if it is an active processing.
+    and if it is an active processing. The search is case-sensitive.
 
 .. option:: -m, --meta META
 
     Name of the metadata's field to search. The search return the name
     of the field where substring 'META' is found. The search focuses on
-    the field name and not the content of the field.
+    the field name and not the content of the field. The search is
+    case-sensitive.
 
 .. option:: -r, --recursive
 
@@ -135,10 +136,29 @@ Same as above but converting all the sidecar files in the current directory.::
 
     darkbridge convert ./*.NEF
 
-List metadata of image files the current directory and all subdirectory::
+List metadata of image files the current directory and all subdirectory
+with a verbosity level to show field names and contents::
 
-    darkbridge list --recursive ./**/*.NEF
+    darkbridge -vv list --recursive ./*.NEF
 
+Search images files with the metadata ``dc:subject`` entered::
+
+    darkbridge -vv  search -m 'dc:subject' ./*.NEF
+
+Same as above but with a more permisive pattern (i.e. all fields of 'dc'
+family will be displayed::
+
+    darkbridge -vv  search -m 'dc:' ./*.NEF
+
+Show the images adjustement ``nikon::PictureControl`` of a particular image
+files. Search may be used on a selection of files or one file::
+
+    darkbridge -vv  search -p nikon::PictureControl landscape.NEF
+
+Same as above but with a more permisive pattern (i.e. all image adjustement
+relative to noise will be displayed::
+
+    darkbridge -vv  search -p Noise landscape.NEF
 """
 import argparse
 import datetime

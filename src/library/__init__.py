@@ -4,13 +4,12 @@ This package groups supporting modules used by DarkBridge but without
 adherence to the project. These modules may be considered as standalone
 packages and moved toward their own PyPI project.
 
-The exported modules are as follows:
+.. toctree::
+    :name: library_toc
+    :maxdepth: 1
 
-.. hlist::
-    :columns: 2
-
-    * :mod:`library.ieee754` -- Handle IEEE754 floating-point format
-    * :mod:`library.namespace` -- Handle XML namespaces.
+    ieee754
+    namespace
 """
 __all__ = [
     "ieee754",

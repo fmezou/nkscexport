@@ -4,57 +4,151 @@ The `sidecar.nikon` module implements handlers for the Nikon sidecar
 file. The article named :ref:`background_papers/inside_nksc:Inside Nikon
 Sidecar file` details the data structure and tags used by Nikon.
 
-The exported classes, exceptions and functions (and any other objects)
-are as follows:
-
-Exceptions
-----------
-.. hlist::
-    :columns: 2
-
-    * :exc:`NikonError` - Base class for sidecar parser exceptions
-
-Classes
--------
-.. hlist::
-    :columns: 2
-
-    * :class:`NikonBaseProperties`- Base class for Nikon Properties class
-    * :class:`NikonXMPProperty` - Nikon XMP property
-    * :class:`NikonXMPMeta`- Nikon XMP Meta container
-    * :class:`NikonRDF`- Nikon RDF container
-    * :class:`NikonRDFDescription`- Nikon RDF Description container.
-      (NOT USEFUL)
-    * :class:`NikonSDCProperties`- Nikon SDC properties container
-    * :class:`NikonAsteroidProperties`- Nikon Asteroid properties container
-    * :class:`NikonNineProperties`- Nikon Nine properties container
-    * :class:`NikonSideCar`- Nikon sidecar file.
-
-Constants
----------
-
-Todo:
-    Review the list after the completion of implement
-
-.. hlist::
-    :columns: 2
-
-    * :const:`NIKON_RATING_MAP` - Correspondence note Nikon → note XMP
-    * :const:`NIKON_LABEL_MAP` - Correspondence note Nikon → note XMP"
-    * :const:`NIKON_SUPPORTED_FORMAT` - file extension of the supported
-      image file
-    * :const:`NIKON_NKSC_SUBFOLDER`- subfolder storing the Nikon sidecar
-      file
-    * :const:`NIKON_NKSC_EXT`- file extension of Nikon sidecar files
+Each set of XMP properties (``sdc``, ``ast``, ``nine``) have its own
+handlers to process that set. The :class:`NikonSideCar` is the main class
+managing a Nikon sidecar file.
 
 Using ``nikon``
 ---------------
 
-Todo:
-    Describe how using the module
+For this short tutorial, we have a sidecar file named 'full_XMP.IPTC.NEF.nksc'.
+We create an instance of :class:`NikonSideCar`).
 
-Reference manual
-----------------
+>>> from sidecar.nikon import NikonSideCar
+>>> from pathlib import Path
+>>> path = Path('images_samples/NKSC_PARAM/full_XMP.IPTC.NEF.nksc')
+>>> nksc = NikonSideCar(path)
+
+We can parse the Nikon sidecar file to extract metadata.
+
+>>> nksc.parse()
+
+We can simply access th some key properties via methods as
+:meth:`NikonSideCar.get_rating` or :meth:`NikonSideCar.is_geotagged`. See
+:class:`NikonSideCar` for an exhaustive list of methods.
+
+>>> nksc.get_rating()
+5
+>>> nksc.get_label()
+'Rose'
+>>> nksc.is_geotagged()
+True
+
+We can list all the metadata parsed from the sidecar files. The following
+output has been truncated to fit in the page.
+
+>>> for k, v in nksc.metadata.items():
+...     print(f" * {k}: {v}")
+ * appname: NX Studio
+ * appversion: 1.10 W
+ * xmp:Rating: 5
+ * xmp:Label: Rose
+ * dc:title: [Description] Titre
+ * dc:subject: ['Mot-clé #1', 'Mot-clé #2', 'Mot-clé #3']
+ ...
+ * Iptc4xmpExt:Event: ['[Description] Evénement']
+
+We can list all the image adjustement stored in the sidecar file. The
+following output has been truncated to fit in the page.
+
+>>> for k, v in nksc.processing.items():
+...     print(f" * {k}: Active={v.active}")
+...     for n, p in v.params.items():
+...         print(f"     * {n}: {p} ")
+ * nikon::ColorShift: Active=False
+     * colorCorrection: 0
+ * nikon::PictureControl: Active=True
+     * Export: b'NCP\\x00\\x00\\x00\\x00\\x01\\x00\\x00\\x00$0100STANDARD...'
+     * SelectedPictureControl: 0
+     * AutoContrast: 255
+     * AutoSaturation: 255
+     * SelectedPictureControlVersion2: 0
+     * SavedPicConProcess: 1
+     * PictureControl: 0
+     ...
+
+We can show the geolocation stored in the side file. The :attr:`geolocation`
+attribute is a :class:`NikonGPSProperties`. As this class have a
+`object.__repr__` method, only the GPS coordinates are printed. All GPS
+properties are in :attr:`NikonGPSProperties.props`. See
+:class:`NikonGPSProperties` for a more detailled view of geolocation
+properties.
+
+>>> nksc.geolocation
+lat: 48.13672 (N) long: 1.64114 (W)
+>>> nksc.geolocation.props['GPSLatitude']
+48.13672002447976
+
+Reference
+---------
+
+Exception
+^^^^^^^^^
+
+.. autoexception:: NikonError
+   :member-order: bysource
+   :members:
+   :private-members:
+   :show-inheritance:
+
+Sidecar object
+^^^^^^^^^^^^^^
+
+.. autoclass:: NikonSideCar
+   :member-order: bysource
+   :members:
+   :private-members:
+   :show-inheritance:
+
+Properties objects
+^^^^^^^^^^^^^^^^^^
+.. autoclass:: NikonSDCProperties
+   :member-order: bysource
+   :members:
+   :private-members:
+   :show-inheritance:
+
+.. autoclass:: NikonAsteroidProperties
+   :member-order: bysource
+   :members:
+   :private-members:
+   :show-inheritance:
+
+.. autoclass:: NikonNineProperties
+   :member-order: bysource
+   :members:
+   :private-members:
+   :show-inheritance:
+
+.. autoclass:: NikonGPSProperties
+   :member-order: bysource
+   :members:
+   :private-members:
+   :show-inheritance:
+
+.. autoclass:: NikonXMPProperty
+   :member-order: bysource
+   :members:
+   :private-members:
+   :show-inheritance:
+
+.. autoclass:: NikonXMPDescriptions
+   :member-order: bysource
+   :members:
+   :private-members:
+   :show-inheritance:
+
+Constants
+^^^^^^^^^
+
+.. autodata:: NIKON_SUPPORTED_FORMAT
+
+.. autodata:: NIKON_NKSC_SUBFOLDER
+
+.. autodata:: NIKON_NKSC_EXT
+
+.. autodata:: NIKON_LABEL_MAP
+
 """
 import base64
 import logging
@@ -69,13 +163,13 @@ from sidecar.nik_adjustment import NineEdits
 
 __all__ = [
     "NikonError",
-    "NikonGPSProperties",
-    "NikonXMPProperty",
-    "NikonXMPDescriptions",
+    "NikonSideCar",
     "NikonSDCProperties",
     "NikonAsteroidProperties",
     "NikonNineProperties",
-    "NikonSideCar",
+    "NikonGPSProperties",
+    "NikonXMPProperty",
+    "NikonXMPDescriptions",
     "NIKON_SUPPORTED_FORMAT",
     "NIKON_NKSC_SUBFOLDER",
     "NIKON_NKSC_EXT",
@@ -220,7 +314,7 @@ class NikonGPSProperties:
     The article named :ref:`background_papers/inside_nksc:Inside Nikon
     Sidecar file` details the data structure and tags used by Nikon. In
     a nutshell, Nikon seems to have using DICOM specification (see
-    :ref:`background_papers/inside_nksc:GPSAttributes`).
+    :ref:`background_papers/inside_geoloc:GPSAttributes`).
 
     Raises:
         ValueError: argument has the right type but an
@@ -1084,9 +1178,6 @@ class NikonAsteroidProperties:
     The article named ":ref:`background_papers/inside_nksc:Inside Nikon
     Sidecar file`" details the data structure and tags used by Nikon.
 
-    Args:
-        element: XML element containing the ``rdf:Description`` tag.
-
     Raises:
         ValueError: Inappropriate value, the :attr:`ValueError.message`
             details the error.
@@ -1391,9 +1482,6 @@ class NikonNineProperties:
             always set to 0 (probably deprecated, but there is no public
             information).
 
-    Args:
-        element: XML element containing the ``rdf:Description`` tag.
-
     Raises:
         NikonError: generic error, the :attr:`NikonError.message` details
             the error.
@@ -1531,11 +1619,6 @@ class NikonSideCar:
     The article named ":ref:`background_papers/inside_nksc:Inside Nikon
     Sidecar file`" details the data structure and tags used by Nikon.
 
-    This class parse a sidecar file and extract ``xmpmeta`` tags.
-
-    The article named ":ref:`background_papers/inside_nksc:Inside Nikon
-    Sidecar file`" details the data structure and tags used by Nikon.
-
     Args:
         path: filesystem path of the Nikon Sidecar files containing the
             :term:`XMP Packet` element.
@@ -1548,16 +1631,6 @@ class NikonSideCar:
             indicate if the processing will be applied on the
             image when opening in NX Studio. The key ``params`` contains
             processing's parameters as a dictionnary.
-
-    **Public Methods**
-        This class has a number of public methods listed below in alphabetical
-        order.
-
-        ===================================  ===================================
-        `parse`                              ..
-        ===================================  ===================================
-
-    **Using NikonSideCar...**
     """
     metadata: dict | None
     processing: dict | None
