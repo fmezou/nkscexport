@@ -38,9 +38,9 @@ interface :command:`darkbridge`. This is the documentation for **DarkBridge**
 .. image:: https://img.shields.io/github/license/fmezou/darkbridge
     :alt: License
 
-.. image:: https://img.shields.io/readthedocs/darkbridge/develop
+.. image:: https://img.shields.io/readthedocs/darkbridge/latest
    :alt: Read the Docs (version)
-   :target: https://darkbridge.readthedocs.io/en/develop
+   :target: https://darkbridge.readthedocs.io/en/latest
 
 .. image:: https://img.shields.io/pypi/v/darkbridge
     :alt: PyPI - Version

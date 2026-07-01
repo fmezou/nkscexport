@@ -40,7 +40,7 @@ homepage = "https://pypi.org/project/darkbridge/"
 source = "https://github.com/fmezou/darkbridge"
 download = "https://github.com/fmezou/darkbridge/releases"
 changelog = "https://github.com/fmezou/darkbridge/compare/"
-documentation = "https://darkbridge.readthedocs.io/en/develop/"
+documentation = "https://darkbridge.readthedocs.io/en/latest/"
 issues = "https://github.com/fmezou/darkbridge/issues"
 
 [project.scripts]

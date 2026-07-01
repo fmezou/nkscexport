@@ -35,8 +35,8 @@ See also
 
 
 [logo]: https://raw.githubusercontent.com/fmezou/darkbridge/refs/heads/develop/docs/source/_static/darkbridge_assets/darkbridge-logo.svg
-[rtds]: https://app.readthedocs.org/projects/darkbridge/badge/?version=develop
-[rtdp]: https://darkbridge.readthedocs.io/en/develop/
+[rtds]: https://app.readthedocs.org/projects/darkbridge/badge/?version=latest
+[rtdp]: https://darkbridge.readthedocs.io/en/latest/
 [lic]: https://img.shields.io/github/license/fmezou/darkbridge
 [pkg]: https://img.shields.io/github/v/release/fmezou/darkbridge
 [tag]: https://img.shields.io/github/v/tag/fmezou/darkbridge
