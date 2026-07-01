@@ -11,7 +11,7 @@ For this short tutorial, we simply import the data.
 
 >>> from darkbridge.version import version
 >>> version
-'0.1.0-dev0'
+'0.1.0'
 
 Reference
 ---------
@@ -36,6 +36,6 @@ name: str = "DarkBridge"
 #: The version identifier of the project, as defined in the `Version
 #: specifier specification <https://packaging.python.org/en/latest/
 #: specifications/version-specifiers/#version-specifiers>`_
-version: str = "0.1.0.dev0"
+version: str = "0.1.0a1"
 
 

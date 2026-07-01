@@ -24,7 +24,7 @@ keywords = [
 # Trove classifiers which apply to the project
 # https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#classifiers
 classifiers = [
-    "Development Status :: 1 - Planning",
+    "Development Status :: 3 - Alpha",
     "Environment :: Console",
     "Intended Audience :: Developers",
     "Programming Language :: Python :: 3",
