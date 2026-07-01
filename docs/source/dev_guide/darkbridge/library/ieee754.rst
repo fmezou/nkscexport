@@ -4,9 +4,9 @@
 .. default-domain:: py
 .. default-role:: any
 
-``nikon`` -- Handle Nikon sidecar files (read only)
+``ieee754`` -- Handle IEEE754 floating-point format
 ===================================================
-.. automodule:: sidecar.nikon
+.. automodule:: darkbridge.library.ieee754
     :platform: all
-    :synopsis: Handle Nikon sidecar files (read only)
+    :synopsis: Handle IEEE754 floating-point format
 

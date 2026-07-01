@@ -40,9 +40,11 @@ interface :command:`darkbridge`. This is the documentation for **DarkBridge**
 
 .. image:: https://img.shields.io/readthedocs/darkbridge/develop
    :alt: Read the Docs (version)
+   :target: https://darkbridge.readthedocs.io/en/develop
 
 .. image:: https://img.shields.io/pypi/v/darkbridge
     :alt: PyPI - Version
+    :target: https://pypi.org/project/darkbridge/
 
 .. image:: https://img.shields.io/pypi/status/darkbridge
     :alt: PyPI - Status
@@ -83,8 +85,8 @@ similar topics.
    :name: devs_toc
 
    dev_guide/darkbridge/package
-   dev_guide/sidecar/package
-   dev_guide/library/package
+   dev_guide/darkbridge/sidecar/package
+   dev_guide/darkbridge/library/package
 
 .. toctree::
    :maxdepth: 1

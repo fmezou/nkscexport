@@ -11,7 +11,7 @@ import math
 import unittest
 from pathlib import Path
 
-from library.ieee754 import IEEE754
+from darkbridge.library.ieee754 import IEEE754
 
 # Tested modules may use the logging facility, so a minimal configuration
 # is set. To avoid side effects with the `unittest` console output, log

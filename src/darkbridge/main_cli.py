@@ -171,8 +171,8 @@ import colorama
 
 from darkbridge.core import DarkBridge
 from darkbridge.core import DefaultDisplay
-from sidecar.nikon import NikonSideCar
-from sidecar.nik_adjustment import NikBaseAdjustment
+from darkbridge.sidecar.nikon import NikonSideCar
+from darkbridge.sidecar.nik_adjustment import NikBaseAdjustment
 from darkbridge.version import version
 
 

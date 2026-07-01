@@ -1,8 +1,6 @@
 [build-system]
-#requires = ["hatchling >= 1.26"]
-#build-backend = "hatchling.build"
-requires = ["setuptools >= 61.0.0", "setuptools-scm"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling >= 1.26"]
+build-backend = "hatchling.build"
 
 [project]
 name = "DarkBridge"
@@ -48,10 +46,7 @@ issues = "https://github.com/fmezou/darkbridge/issues"
 [project.scripts]
 darkbridge = "darkbridge.main_cli:main"
 
-[tool.setuptools.packages.find]
-where = ["src"]
-include = ["darkbridge", "library", "sidecar"]
-namespaces = false
-
-[tool.setuptools.dynamic]
-version = {attr = "darkbridge.__version__"}
+[tool.hatch.version]
+source = "code"
+path = "src/darkbridge/version.py"
+expression = "version"

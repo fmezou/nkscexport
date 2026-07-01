@@ -6,7 +6,7 @@
 
 ``nik_adjustment`` -- Handle Nikon adjustments
 ==============================================
-.. automodule:: sidecar.nik_adjustment
+.. automodule:: darkbridge.sidecar.nik_adjustment
     :platform: all
     :synopsis: Handle Nikon adjustments
 

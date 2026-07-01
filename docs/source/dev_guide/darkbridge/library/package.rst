@@ -7,6 +7,6 @@
 *********************************
 ``library`` -- Supporting modules
 *********************************
-.. automodule:: library
+.. automodule:: darkbridge.library
     :platform: all
     :synopsis: Supporting modules

@@ -6,6 +6,6 @@
 
 ``namespace`` -- Handle XML namespaces
 ======================================
-.. automodule:: library.namespace
+.. automodule:: darkbridge.library.namespace
     :platform: all
     :synopsis: Handle XML namespaces

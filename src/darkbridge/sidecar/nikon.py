@@ -156,9 +156,9 @@ import datetime as dt
 from pathlib import Path
 from xml.etree import ElementTree
 
-from library.ieee754 import IEEE754
-from library.namespace import NameSpace
-from sidecar.nik_adjustment import NineEdits
+from darkbridge.library.ieee754 import IEEE754
+from darkbridge.library.namespace import NameSpace
+from darkbridge.sidecar.nik_adjustment import NineEdits
 
 
 __all__ = [

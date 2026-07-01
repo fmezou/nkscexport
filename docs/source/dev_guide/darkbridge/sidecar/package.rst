@@ -7,6 +7,6 @@
 ***********************************
 ``sidecar`` -- Handle sidecar files
 ***********************************
-.. automodule:: sidecar
+.. automodule:: darkbridge.sidecar
     :platform: all
     :synopsis: Handle sidecar files.

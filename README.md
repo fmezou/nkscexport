@@ -2,7 +2,7 @@
 
 > ![GitHub License][lic] [![ReadTheDocs Status][rtds]][rtdp]\
 > ![GitHub Release][pkg] ![GitHub Tag][tag]\
-> ![PyPI - Version][pyv] ![PyPI - Status][pyst] ![PyPI - Format][pyfm]
+> [![PyPI - Version][pyv]][pyt] ![PyPI - Status][pyst] ![PyPI - Format][pyfm]
 
 DarkBridge
 ==========
@@ -43,4 +43,5 @@ See also
 [pyv]: https://img.shields.io/pypi/v/darkbridge
 [pyfm]: https://img.shields.io/pypi/format/darkbridge
 [pyst]: https://img.shields.io/pypi/status/darkbridge
+[pyt]: https://pypi.org/project/darkbridge/
 [nxst]: https://downloadcenter.nikonimglib.com/en/products/564/NX_Studio.html

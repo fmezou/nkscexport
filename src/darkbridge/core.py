@@ -189,8 +189,8 @@ import logging
 import sys
 from pathlib import Path
 
-from sidecar.nikon import *
-from sidecar.nik_adjustment import NikBaseAdjustment
+from darkbridge.sidecar.nikon import *
+from darkbridge.sidecar.nik_adjustment import NikBaseAdjustment
 
 
 __all__ = [
