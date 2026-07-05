@@ -382,7 +382,11 @@ class CLIDisplay(DefaultDisplay):
                                 + f"      * {k}"
                                 + colorama.Style.RESET_ALL)
                     for n, p in v.params.items():
-                        msgs.append(f"          * {n}: {p} ")
+                        if isinstance(p, bytes):
+                            dump = self._dump_data(p, "            " )
+                            msgs.append(f"          * {n}: {dump}")
+                        else:
+                            msgs.append(f"          * {n}: {p} ")
 
         print("\n".join(msgs))
 
@@ -432,18 +436,66 @@ class CLIDisplay(DefaultDisplay):
                                 + f"      * [X] {k}"
                                 + colorama.Style.RESET_ALL)
                     for n, p in v.params.items():
-                        msgs.append(f"          * {n}: {p} ")
+                        if isinstance(p, bytes):
+                            dump = self._dump_data(p, "            " )
+                            msgs.append(f"          * {n}: {dump}")
+                        else:
+                            msgs.append(f"          * {n}: {p} ")
                 else:
                     msgs.append(colorama.Style.DIM
                                 + colorama.Fore.LIGHTMAGENTA_EX
                                 + f"      * [ ] {k}"
                                 + colorama.Style.RESET_ALL)
                     for n, p in v.params.items():
-                        msgs.append(colorama.Style.DIM
-                                    + f"          * {n}: {p} "
-                                    + colorama.Style.RESET_ALL)
+                        if isinstance(p, bytes):
+                            dump = self._dump_data(p, "            " )
+                            msgs.append(colorama.Style.DIM
+                                        + f"          * {n}: {dump}"
+                                        + colorama.Style.RESET_ALL)
+                        else:
+                            msgs.append(colorama.Style.DIM
+                                        + f"          * {n}: {p} "
+                                        + colorama.Style.RESET_ALL)
 
         print("\n".join(msgs))
+
+    def _dump_data(self, data: bytes, prefix:str):
+        """Dump an obscure data structure.
+
+        This method returns a human-readable representation of an obscure
+        data (unknown or obfuscated data structure). The representation is
+        a common one based on standard hexacimal dump (left part with bytes
+        expressed in hexadecimal and right part as character if possible.
+
+        Args:
+            data: Obscure data expressed as binary array.
+            prefix: String starting output lines to indent the output if
+                needed
+        """
+        msgs = []
+        buffer = data
+        msgs.append(f"Obscure data ({len(data)} bytes)")
+        head = f"00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F"
+        msgs.append(colorama.Style.BRIGHT
+                    + colorama.Fore.LIGHTBLACK_EX
+                    + f"{prefix}....| {head}"
+                    + colorama.Style.RESET_ALL)
+        i = 0
+        while len(buffer) != 0:
+            line = buffer[0:16]
+            hexa = f"{line.hex(" ")}".ljust(len(head))
+            ascii = str(line.translate(self._data_trans), encoding='ascii')
+            msgs.append(colorama.Style.BRIGHT
+                        + colorama.Fore.LIGHTBLACK_EX
+                        + f"{prefix}{i:04x}| "
+                        + colorama.Style.NORMAL
+                        + f"{hexa} {ascii}"
+                        + colorama.Style.RESET_ALL)
+            buffer = buffer[16:]
+            i += 16
+
+        return "\n".join(msgs)
+
 
     def show_findings(self, index: int, path: Path, nksc: NikonSideCar,
                       findings: dict):
@@ -541,7 +593,11 @@ class CLIDisplay(DefaultDisplay):
                                 f"      * {k}"
                                 + colorama.Style.RESET_ALL)
                     for n, p in v.params.items():
-                        msgs.append(f"          * {n}: {p} ")
+                        if isinstance(p, bytes):
+                            dump = self._dump_data(p, "            " )
+                            msgs.append(f"          * {n}: {dump}")
+                        else:
+                            msgs.append(f"          * {n}: {p} ")
                 else:
                     msgs.append(colorama.Style.BRIGHT
                                 + colorama.Fore.LIGHTBLUE_EX

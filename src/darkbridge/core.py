@@ -381,6 +381,15 @@ class DefaultDisplay(BaseDisplay):
         self._path = None
         self._nksc = None
 
+        #Build the translation table for dump (see CLIDisplay._dump_data)
+        datain = bytearray(range(256))
+        dataout = bytearray(range(256))
+        printable = bytearray(range(32, 127, 1))
+        for i in range(256):
+            if dataout[i] not in printable:
+                dataout[i] = 0x2E # '.'
+        self._data_trans = bytes.maketrans(datain, dataout)
+
     def start_convert(self, filenames: list[str], recursive: bool,
                       dry_run: bool, force: bool, verbosity: int, total: int):
         """Display the conversion launching.
@@ -695,7 +704,11 @@ class DefaultDisplay(BaseDisplay):
                 if v.active:
                     msgs.append(f"      * {k} ")
                     for n, p in v.params.items():
-                        msgs.append(f"          * {n}: {p} ")
+                        if isinstance(p, bytes):
+                            dump = self._dump_data(p, "            " )
+                            msgs.append(f"          * {n}: {dump}")
+                        else:
+                            msgs.append(f"          * {n}: {p} ")
 
         print("\n".join(msgs))
 
@@ -726,7 +739,11 @@ class DefaultDisplay(BaseDisplay):
                 else:
                     msgs.append(f"      * [ ] {k} ")
                 for n, p in v.params.items():
-                    msgs.append(f"          * {n}: {p} ")
+                    if isinstance(p, bytes):
+                        dump = self._dump_data(p, "            ")
+                        msgs.append(f"          * {n}: {dump}")
+                    else:
+                        msgs.append(f"          * {n}: {p} ")
 
         print("\n".join(msgs))
 
@@ -775,11 +792,44 @@ class DefaultDisplay(BaseDisplay):
             if isinstance(v, NikBaseAdjustment):
                 msgs.append(f"      * {k}")
                 for n, p in v.params.items():
-                    msgs.append(f"          * {n}: {p} ")
+                    if isinstance(p, bytes):
+                        dump = self._dump_data(p, "            ")
+                        msgs.append(f"          * {n}: {dump}")
+                    else:
+                        msgs.append(f"          * {n}: {p} ")
             else:
                 msgs.append(f"      * {k}: {v}")
 
         print("\n".join(msgs))
+
+    def _dump_data(self, data: bytes, prefix: str):
+        """Dump an obscure data structure.
+
+        This method returns a human-readable representation of an obscure
+        data (unknown or obfuscated data structure). The representation is
+        a common one based on standard hexacimal dump (left part with bytes
+        expressed in hexadecimal and right part as character if possible.
+
+        Args:
+            data: Obscure data expressed as binary array.
+            prefix: String starting output lines to indent the output if
+                needed
+        """
+        msgs = []
+        buffer = data
+        msgs.append(f"Obscure data ({len(data)} bytes)")
+        head = f"00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F"
+        msgs.append(f"{prefix}....| {head}")
+        i = 0
+        while len(buffer) != 0:
+            line = buffer[0:16]
+            hexa = f"{line.hex(" ")}".ljust(len(head))
+            ascii = str(line.translate(self._data_trans), encoding='ascii')
+            msgs.append(f"{prefix}{i:04x}| {hexa} {ascii}")
+            buffer = buffer[16:]
+            i += 16
+
+        return "\n".join(msgs)
 
 
 class DarkBridge:
