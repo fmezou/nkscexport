@@ -439,6 +439,19 @@ class NikBaseAdjustment:
     active: bool
     params: dict
     def __init__(self, element: ElementTree.Element):
+        # Table of doers method for processing parameters
+        self._doers = {
+            "integer": self._set_param_integer,
+            "double": self._set_param_double,
+            "bool":self._set_param_bool,
+            "Export": self._set_param_export,
+            "points": self._set_param_points,
+            "data": self._set_param_data,
+            "binary": self._set_param_binary,
+            "map": self._set_param_map,
+            "dateAndTime": self._set_param_dtstamp,
+            "_default": self._set_default
+        }
         self._element = element
         self.active = False
         self.params = {}
@@ -472,7 +485,7 @@ class NikBaseAdjustment:
         This method parses an XML element as a image's adjustment
         parameters block and store it in the parameters' dictionary
         :attr:`params` according to its explicit or implicit type. As
-        image's adjustment parameterq are not documented (Nikon
+        image's adjustment parameters are not documented (Nikon
         proprietary format), the method is permissive and not checks the
         data set.
 
@@ -491,81 +504,160 @@ class NikBaseAdjustment:
                 details the error.
         """
         for child in element:
-            match child.tag:
-                case "integer":
-                    # An ``integer`` may a decimal number or a boolean if its
-                    # value is ``true`` or ``false``.
-                    if "name" in child.attrib:
-                        k, v = child.attrib["name"], child.text
-                        if v is not None:
-                            match v:
-                                case "false" | "true":
-                                    self.params[k] = (v.lower() == "true")
-                                case _:
-                                    self.params[k] = float(v)
-                        else:
-                            self.params[k] = None
-                    else:
-                        raise NikAdjustmentError(f"Unnamed parameters")
+            if child.tag in self._doers:
+                self._doers[child.tag](child)
+            else:
+                self._doers["_default"](child)
 
-                case "double":
-                    if "name" in child.attrib:
-                        k, v = child.attrib["name"], child.text
-                        if v is not None:
-                            self.params[k] = float(v)
-                        else:
-                            self.params[k] = None
-                    else:
-                        raise NikAdjustmentError(f"Unnamed parameters")
-
-                case "Export":
-                    self._set_param_export(child)
-
-                case "points":
-                    self._set_param_points(child)
-
-                case "data":
-                    # Unspecified text string
-                    if "id" in child.attrib:
-                        k, v = child.attrib["id"], child.text
-                        if v is not None:
-                            self.params[k] = v
-                        else:
-                            self.params[k] = None
-                    else:
-                        raise NikAdjustmentError(f"Unnamed parameters")
-
-                case "binary":
-                    #  Binary string encoded in base64 (seems similar to
-                    # Export parameters)
-                    if "name" in child.attrib:
-                        k, v = child.attrib["name"], child.text
-                        if v is not None:
-                            self.params[k] = base64.b64decode(v)
-                        else:
-                            self.params[k] = None
-                    else:
-                        raise NikAdjustmentError(f"Unnamed parameters")
-
-                case "map":
-                    self._set_param_map(child)
-
-                case "dateAndTime":
-                    self._set_param_dtstamp(child)
-
-                case _:
-                    # It is a simple tag, its type is guessed from its value
-                    k, v = child.tag, child.text
-                    if v is not None:
-                        if v.isdecimal():
-                            self.params[k] = int(v)
-                        else:
-                            self.params[k] = v
-                    else:
-                        self.params[child.tag] = None
-
+        _logger.debug(f"{self.__class__.__name__} adjustments parameters: "
+                      f"{len(self.params)}")
         for k, v in self.params.items():
             _logger.debug(f"{self.__class__.__name__} adjustments parameters {k}={v}")
+
+    def _set_param_integer(self, element: ElementTree.Element):
+        """Set integer parameter.
+
+        An ``integer`` may a decimal number or a boolean if its
+        value is ``true`` or ``false``.
+
+        Args:
+            element: Element containing the parameter.
+
+        Raises:
+            NikAdjustmentError: Generic error, the :attr:`NikAdjustmentError.message`
+                details the error.
+        """
+        if "name" in element.attrib:
+            k, v = element.attrib["name"], element.text
+            if v is not None:
+                match v:
+                    case "false" | "true":
+                        self.params[k] = (v.lower() == "true")
+                    case _:
+                        self.params[k] = float(v)
+            else:
+                self.params[k] = None
+        else:
+            raise NikAdjustmentError(f"Unnamed parameters")
+
+    def _set_param_bool(self, element: ElementTree.Element):
+        """Set boolean parameter.
+
+        As the NineEdits XML format is not documented, some type may be
+        overloaded (boolean and integer for exemple).
+
+        Args:
+            element: Element containing the parameter.
+
+        Raises:
+            NikAdjustmentError: Generic error, the :attr:`NikAdjustmentError.message`
+                details the error.
+        """
+        if "name" in element.attrib:
+            k, v = element.attrib["name"], element.text
+            if v is not None:
+                match v:
+                    case "false" | "true":
+                        self.params[k] = (v.lower() == "true")
+                    case _:
+                        raise NikAdjustmentError(f"Parameters {k} is not "
+                                                 f"a boolean ({v})")
+            else:
+                self.params[k] = None
+        else:
+            raise NikAdjustmentError(f"Unnamed parameters")
+
+    def _set_param_double(self, element: ElementTree.Element):
+        """Set double parameter.
+
+        Args:
+            element: Element containing the parameter.
+
+        Raises:
+            NikAdjustmentError: Generic error, the :attr:`NikAdjustmentError.message`
+                details the error.
+        """
+        if "name" in element.attrib:
+            k, v = element.attrib["name"], element.text
+            if v is not None:
+                self.params[k] = float(v)
+            else:
+                self.params[k] = None
+        else:
+            raise NikAdjustmentError(f"Unnamed parameters")
+
+    def _set_param_data(self, element: ElementTree.Element):
+        """Set data parameter.
+
+        Data is an unspecified text string
+
+        Args:
+            element: Element containing the parameter.
+
+        Raises:
+            NikAdjustmentError: Generic error, the :attr:`NikAdjustmentError.message`
+                details the error.
+        """
+        if "id" in element.attrib:
+            k, v = element.attrib["id"], element.text
+            if v is not None:
+                self.params[k] = v
+            else:
+                self.params[k] = None
+        else:
+            raise NikAdjustmentError(f"Unnamed parameters")
+
+    def _set_param_binary(self, element: ElementTree.Element):
+        """Set binary parameter.
+
+        Binary string encoded in base64 (seems similar to Export type
+        parameters)
+
+        Args:
+            element: Element containing the parameter.
+
+        Raises:
+            NikAdjustmentError: Generic error, the :attr:`NikAdjustmentError.message`
+                details the error.
+        """
+        if "name" in element.attrib:
+            k, v = element.attrib["name"], element.text
+            if v is not None:
+                self.params[k] = base64.b64decode(v)
+            else:
+                self.params[k] = None
+        else:
+            raise NikAdjustmentError(f"Unnamed parameters")
+
+    def _set_default(self, element: ElementTree.Element):
+        """Default setter for parameter.
+
+        Simple parameter is a simple tag, its type is guessed from its
+        value. As the method is the default setter, it checks that the
+        parameter is a simple one. If not a warning is logged.
+
+        Args:
+            element: Element containing the parameter.
+
+        Raises:
+            NikAdjustmentError: Generic error, the :attr:`NikAdjustmentError.message`
+                details the error.
+        """
+        k, v = element.tag, element.text
+        if "name" in element.attrib:
+            name = element.attrib["name"]
+            _logger.warning(f"{self.__class__.__name__}: {name} ({k}) "
+                            f"parameter is not known - ignored")
+        else:
+            if v is not None:
+                if v.isdecimal():
+                    self.params[k] = int(v)
+                else:
+                    self.params[k] = v
+            else:
+                _logger.warning(f"{self.__class__.__name__}: Empty or null "
+                                f"parameter ({k})")
+                self.params[k] = None
 
     def _set_param_dtstamp(self, element: ElementTree.Element):
         """Set datetime stamp parameter.
