@@ -14,7 +14,7 @@ Using ``nikon``
 For this short tutorial, we have a sidecar file named 'full_XMP.IPTC.NEF.nksc'.
 We create an instance of :class:`NikonSideCar`).
 
->>> from sidecar.nikon import NikonSideCar
+>>> from darkbridge.sidecar.nikon import NikonSideCar
 >>> from pathlib import Path
 >>> path = Path('images_samples/NKSC_PARAM/full_XMP.IPTC.NEF.nksc')
 >>> nksc = NikonSideCar(path)
@@ -158,7 +158,7 @@ from xml.etree import ElementTree
 
 from darkbridge.library.ieee754 import IEEE754
 from darkbridge.library.namespace import NameSpace
-from darkbridge.sidecar.nik_adjustment import NineEdits
+from darkbridge.sidecar.nik_adjustment import create_nine_edits
 
 
 __all__ = [
@@ -1577,7 +1577,7 @@ class NikonNineProperties:
                 details the error.
         """
         tree = ElementTree.fromstring(xmp_property.value)
-        self.props["NineEdits"] = NineEdits(tree).adjustments
+        self.props["NineEdits"] = create_nine_edits(tree)
 
     def _set_label(self, xmp_property: NikonXMPProperty):
         """Set the label of the image.
@@ -1624,8 +1624,8 @@ class NikonSideCar:
             :term:`XMP Packet` element.
 
     Attributes:
-        metadata: unified dictionary of image metadata coming the Asteroid
-            (ast) set.
+        metadata: unified dictionary of image metadata coming from the
+            Asteroid (ast) set.
         geolocation: object contains the geolocation of the image.
         processing: dictonary of image ajustements. The key ``active``
             indicate if the processing will be applied on the

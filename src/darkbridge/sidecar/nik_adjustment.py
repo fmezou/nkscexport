@@ -62,10 +62,10 @@ We use a linearized form of the XMP property expressed as a string.
 
 We create an instance of :class:`NineEdits` with the above string.
 
->>> from sidecar.nik_adjustment import NineEdits
+>>> from darkbridge.sidecar.nik_adjustment import create_nine_edits
 >>> from xml.etree import ElementTree
 >>> tree = ElementTree.fromstring(prop)
->>> procs = NineEdits(tree).adjustments
+>>> procs = create_nine_edits(tree)
 
 We can list the image ajustements declarated in the XMP property.
 
@@ -94,14 +94,12 @@ Exception
    :private-members:
    :show-inheritance:
 
+Image adjustement functions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. autofunction:: create_nine_edits
+
 Image adjustment objects
 ^^^^^^^^^^^^^^^^^^^^^^^^
-.. autoclass:: NineEdits
-   :member-order: bysource
-   :members:
-   :private-members:
-   :show-inheritance:
-
 .. autoclass:: NikBaseAdjustment
    :member-order: bysource
    :members:
@@ -390,7 +388,7 @@ __all__ = [
     "NikNoiseReduction",
     "NikPixelShiftNoiseReduction",
     "NikDLightingHQ",
-    "NineEdits"
+    "create_nine_edits"
 ]
 
 
@@ -767,160 +765,202 @@ class NikBaseAdjustment:
 class NikColorShift(NikBaseAdjustment):
     pass
     
+
 class NikDLightingHS(NikBaseAdjustment):
     pass
+
 
 class NikWhiteBalance(NikBaseAdjustment):
     pass
     
+
 class NikStraighten(NikBaseAdjustment):
     pass
     
+
 class NikPictureControl(NikBaseAdjustment):
     pass
     
+
 class NikQuickFixToneCurve(NikBaseAdjustment):
     pass
     
+
 class NikGaussianBlur(NikBaseAdjustment):
     pass
     
+
 class NikLEGeneral(NikBaseAdjustment):
     pass
     
+
 class NikFishEye(NikBaseAdjustment):
     pass
     
+
 class NikDehaze(NikBaseAdjustment):
     pass
     
+
 class NikColorBalance(NikBaseAdjustment):
     pass
     
+
 class NikFlare(NikBaseAdjustment):
     pass
         
+
 class NikSkinTone(NikBaseAdjustment):
     pass
+
 
 class NikVignette(NikBaseAdjustment):
     pass
     
+
 class NikPerspective(NikBaseAdjustment):
     pass
     
+
 class NikChrAb(NikBaseAdjustment):
     pass
     
+
 class NikUnsharpMask(NikBaseAdjustment):
     pass
     
+
 class NikColorBooster(NikBaseAdjustment):
     pass
     
+
 class NikNXHistory(NikBaseAdjustment):
     pass
     
+
 class NikSkinSoftening(NikBaseAdjustment):
     pass
     
+
 class NikLevelsCurves(NikBaseAdjustment):
     pass
     
+
 class NikRedEye(NikBaseAdjustment):
     pass
     
+
 class NikDiffraction(NikBaseAdjustment):
     pass
+
 
 class NikDistortion(NikBaseAdjustment):
     pass
     
+
 class NikApplicationData(NikBaseAdjustment):
     pass
     
+
 class NikLongChrAb(NikBaseAdjustment):
     pass
     
+
 class NikExposureSettings(NikBaseAdjustment):
     pass
     
+
 class NikLCH(NikBaseAdjustment):
     pass
     
+
 class NikQuickFixContrast(NikBaseAdjustment):
     pass
     
+
 class NikGrainNoise(NikBaseAdjustment):
     pass
     
+
 class NikDustOff(NikBaseAdjustment):
     pass
+
 
 class Niktransform(NikBaseAdjustment):
     pass
     
+
 class NikSizeRes(NikBaseAdjustment):
     pass
     
+
 class NikPhotoEffects(NikBaseAdjustment):
     pass
     
+
 class NikBrightness(NikBaseAdjustment):
     pass
-    
+
+
 class NikActiveDLighting(NikBaseAdjustment):
     pass
-    
+
+
 class NikNoiseReduction(NikBaseAdjustment):
     pass
 
+
 class NikPixelShiftNoiseReduction(NikBaseAdjustment):
     pass
-    
+
+
 class NikDLightingHQ(NikBaseAdjustment):
     pass
 
-class NineEdits:
-    """Nikon NineEdits (aka adjustments) container
 
-     Args:
-         element: XML element containing the ``NineEdits`` property.
+def create_nine_edits(element: ElementTree.Element) -> dict:
+    """Return the list of image adjustments
 
-     Raises:
-         NikAdjustmentError: Generic error, the :attr:`NikAdjustmentError.message`
-             details the error.
+        Args:
+            element: XML element containing the ``NineEdits`` property.
 
-     Attributes:
-         active: `True` indicate that the filter will be applied on the image
-             associated to the sidecar files when opening in NX Studio.
-         params: filter's parameters as a dictionnary.
-     """
-    def __init__(self, element: ElementTree.Element):
-        self._element = element
-        self.adjustments = {}
+        Return:
+            Dictionary of image adjustments with the image adjustment name
+            as key. The value is an instance of the image adjustment
+            class (:class:`NikWhiteBalance`, :class:`NikPictureControl`
+            or :class:`NikBaseAdjustment` for example). See class
+            documentation to have more details.
 
-        if element.tag == "userData":
-            for child in self._element:
-                match child.tag:
-                    case "filter":
-                        if "id" in child.attrib:
-                            k = child.attrib["id"]
-                            self.adjustments[k] = _MAP_ADJUSTMENT_ID[k](child)
-                        else:
-                            raise NikAdjustmentError(f"Unknown adjustment: {k}")
+        Raises:
+            NikAdjustmentError: Generic error, the :attr:`NikAdjustmentError.message`
+                details the error.
+    """
+    adjustments = {}
+    if element.tag == "userData":
+        for child in element:
+            match child.tag:
+                case "filter":
+                    if "id" in child.attrib:
+                        k = child.attrib["id"]
+                        adjustments[k] = _MAP_ADJUSTMENT_ID[k](child)
+                    else:
+                        raise NikAdjustmentError(f"Unknown adjustment: {k}")
 
-                    case _:
-                        raise NikAdjustmentError(f"Unsupported tag value "
-                                             f"({child.text})")
-        else:
-            raise NikAdjustmentError(f"NineEdit Wrong header block:"
-                                 f" actual {element.tag}, expected userData")
+                case _:
+                    raise NikAdjustmentError(f"Unsupported tag value "
+                                         f"({child.text})")
+    else:
+        raise NikAdjustmentError(f"NineEdit Wrong header block:"
+                             f" actual {element.tag}, expected userData")
 
-        for k, v in self.adjustments.items():
-            _logger.debug(f"NineEdits adjustments parameters {k}={v}")
+    for k, v in adjustments.items():
+        _logger.debug(f"NineEdits adjustments parameters {k}={v}")
+
+    return adjustments
 
 
+#: Mapping Nikon adjustement name (``filter id``) with the adjustement
+#: class
 _MAP_ADJUSTMENT_ID = {
     "nikon::ColorShift": NikColorShift,
     "nikon::DLightingHS": NikDLightingHS,
@@ -962,4 +1002,3 @@ _MAP_ADJUSTMENT_ID = {
     "nikon::PixelShiftNoiseReduction": NikPixelShiftNoiseReduction,
     "nikon::DLightingHQ": NikDLightingHQ,
 }
-"""Mapping Nikon adjustement name (``filter id``) with the adjustement class"""
