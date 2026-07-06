@@ -60,14 +60,17 @@ We use a linearized form of the XMP property expressed as a string.
 ...         '<highlightAdjustment>1</highlightAdjustment><colorBoost>60'
 ...         '</colorBoost></parameters></filter></userData>')
 
-We create an instance of :class:`NineEdits` with the above string.
+We create images adjustements objects based the above string with the factory
+function :func:`create_nine_edits`.
 
 >>> from darkbridge.sidecar.nik_adjustment import create_nine_edits
 >>> from xml.etree import ElementTree
 >>> tree = ElementTree.fromstring(prop)
 >>> procs = create_nine_edits(tree)
 
-We can list the image ajustements declarated in the XMP property.
+We can list the image ajustements declarated in the XMP property,
+:func:`create_nine_edits` returning a dictionary of image adjustments objects
+with the image adjustment name as key.
 
 >>> procs
 {'nikon::NoiseReduction': NikNoiseReduction object: active=True, 'nikon::transform': Niktransform object: active=True, 'nikon::DLightingHQ': NikDLightingHQ object: active=False}
