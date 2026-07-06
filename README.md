@@ -28,6 +28,12 @@ metadata, and other data in addition to image adjustments.
 > script do not support this mode. If an image file has not a sidecar file, the
 > script will ignore it. Same for orphan sidecar files.*
 
+For this project, the image samples have been shot with a Nikon D70s camera
+and a Nikon D7100 camera using NEF format (Lossless Compressed RAW (14-bit), 
+Adobe RGB). NX Studio v1.10.1 has been used to develop and edit the samples 
+images.  
+
+Adobe RGB
 See also
 --------
 * [NX Studio Help](https://nikonimglib.com/nxstdo/onlinehelp/en/save_80.html)
