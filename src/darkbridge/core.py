@@ -1013,7 +1013,7 @@ class DarkBridge:
         This method searches sidecar files in the required folders (and
         subfolders if :attr:`_recursive` is ``True``), reads the
         metadata and indicate if the pattern is found in active
-        processing.
+        processings.
 
         Args:
             pattern: Substring to find in processing names.
@@ -1035,11 +1035,27 @@ class DarkBridge:
             if self._nksc is not None:
                 self._nksc.parse()
                 findings = {}
+
+                # Search in the top level list
                 for k, v in self._nksc.processing.items():
                     if pattern in k and v.active:
                         found = True
                         findings[k] = v
                         _logger.info(f"Processing '{k}' match with '{pattern}'")
+
+                # Search the pattern in image adjustment stack from NXHistory
+                if "nikon::NXHistory" in self._nksc.processing:
+                    nxh =  self._nksc.processing["nikon::NXHistory"]
+                    if nxh.active and len(nxh.params) != 0:
+                        for step in nxh.params.values():
+                            for k, v in step.items():
+                                if (isinstance(v, NikBaseAdjustment)
+                                        and pattern in k and v.active):
+                                    found = True
+                                    findings[k] = v
+                                    _logger.info(f"NXHistory Processing '{k}' "
+                                                 f"match with '{pattern}'")
+
                 if found:
                     self._display.show_findings(index, path[0], self._nksc, findings)
                     matching += 1
