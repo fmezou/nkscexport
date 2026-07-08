@@ -101,7 +101,49 @@ similar topics.
    background_papers/inside_nksc
    background_papers/inside_geoloc
    background_papers/inside_adjustment
-
+   background_papers/nik_adaptivepaste
+   background_papers/nik_crop
+   background_papers/nik_gaussianblur
+   background_papers/nik_grainnoise
+   background_papers/nik_lch
+   background_papers/nik_levelscurves
+   background_papers/nik_newton
+   background_papers/nik_rotate
+   background_papers/nik_straighten
+   background_papers/nikon_activedlighting
+   background_papers/nikon_applicationdata
+   background_papers/nikon_brightness
+   background_papers/nikon_chrab
+   background_papers/nikon_colorbalance
+   background_papers/nikon_colorbooster
+   background_papers/nikon_colorshift
+   background_papers/nikon_dehaze
+   background_papers/nikon_diffraction
+   background_papers/nikon_distortion
+   background_papers/nikon_dlightinghq
+   background_papers/nikon_dlightinghs
+   background_papers/nikon_dustoff
+   background_papers/nikon_exposuresettings
+   background_papers/nikon_fisheye
+   background_papers/nikon_flare
+   background_papers/nikon_legeneral
+   background_papers/nikon_longchrab
+   background_papers/nikon_noisereduction
+   background_papers/nikon_nxhistory
+   background_papers/nikon_perspective
+   background_papers/nikon_photoeffects
+   background_papers/nikon_picturecontrol
+   background_papers/nikon_pixelshiftnoisereduction
+   background_papers/nikon_quickfixcontrast
+   background_papers/nikon_quickfixtonecurve
+   background_papers/nikon_redeye
+   background_papers/nikon_sizeres
+   background_papers/nikon_skinsoftening
+   background_papers/nikon_skintone
+   background_papers/nikon_transform
+   background_papers/nikon_unsharpmask
+   background_papers/nikon_vignette
+   background_papers/nikon_whitebalance
 
 
 .. toctree::
