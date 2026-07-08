@@ -342,6 +342,31 @@ Image adjustment objects
    :members:
    :private-members:
    :show-inheritance:
+
+.. autoclass:: NikAdaptivePaste
+   :member-order: bysource
+   :members:
+   :private-members:
+   :show-inheritance:
+
+.. autoclass:: NikNewton
+   :member-order: bysource
+   :members:
+   :private-members:
+   :show-inheritance:
+
+.. autoclass:: NikRotate
+   :member-order: bysource
+   :members:
+   :private-members:
+   :show-inheritance:
+
+.. autoclass:: NikCrop
+   :member-order: bysource
+   :members:
+   :private-members:
+   :show-inheritance:
+
 """
 import base64
 import datetime
@@ -391,6 +416,10 @@ __all__ = [
     "NikNoiseReduction",
     "NikPixelShiftNoiseReduction",
     "NikDLightingHQ",
+    "NikAdaptivePaste",
+    "NikNewton",
+    "NikRotate",
+    "NikCrop",
     "create_nine_edits"
 ]
 
@@ -446,6 +475,7 @@ class NikBaseAdjustment:
             "bool":self._set_param_bool,
             "Export": self._set_param_export,
             "points": self._set_param_points,
+            "point": self._set_param_point,
             "data": self._set_param_data,
             "binary": self._set_param_binary,
             "map": self._set_param_map,
@@ -456,28 +486,42 @@ class NikBaseAdjustment:
         self.active = False
         self.params = {}
 
+    def parse(self):
+        """Parse the image adjustment XML element.
+
+        This method parses an XML element as an image's adjustment
+        block and populate attributes (:attr:`active` and :attr:`params`).
+
+        The article named ":ref:`background_papers/inside_nksc:Inside
+        Nikon Sidecar file`" details the data structure and tags used by
+        Nikon.
+
+        Raises:
+            NikAdjustmentError: Generic error, the :attr:`NikAdjustmentError.message`
+                details the error.
+        """
         for child in self._element:
             match child.tag:
                 case "active":
                     name, val = child.tag, child.text
                     if val is not None:
-                        match child.text.lower():
+                        match val.lower():
                             case "false" | "true":
                                 self.active = (val.lower() == "true")
 
                             case _:
-                                raise NikAdjustmentError(f"Unsupported active value "
-                                                     f"({val})")
+                                raise NikAdjustmentError(
+                                    f"Unsupported active value ({val})")
                     else:
-                        raise NikAdjustmentError(f"Unsupported active value "
-                                             f"({val})")
+                        raise NikAdjustmentError(
+                            f"Unsupported active value ({val})")
 
                 case "parameters":
                     self._set_params(child)
 
                 case _:
-                    raise NikAdjustmentError(f"Unsupported tag value "
-                                         f"({child.text})")
+                    raise NikAdjustmentError(
+                        f"Unsupported tag value ({child.text})")
 
     def _set_params(self, element: ElementTree.Element):
         """Set image's adjustment parameters.
@@ -818,7 +862,8 @@ class NikBaseAdjustment:
                     case "pointOfPoints":
                         if points is None:
                             points = []
-                        points.append(v)
+                        point = {"x": int(v["x"]), "y": int(v["y"])}
+                        points.append(point)
 
                     case _:
                         raise NikAdjustmentError(
@@ -827,6 +872,32 @@ class NikBaseAdjustment:
             raise NikAdjustmentError(f"Unnamed parameters")
 
         self.params[name] = points
+
+    def _set_param_point(self, element: ElementTree.Element):
+        """Set point parameter.
+
+        Point parameter is a 2D coordinates (``x`` and ``y``). Please note
+        that data structure is not the same than points.
+
+        Args:
+            element: Element containing the parameter.
+
+        Raises:
+            NikAdjustmentError: Generic error, the :attr:`NikAdjustmentError.message`
+                details the error.
+        """
+        point = None
+        if "name" in element.attrib:
+            name = element.attrib["name"]
+            point = {
+                "x": int(element.attrib["x"]),
+                "y": int(element.attrib["y"])
+            }
+
+        else:
+            raise NikAdjustmentError(f"Unnamed parameters")
+
+        self.params[name] = point
 
     def __repr__(self):
         """Return a printable string representation.
@@ -930,8 +1001,150 @@ class NikColorBooster(NikBaseAdjustment):
     
 
 class NikNXHistory(NikBaseAdjustment):
-    pass
-    
+    """Nikon::NXHistory image's adjustment class
+
+     Nikon::NXHistory is not strictly an image adjustment, it is an ordered
+     list whose entries are tagged vith ``historystep``. Each entry (aka. step)
+     is an unitary image adjustment to apply to the image. For example,
+     cropping an image should be done after image processing modifying the
+     image size as lens correction or perspective controls). The list is stored
+     in a dictionary with name ``historystep:XXX`` as key where XX is the step
+     index (from 1 to 999).
+
+     The step parameters are in a dictionary with parameter name as key. The
+     value type is set according to its explicit or implicit type.
+
+     Args:
+         element: XML element containing the metadata.
+
+     Raises:
+         NikAdjustmentError: Generic error, the :attr:`NikAdjustmentError.message`
+             details the error.
+
+     """
+    def __init__(self, element: ElementTree.Element):
+        super().__init__(element)
+        # Add the specific handler
+        doers = {
+            "historystep": self._set_param_history_step
+        }
+        self._doers.update(doers)
+
+        # Table of doers method for processing historystep subparameters
+        self._hs_doers = {
+            "filter": self._set_hs_filter,
+            "adjustmentData": self._set_hs_adjustment_data,
+            "_default": self._set_hs_default
+        }
+        self._index = 1
+        self._hs_params = {}
+
+    def _set_param_history_step(self, element: ElementTree.Element):
+            """Set history step parameter.
+
+            Args:
+                element: Element containing the parameter.
+
+            Raises:
+                NikAdjustmentError: Generic error, the :attr:`NikAdjustmentError.message`
+                    details the error.
+            """
+            self._hs_params = {}
+            for child in element:
+                if child.tag in self._hs_doers:
+                    self._hs_doers[child.tag](child)
+                else:
+                    self._hs_doers["_default"](child)
+
+            self.params[f"{element.tag}:{self._index:03d}"] = self._hs_params
+
+            _logger.debug(f"{self.__class__.__name__} history step "
+                          f"#{self._index} parameters: {len(self._hs_params)}")
+            for k, v in self._hs_params.items():
+                _logger.debug(f"{self.__class__.__name__} history step "
+                              f"parameters {k}={v}")
+            self._index += 1
+
+    def _set_hs_filter(self, element: ElementTree.Element):
+        """Set history step filter parameter.
+
+        This parameter is the image adjustment to apply.
+
+        Args:
+            element: Element containing the parameter.
+
+        Raises:
+            NikAdjustmentError: Generic error, the :attr:`NikAdjustmentError.message`
+                details the error.
+        """
+        if "id" in element.attrib:
+            k = element.attrib["id"]
+            if k in _MAP_ADJUSTMENT_ID:
+                self._hs_params[k] = _MAP_ADJUSTMENT_ID[k](element)
+                self._hs_params[k].parse()
+            else:
+                _logger.warning(f"{self.__class__.__name__}: "
+                                f"Unknown adjustment: {k}")
+        else:
+             raise NikAdjustmentError(f"Unnamed filter")
+
+    def _set_hs_adjustment_data(self, element: ElementTree.Element):
+        """Set history step adjustmentData parameter.
+
+        Args:
+            element: Element containing the parameter.
+
+        Raises:
+            NikAdjustmentError: Generic error, the :attr:`NikAdjustmentError.message`
+                details the error.
+        """
+        for child in element:
+            if child.tag == "data":
+                if "id" in child.attrib:
+                    k, v = child.attrib["id"], child.text
+                    if v is not None:
+                        match v.lower():
+                            case "false" | "true":
+                                self._hs_params[k] = (v.lower() == "true")
+
+                            case _:
+                                self._hs_params[k] = v
+                    else:
+                        self._hs_params[k] = None
+                else:
+                    raise NikAdjustmentError(f"Unnamed parameters")
+            else:
+                raise NikAdjustmentError(
+                    f"Unexpected tag for adjustmentData parameter: {child.tag}")
+
+    def _set_hs_default(self, element: ElementTree.Element):
+        """Default setter for history step parameter.
+
+        Simple parameter is a simple tag, its type is guessed from its
+        value.
+
+        Args:
+            element: Element containing the parameter.
+
+        Raises:
+            NikAdjustmentError: Generic error, the :attr:`NikAdjustmentError.message`
+                details the error.
+        """
+        k, v = element.tag, element.text
+        if v is not None:
+            match v.lower():
+                case "false" | "true":
+                    self._hs_params[k] = (v.lower() == "true")
+
+                case _:
+                    if v.isdecimal():
+                        self._hs_params[k] = int(v)
+                    else:
+                        self._hs_params[k] = v
+        else:
+            _logger.warning(f"{self.__class__.__name__}: Empty or null "
+                            f"parameter ({k})")
+            self._hs_params[k] = None
 
 class NikSkinSoftening(NikBaseAdjustment):
     pass
@@ -1012,6 +1225,17 @@ class NikPixelShiftNoiseReduction(NikBaseAdjustment):
 class NikDLightingHQ(NikBaseAdjustment):
     pass
 
+class NikAdaptivePaste(NikBaseAdjustment):
+    pass
+
+class NikNewton(NikBaseAdjustment):
+    pass
+
+class NikRotate(NikBaseAdjustment):
+    pass
+
+class NikCrop(NikBaseAdjustment):
+    pass
 
 def create_nine_edits(element: ElementTree.Element) -> dict:
     """Return the list of image adjustments
@@ -1037,16 +1261,21 @@ def create_nine_edits(element: ElementTree.Element) -> dict:
                 case "filter":
                     if "id" in child.attrib:
                         k = child.attrib["id"]
-                        adjustments[k] = _MAP_ADJUSTMENT_ID[k](child)
+                        if k in _MAP_ADJUSTMENT_ID:
+                            adjustments[k] = _MAP_ADJUSTMENT_ID[k](child)
+                            adjustments[k].parse()
+                        else:
+                            _logger.warning(f"Unknown adjustment: {k}")
                     else:
-                        raise NikAdjustmentError(f"Unknown adjustment: {k}")
+                        raise NikAdjustmentError(f"Unnamed filter")
 
                 case _:
-                    raise NikAdjustmentError(f"Unsupported tag value "
-                                         f"({child.text})")
+                    raise NikAdjustmentError(
+                        f"Unsupported tag value ({child.text})")
     else:
-        raise NikAdjustmentError(f"NineEdit Wrong header block:"
-                             f" actual {element.tag}, expected userData")
+        raise NikAdjustmentError(
+            f"NineEdit Wrong header block: actual {element.tag}, "
+            f"expected userData")
 
     for k, v in adjustments.items():
         _logger.debug(f"NineEdits adjustments parameters {k}={v}")
@@ -1054,8 +1283,7 @@ def create_nine_edits(element: ElementTree.Element) -> dict:
     return adjustments
 
 
-#: Mapping Nikon adjustement name (``filter id``) with the adjustement
-#: class
+#: Mapping Nikon adjustment name (``filter id``) with the adjustment class
 _MAP_ADJUSTMENT_ID = {
     "nikon::ColorShift": NikColorShift,
     "nikon::DLightingHS": NikDLightingHS,
@@ -1096,4 +1324,8 @@ _MAP_ADJUSTMENT_ID = {
     "nikon::NoiseReduction": NikNoiseReduction,
     "nikon::PixelShiftNoiseReduction": NikPixelShiftNoiseReduction,
     "nikon::DLightingHQ": NikDLightingHQ,
+    "nik::AdaptivePaste": NikAdaptivePaste,
+    "nik::Newton": NikNewton,
+    "nik::Rotate": NikRotate,
+    "nik::Crop": NikCrop,
 }
