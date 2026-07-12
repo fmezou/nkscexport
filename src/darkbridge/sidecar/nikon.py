@@ -258,6 +258,217 @@ class NikonError(Exception):
         return self.message
 
 
+class NikonXMPProperty:
+    """Nikon XMP property.
+
+    This class parses an XML element as a ``XMP`` property and decode
+    the resource. The resource may be a simple text , a structured
+    data identified with the ``rdf:parseType`` attribute, or an array
+    (see section 7.3 to 7.9 [adxmp1]_)
+
+    The article named ":ref:`background_papers/inside_nksc:Inside Nikon
+    Sidecar file`" details the data structure and tags used by Nikon.
+
+    Args:
+        element: Element containing the property.
+
+    Raises:
+        NikonError: Generic error, the :attr:`NikonError.message` details
+            the error.
+
+    Attributes:
+        name: Name of the property.
+        value: Value of the property, the type of the attribute depends on the
+            resource type (binary, double,...).
+    """
+    name: str
+    value: None | str | list[float|None] | int | bytes
+
+    def __init__(self, element: ElementTree.Element):
+        self.value = None
+
+        self.name = _NS.shorten_name(element.tag)
+        type_name = _NS.expand_name("rdf:parseType")
+        if type_name in element.attrib:
+            # Structure valued XMP property
+            res_value = ""
+            res_type = ""
+            match element.attrib[type_name]:
+                case "Resource":
+                    for item in element:
+                        item_name = _NS.shorten_name(item.tag)
+                        match item_name: #
+                            case "rdf:value":
+                                res_value = item.text
+                            case "astype:Type":
+                                res_type = item.text
+                            case _:
+                                res_type = "dict"
+                case _:
+                    raise NikonError(f"Unknown parseType for property "
+                                     f"({element.attrib[type_name]})")
+
+            match res_type:
+                case "Binary": # Binary buffer
+                    self._set_binary(res_value)
+
+                case "Long": # Integer
+                    self._set_long(res_value)
+
+                case "Double": # One or more float number
+                    self._set_double(res_value)
+
+                case "Ascii": # ASCII string
+                    self._set_ascii(res_value)
+
+                case "GPSProcessingMethod": # GPSProcessingMethod
+                    self._set_gps_processing_method(res_value)
+
+                case "dict": # Unqualified structure value
+                    self._set_dict(element)
+
+                case _:
+                    raise NikonError(f"Unknown type for property ({res_type})")
+
+        else:
+            match len(element):
+                case 0:
+                    self._set_simple(element) # Simple valued XMP property
+
+                case 1:
+                    name = _NS.shorten_name(element[0].tag)
+                    match name:
+                        case "rdf:Bag": # element for an unordered (resp ordered array).
+                            self._set_array(element[0])
+
+                        case "rdf:Seq": # element for an ordered array.
+                            self._set_array(element[0])
+
+                        case "rdf:Alt": # element for an alternative array.
+                            self._set_array(element[0])
+
+                case _:
+                    raise NikonError(
+                        f"Unexpected number of elements for an array: "
+                        f"actual '{len(element)}', expected 1")
+
+
+    def _set_array(self, element: ElementTree.Element):
+        """Set an array.
+
+        The XMP specifications defines three type of array (section
+        6.3.4 [adxmp1]_). This method store the array item in a `list`.
+
+        Args:
+            element: Element containing the property.
+        """
+        self.value = []
+        for li in element:
+            name = _NS.shorten_name(li.tag)
+            if name == "rdf:li":
+                self.value.append(li.text)
+            else:
+                raise NikonError(
+                    f"Unexpected tag name for array content: "
+                    f"actual '{name}', expected 'rdf:li'")
+
+        _logger.debug(f"XMP property (array):"
+                      f" {self.name}={self.value}")
+
+    def _set_simple(self, element: ElementTree.Element):
+        """Set a simple value.
+
+        Args:
+            element: Element containing the property.
+        """
+        self.value = element.text
+        _logger.debug(f"XMP property (XML text):"
+                      f" {self.name}={self.value}")
+
+    def _set_binary(self, value:str):
+        """Set a binary resource.
+
+        Args:
+            value: Value of the resource expressed as binary
+                string encoded in base64 .
+        """
+        self.value = base64.b64decode(value)
+        _logger.debug(f"XMP property (Binary):"
+                      f" {self.name}={self.value}")
+
+    def _set_long(self, value:str):
+        """Set an integer resource.
+
+        Args:
+            value: Value of resource expressed as binary
+                string encoded in base64 .
+        """
+        buffer = base64.b64decode(value)
+        self.value = int.from_bytes(buffer, byteorder='little')
+        _logger.debug(f"XMP property (Long):"
+                      f" {self.name}={self.value}")
+
+    def _set_double(self, value:str):
+        """Set float number resource.
+
+        The value may define one or more float number (IEEE754 Double
+        precision 64-bits). All numbers are simply concatenated with no
+        separators.
+
+        Args:
+            value: Value of resource expressed as binary
+                string encoded in base64 .
+        """
+        buffer = base64.b64decode(value)
+        vm = len(buffer) // 8
+        if vm == 1:
+            self.value = IEEE754(buffer).value
+            _logger.debug(f"XMP property (Double):"
+                          f" {self.name}={self.value}")
+        else:
+            self.value = []
+            for i in range(len(buffer) // 8):
+                self.value.append(
+                    IEEE754(buffer[i * 8: (i + 1) * 8]).value)
+            _logger.debug(f"XMP property (n*Double):"
+                          f" {self.name}={self.value}")
+
+    def _set_ascii(self, value: str):
+        """Set ACSII string resource.
+
+        Args:
+            value: Value of resource expressed as binary
+                string encoded in base64 .
+        """
+        self.value = value
+        _logger.debug(f"XMP property (Ascii):"
+                      f" {self.name}={self.value}")
+
+    def _set_gps_processing_method(self, value: str):
+        """Set GPSProcessingMethod resource (proprietary format...).
+
+        Args:
+            value: Value of integer resource expressed as binary
+                string encoded in base64 .
+        """
+        self.value = base64.b64decode(value)
+        _logger.debug(f"XMP property (GPSProcessingMethod):"
+                      f" {self.name}={self.value}")
+
+    def _set_dict(self, element: ElementTree.Element):
+        """Set structure valued resource.
+
+        Args:
+            element: Element containing the property.
+        """
+        self.value = dict()
+        for k in element:
+            name = _NS.shorten_name(k.tag)
+            self.value[name] = k.text
+        _logger.debug(f"XMP property (Structure value):"
+                      f" {self.name}={self.value}")
+
+
 class NikonGPSProperties:
     """Nikon GPS properties container.
 
@@ -728,217 +939,6 @@ class NikonGPSProperties:
                  f"long: {self.props["GPSLongitude"]:.5f} "
                  f"({self.props["GPSLongitudeRef"]})")
         return s
-
-
-class NikonXMPProperty:
-    """Nikon XMP property.
-
-    This class parses an XML element as a ``XMP`` property and decode
-    the resource. The resource may be a simple text , a structured
-    data identified with the ``rdf:parseType`` attribute, or an array
-    (see section 7.3 to 7.9 [adxmp1]_)
-
-    The article named ":ref:`background_papers/inside_nksc:Inside Nikon
-    Sidecar file`" details the data structure and tags used by Nikon.
-
-    Args:
-        element: Element containing the property.
-
-    Raises:
-        NikonError: Generic error, the :attr:`NikonError.message` details
-            the error.
-
-    Attributes:
-        name: Name of the property.
-        value: Value of the property, the type of the attribute depends on the
-            resource type (binary, double,...).
-    """
-    name: str
-    value: None | str | list[float|None] | int | bytes
-
-    def __init__(self, element: ElementTree.Element):
-        self.value = None
-
-        self.name = _NS.shorten_name(element.tag)
-        type_name = _NS.expand_name("rdf:parseType")
-        if type_name in element.attrib:
-            # Structure valued XMP property
-            res_value = ""
-            res_type = ""
-            match element.attrib[type_name]:
-                case "Resource":
-                    for item in element:
-                        item_name = _NS.shorten_name(item.tag)
-                        match item_name: #
-                            case "rdf:value":
-                                res_value = item.text
-                            case "astype:Type":
-                                res_type = item.text
-                            case _:
-                                res_type = "dict"
-                case _:
-                    raise NikonError(f"Unknown parseType for property "
-                                     f"({element.attrib[type_name]})")
-
-            match res_type:
-                case "Binary": # Binary buffer
-                    self._set_binary(res_value)
-
-                case "Long": # Integer
-                    self._set_long(res_value)
-
-                case "Double": # One or more float number
-                    self._set_double(res_value)
-
-                case "Ascii": # ASCII string
-                    self._set_ascii(res_value)
-
-                case "GPSProcessingMethod": # GPSProcessingMethod
-                    self._set_gps_processing_method(res_value)
-
-                case "dict": # Unqualified structure value
-                    self._set_dict(element)
-
-                case _:
-                    raise NikonError(f"Unknown type for property ({res_type})")
-
-        else:
-            match len(element):
-                case 0:
-                    self._set_simple(element) # Simple valued XMP property
-
-                case 1:
-                    name = _NS.shorten_name(element[0].tag)
-                    match name:
-                        case "rdf:Bag": # element for an unordered (resp ordered array).
-                            self._set_array(element[0])
-
-                        case "rdf:Seq": # element for an ordered array.
-                            self._set_array(element[0])
-
-                        case "rdf:Alt": # element for an alternative array.
-                            self._set_array(element[0])
-
-                case _:
-                    raise NikonError(
-                        f"Unexpected number of elements for an array: "
-                        f"actual '{len(element)}', expected 1")
-
-
-    def _set_array(self, element: ElementTree.Element):
-        """Set an array.
-
-        The XMP specifications defines three type of array (section
-        6.3.4 [adxmp1]_). This method store the array item in a `list`.
-
-        Args:
-            element: Element containing the property.
-        """
-        self.value = []
-        for li in element:
-            name = _NS.shorten_name(li.tag)
-            if name == "rdf:li":
-                self.value.append(li.text)
-            else:
-                raise NikonError(
-                    f"Unexpected tag name for array content: "
-                    f"actual '{name}', expected 'rdf:li'")
-
-        _logger.debug(f"XMP property (array):"
-                      f" {self.name}={self.value}")
-
-    def _set_simple(self, element: ElementTree.Element):
-        """Set a simple value.
-
-        Args:
-            element: Element containing the property.
-        """
-        self.value = element.text
-        _logger.debug(f"XMP property (XML text):"
-                      f" {self.name}={self.value}")
-
-    def _set_binary(self, value:str):
-        """Set a binary resource.
-
-        Args:
-            value: Value of the resource expressed as binary
-                string encoded in base64 .
-        """
-        self.value = base64.b64decode(value)
-        _logger.debug(f"XMP property (Binary):"
-                      f" {self.name}={self.value}")
-
-    def _set_long(self, value:str):
-        """Set an integer resource.
-
-        Args:
-            value: Value of resource expressed as binary
-                string encoded in base64 .
-        """
-        buffer = base64.b64decode(value)
-        self.value = int.from_bytes(buffer, byteorder='little')
-        _logger.debug(f"XMP property (Long):"
-                      f" {self.name}={self.value}")
-
-    def _set_double(self, value:str):
-        """Set float number resource.
-
-        The value may define one or more float number (IEEE754 Double
-        precision 64-bits). All numbers are simply concatenated with no
-        separators.
-
-        Args:
-            value: Value of resource expressed as binary
-                string encoded in base64 .
-        """
-        buffer = base64.b64decode(value)
-        vm = len(buffer) // 8
-        if vm == 1:
-            self.value = IEEE754(buffer).value
-            _logger.debug(f"XMP property (Double):"
-                          f" {self.name}={self.value}")
-        else:
-            self.value = []
-            for i in range(len(buffer) // 8):
-                self.value.append(
-                    IEEE754(buffer[i * 8: (i + 1) * 8]).value)
-            _logger.debug(f"XMP property (n*Double):"
-                          f" {self.name}={self.value}")
-
-    def _set_ascii(self, value: str):
-        """Set ACSII string resource.
-
-        Args:
-            value: Value of resource expressed as binary
-                string encoded in base64 .
-        """
-        self.value = value
-        _logger.debug(f"XMP property (Ascii):"
-                      f" {self.name}={self.value}")
-
-    def _set_gps_processing_method(self, value: str):
-        """Set GPSProcessingMethod resource (proprietary format...).
-
-        Args:
-            value: Value of integer resource expressed as binary
-                string encoded in base64 .
-        """
-        self.value = base64.b64decode(value)
-        _logger.debug(f"XMP property (GPSProcessingMethod):"
-                      f" {self.name}={self.value}")
-
-    def _set_dict(self, element: ElementTree.Element):
-        """Set structure valued resource.
-
-        Args:
-            element: Element containing the property.
-        """
-        self.value = dict()
-        for k in element:
-            name = _NS.shorten_name(k.tag)
-            self.value[name] = k.text
-        _logger.debug(f"XMP property (Structure value):"
-                      f" {self.name}={self.value}")
 
 
 class NikonXMPDescriptions:
