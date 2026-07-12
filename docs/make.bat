@@ -10,7 +10,7 @@ if "%SPHINXBUILD%" == "" (
 set SOURCEDIR=source
 set BUILDDIR=_build
 if "%SPHINXOPTS%" == "" (
-	set SPHINXOPTS=--doctree-dir %BUILDDIR%/.doctrees
+	set SPHINXOPTS=-d %BUILDDIR%/doctrees
 )
 %SPHINXBUILD% >NUL 2>NUL
 if errorlevel 9009 (
