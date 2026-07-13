@@ -168,7 +168,7 @@ starting at offset 0x0c.
 |                   |          |        | expected for 'B&W'.           |
 |                   |          |        |                               |
 |                   |          |        | * ``0xff``: no value          |
-|                   |          |        | * 0x81..87: biased [#bs]_     |
+|                   |          |        | * 0x81..0x87: biased [#bs]_   |
 |                   |          |        |   (1..7)                      |
 +-------------------+----------+--------+-------------------------------+
 
@@ -179,9 +179,9 @@ starting at offset 0x0c.
 
    Picture Control tool settings pane for Monochrome control selected.
 
-.. [#bs] The setting value is biased, the value stored is offset from the actual
-   value by the value bias (here 0x80). Biasing is done because settings have
-   to be signed values.
+.. [#bs] The setting value is biased, the value stored is offset from the
+   actual value by the value bias (here 0x80). Biasing is done because
+   settings have to be signed values.
 
 Latest Picture Control
 ----------------------
