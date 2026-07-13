@@ -1004,7 +1004,7 @@ class NikNXHistory(NikBaseAdjustment):
     """Nikon::NXHistory image's adjustment class
 
      Nikon::NXHistory is not strictly an image adjustment, it is an ordered
-     list whose entries are tagged vith ``historystep``. Each entry (aka. step)
+     list whose entries are tagged with ``historystep``. Each entry (aka. step)
      is an unitary image adjustment to apply to the image. For example,
      cropping an image should be done after image processing modifying the
      image size as lens correction or perspective controls). The list is stored
