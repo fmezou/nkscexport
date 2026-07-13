@@ -110,35 +110,35 @@ starting at offset 0x0c.
 |                   |          |        | * PT: ``0x0486``              |
 |                   |          |        | * LS: ``0x04C7``              |
 +-------------------+----------+--------+-------------------------------+
-| Custom            | 1 bytes  | 25     | Indicates the setting's       |
+| Custom            | 1 byte   | 25     | Indicates the setting's       |
 |                   |          |        | customization level.          |
 |                   |          |        |                               |
 |                   |          |        | * ``0x00``: no customization  |
 |                   |          |        | * ``0x01``: Quick Adjust used |
 |                   |          |        | * ``0x02``: Custom            |
 +-------------------+----------+--------+-------------------------------+
-| Quick Adjust      | 1 bytes  | 26     | * 0x7C..0x82: biased [#bs]_   |
+| Quick Adjust      | 1 byte   | 26     | * 0x7C..0x82: biased [#bs]_   |
 |                   |          |        |   (-2..2)                     |
 +-------------------+----------+--------+-------------------------------+
-| Sharpening        | 1 bytes  | 27     | * 0x00: auto                  |
+| Sharpening        | 1 byte   | 27     | * 0x00: auto                  |
 |                   |          |        | * 0x80..0x89: biased [#bs]_   |
 |                   |          |        |   (0..9)                      |
 +-------------------+----------+--------+-------------------------------+
-| Contrast          | 1 bytes  | 28     | * 0x00: auto                  |
+| Contrast          | 1 byte   | 28     | * 0x00: auto                  |
 |                   |          |        | * 0x7D..0x83: biased [#bs]_   |
 |                   |          |        |   (-3..3)                     |
 +-------------------+----------+--------+-------------------------------+
-| Brightness        | 1 bytes  | 29     | * 0x7F..0x81: biased [#bs]_   |
+| Brightness        | 1 byte   | 29     | * 0x7F..0x81: biased [#bs]_   |
 |                   |          |        |   (-1..1)                     |
 +-------------------+----------+--------+-------------------------------+
-| Saturation        | 1 bytes  | 30     | * 0x00: auto                  |
+| Saturation        | 1 byte   | 30     | * 0x00: auto                  |
 |                   |          |        | * 0x7D..0x83: biased [#bs]_   |
 |                   |          |        |   (-3..3)                     |
 +-------------------+----------+--------+-------------------------------+
-| Hue               | 1 bytes  | 31     | * 0x7D..0x83: biased [#bs]_   |
+| Hue               | 1 byte   | 31     | * 0x7D..0x83: biased [#bs]_   |
 |                   |          |        |   (-3..3)                     |
 +-------------------+----------+--------+-------------------------------+
-| Filter Effect     | 1 bytes  | 32     | Simulate the effects of color |
+| Filter Effect     | 1 byte   | 32     | Simulate the effects of color |
 |                   |          |        | filters on B&W pictures.      |
 |                   |          |        |                               |
 |                   |          |        | * ``0xff``: no value          |
@@ -148,7 +148,7 @@ starting at offset 0x0c.
 |                   |          |        | * ``0x83``: red               |
 |                   |          |        | * ``0x84``: green             |
 +-------------------+----------+--------+-------------------------------+
-| Toning            | 1 bytes  | 33     | Choose a tint for B&W         |
+| Toning            | 1 byte   | 33     | Choose a tint for B&W         |
 |                   |          |        | pictures.                     |
 |                   |          |        |                               |
 |                   |          |        | * ``0xff``: no value          |
@@ -163,7 +163,7 @@ starting at offset 0x0c.
 |                   |          |        | * ``0x88``: purple-blue       |
 |                   |          |        | * ``0x89``: reddish-purple    |
 +-------------------+----------+--------+-------------------------------+
-| Adjust Saturation | 1 bytes  | 34     | Adjust the saturation of the  |
+| Adjust Saturation | 1 byte   | 34     | Adjust the saturation of the  |
 |                   |          |        | tint selected for 'Toning'    |
 |                   |          |        | expected for 'B&W'.           |
 |                   |          |        |                               |
