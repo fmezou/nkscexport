@@ -83,13 +83,14 @@ Image metadata are stored in an 'Application Record' (DataSets in the
 range 2:xx).
 
 .. table:: Layout of :term:`IPTC IIM` record
-    :name:background_papers/inside_nksc:Layout_IPTC_IIM
+    :name: background_papers/inside_nksc:Layout_IPTC_IIM
 
-    ======= ======= ======= ==========
-    Tag     Record  DataSet Len [#bo]_
-    ======= ======= ======= ==========
-    1 byte  1 byte  1 byte  2 bytes
-    ======= ======= ======= ==========
+    +----------+--------+---------+---------------+---------+
+    | 1 byte   | 1 byte | 1 byte  | 2 bytes       | n bytes |
+    +----------+--------+---------+---------------+---------+
+    | Tag      | Record | DataSet | Length [#bo]_ | Value   |
+    +----------+--------+---------+---------------+---------+
+
 
 Example ``Title`` field (alias XMP ``dc:title`` property)::
 
@@ -98,7 +99,7 @@ Example ``Title`` field (alias XMP ``dc:title`` property)::
 .. rubric:: Notes
 
 .. [#bo] Use Big Endian Byte Ordering (the left-most byte the most
-   significant bytes (see [IIMv4]_, p. 6.
+   significant bytes (see [IIMv4]_, p. 6.)
 
 
 .. rubric:: References
