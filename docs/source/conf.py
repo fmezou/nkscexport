@@ -62,8 +62,8 @@ templates_path = ["_templates"]
 # -- Options for HTML output --------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 html_theme = "sphinx_rtd_theme"
-html_logo = "_static/darkbridge_assets/darkbridge-logo.svg"
-html_favicon = "_static/darkbridge_assets/favicon.ico"
+html_logo = "assets/darkbridge/darkbridge-logo.svg"
+html_favicon = "assets/darkbridge/favicon.ico"
 html_static_path = ["_static"]
 html_show_sourcelink = False
 html_last_updated_fmt = ""

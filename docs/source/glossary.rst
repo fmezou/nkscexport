@@ -97,7 +97,7 @@ Glossary
 .. [IIMv4] IPTC, `Information Interchange Model Version 4 <https://www.iptc.org
    /std/IIM/4.2/specification/IIMV4.2.pdf>`_, pp. 11-13, pp. 24-44
 
-.. |Invertocat| image:: _static/github/GitHub_Invertocat_Black_Clearspace.*
+.. |Invertocat| image:: assets/github/GitHub_Invertocat_Black_Clearspace.*
     :alt: Invertocat
     :align: top
     :width: 20

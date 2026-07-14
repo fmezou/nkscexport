@@ -1,6 +1,6 @@
 :github_url:
 
-.. image:: _static/darkbridge_assets/darkbridge-logo-transparent.svg
+.. image:: assets/darkbridge/darkbridge-logo-transparent.svg
     :align: center
 
 ##########
