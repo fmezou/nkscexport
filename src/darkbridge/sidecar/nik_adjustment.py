@@ -2,12 +2,12 @@
 
 The :mod:`sidecar.nik_adjustment` module implements handlers for the Nikon
 image adjustments stored in Nikon sidecar files.file. The article named
-":ref:`background_papers/inside_nksc:Inside Nikon Sidecar file`" details
-the data structure and tags used by Nikon.
+":ref:`background_papers/inside_adjustment:Inside Nikon image adjustments`"
+details the data structure and tags used by Nikon.
 
-Each image adjustments, as declarated in the observed sidecar file have
+Each image adjustments, as declared in the observed sidecar file have
 its own class to later implement the convert Nikon parameters to
-Darktable module parameters if it possible. Nevertheless, all these
+Darktable module parameters if it is possible. Nevertheless, all these
 classes are derived from the base class :class:`NikBaseAdjustment`. This
 base class offers the interface contract and a set of common methods for
 decoding parameters expressed as XMP properties.
@@ -945,8 +945,222 @@ class NikStraighten(NikBaseAdjustment):
     
 
 class NikPictureControl(NikBaseAdjustment):
-    pass
-    
+    """Picture control image's adjustment class
+
+    Picture control (nikon::PictureControl) adjusts the SDR tone range
+    of RAW pictures.
+
+    The article named
+    ":ref:`background_papers/nikon_picturecontrol:Inside nikon::PictureControl`"
+    details parameters and especially ``Export`` parameter expressed as
+    an obscure data.
+
+    This class override the :meth:`NikBaseAdjustment._set_param_export` method
+    to parse the 'Export' parameter.
+
+    Args:
+        element: XML element containing the metadata.
+
+    Raises:
+        NikAdjustmentError: Generic error, the :attr:`NikAdjustmentError.message`
+            details the error.
+    """
+    #: Filter effect mapping. Names are used instead of value to have a human
+    #: readable structure, and these are the ones used by Nikon Studio.
+    FILTER_EFFECT = {
+        0xff: "no value",
+        0x80: "none",
+        0x81: "yellow",
+        0x82: "orange",
+        0x83: "red",
+        0x84: "green",
+    }
+    #: Toning mapping. Names are used instead of value to have a human
+    #: readable structure, and these are the ones used by Nikon Studio.
+    TONING = {
+        0xff: "no value",
+        0x80: "B&W",
+        0x81: "sepia",
+        0x82: "cyanotype",
+        0x83: "red",
+        0x84: "yellow",
+        0x85: "green",
+        0x86: "blue-green",
+        0x87: "blue",
+        0x88: "purple-blue",
+        0x89: "reddish-purple"
+    }
+    def __init__(self, element: ElementTree.Element):
+        super().__init__(element)
+        # override the specific handler
+        doers = {
+            "Export": self._set_param_export
+        }
+        self._doers.update(doers)
+
+        # Table of doers method for processing picture control dataset
+        self._pc_doers = {
+            0x00000001: self._set_pc_camera,
+            0x00000100: self._set_pc_camera,
+            0x00000200: self._set_pc_camera,
+            0x00000300: self._set_pc_camera,
+            0x00000400: self._set_pc_camera,
+            0x00000500: self._set_pc_camera,
+            0x00000600: self._set_pc_camera,
+            0x00000700: self._set_pc_camera,
+            0x00000800: self._set_pc_camera,
+            0x00000900: self._set_pc_camera,
+            0x00000A00: self._set_pc_camera,
+            0x00000B00: self._set_pc_camera,
+            0x00000C00: self._set_pc_camera,
+            0x00000D00: self._set_pc_camera,
+            0x00000E00: self._set_pc_camera,
+            0x00000F00: self._set_pc_camera,
+            0x00001000: self._set_pc_camera,
+            0x00001100: self._set_pc_camera,
+            0x00001200: self._set_pc_camera,
+            0x00001300: self._set_pc_camera,
+            0x00001400: self._set_pc_camera,
+            0x00001500: self._set_pc_camera,
+            0x00001600: self._set_pc_camera,
+            0x00001700: self._set_pc_camera,
+            0x00001800: self._set_pc_camera,
+            0x00001900: self._set_pc_camera,
+            0x00001A00: self._set_pc_camera,
+            0x00001B00: self._set_pc_camera,
+            0x00001C00: self._set_pc_camera,
+            0x00001D00: self._set_pc_camera,
+            0x00001E00: self._set_pc_camera,
+            0x00001F00: self._set_pc_camera,
+            0x00002000: self._set_pc_camera,
+            0x00010100: self._set_pc_camera,
+            "_default": self._set_pc_camera
+        }
+        # Layout of the camera compatible dataset (id: 0x00000001). The layout
+        # is a tupple: offset, length, handler.
+        self._pccc_layout = [
+            (0, 4, self._set_pccc_version),
+            (4, 20, self._set_pccc_name),
+            (24, 2, self._set_pccc_id),
+            (26, 1, self._set_pccc_custom),
+            (27, 1, self._set_pccc_quick_adjust),
+            (28, 1, self._set_pccc_sharpening),
+            (29, 1, self._set_pccc_contrast),
+            (30, 1, self._set_pccc_brightness),
+            (31, 1, self._set_pccc_saturation),
+            (32, 1, self._set_pccc_hue),
+            (33, 1, self._set_pccc_filter_effect),
+            (34, 1, self._set_pccc_toning),
+            (35, 1, self._set_pccc_adjust_saturation)
+        ]
+        self._pc_params = {}
+
+    def _set_param_export(self, element: ElementTree.Element):
+        """Set export parameter.
+
+        Args:
+            element: Element containing the parameter.
+
+        Raises:
+            NikAdjustmentError: Generic error, the :attr:`NikAdjustmentError.message`
+                details the error.
+        """
+        super()._set_param_export(element)
+        data = self.params["Export"]
+        record = str(data[0:4], encoding='ASCII').rstrip("\x00")
+        data = data[4:]
+        if record != 'NCP':
+            raise NikAdjustmentError(f"Unsupported Picture control ({record})")
+
+        ds = int.from_bytes(data[0:4])
+        while ds != 0x00000000:
+            dl = int.from_bytes(data[4:8])
+            dv = data[8: 8+dl]
+            if ds not in self._pc_doers:
+                _logger.warning(f"{self.__class__.__name__}: DataSet is not "
+                                f"known ({ds:8x}) - ignored")
+            else:
+                self._pc_doers[ds](dv)
+            data = data[8+dl:]
+            ds = int.from_bytes(data[0:4])
+
+        self.params.update(self._pc_params)
+        for k, v in self._pc_params.items():
+            _logger.debug(f"{self.__class__.__name__} Picture control parameters {k}={v}")
+
+    def _set_pc_camera(self, data: bytes):
+        for l in self._pccc_layout:
+            l[2](data[l[0]: l[0]+l[1]])
+
+    def _set_pccc_version(self, data: bytes):
+            self._pc_params["Version"] = str(data, encoding="ASCII")
+
+    def _set_pccc_name(self, data: bytes):
+            self._pc_params["ControlName"] = str(data, encoding="ASCII").rstrip("\x00")
+
+    def _set_pccc_id(self, data: bytes):
+            self._pc_params["ControlId"] = int.from_bytes(data)
+
+    def _set_pccc_custom(self, data: bytes):
+        v = int.from_bytes(data)
+        match v:
+            case 0x00:
+                self._pc_params["Custom"] = "no customization"
+
+            case 0x01:
+                self._pc_params["Custom"]  = "Quick Adjust used"
+
+            case 0x02:
+                self._pc_params["Custom"]  = "Custom"
+
+            case _:
+                raise NikAdjustmentError(f"Unsupported custom setting ({v})")
+
+    def _set_pccc_quick_adjust(self, data: bytes):
+            self._pc_params["QuickAdjust"] = self._set_pccc_biased(data)
+
+    def _set_pccc_sharpening(self, data: bytes):
+            self._pc_params["Sharpening"] = self._set_pccc_biased(data)
+
+    def _set_pccc_contrast(self, data: bytes):
+            self._pc_params["Contrast"] = self._set_pccc_biased(data)
+
+    def _set_pccc_brightness(self, data: bytes):
+            self._pc_params["Brightness"] = self._set_pccc_biased(data)
+
+    def _set_pccc_saturation(self, data: bytes):
+            self._pc_params["Saturation"] = self._set_pccc_biased(data)
+
+    def _set_pccc_hue(self, data: bytes):
+            self._pc_params["Hue"] = self._set_pccc_biased(data)
+
+    def _set_pccc_filter_effect(self, data: bytes):
+            self._pc_params["FilterEffect"] = self.FILTER_EFFECT[int.from_bytes(data)]
+
+    def _set_pccc_toning(self, data: bytes):
+            self._pc_params["Toning"] = self.TONING[int.from_bytes(data)]
+
+    def _set_pccc_adjust_saturation(self, data: bytes):
+            self._pc_params["AdjustSaturation"] = self._set_pccc_biased(data)
+
+    def _set_pccc_biased(self, biased: bytes):
+        match biased:
+            case b'\xff':
+                v = None
+
+            case b'\x00':
+                v = "Auto"
+
+            case _:
+                v = int.from_bytes(biased) - 0x80
+        return v
+
+
+    def _get_cc_settings(self, param: str):
+        """Return the setting from camera compatible data set
+
+        """
+
 
 class NikQuickFixToneCurve(NikBaseAdjustment):
     pass
@@ -1001,18 +1215,18 @@ class NikColorBooster(NikBaseAdjustment):
     
 
 class NikNXHistory(NikBaseAdjustment):
-    """Nikon::NXHistory image's adjustment class
+    """NXHistory image's adjustment class
 
-     Nikon::NXHistory is not strictly an image adjustment, it is an ordered
-     list whose entries are tagged with ``historystep``. Each entry (aka. step)
-     is an unitary image adjustment to apply to the image. For example,
-     cropping an image should be done after image processing modifying the
-     image size as lens correction or perspective controls). The list is stored
-     in a dictionary with name ``historystep:XXX`` as key where XX is the step
-     index (from 1 to 999).
+     NXHistory (Nikon::NXHistory) is not strictly an image adjustment, it
+     is an ordered list whose entries are tagged with ``historystep``.
+     Each entry (aka. step) is an unitary image adjustment to apply to
+     the image. For example, cropping an image should be done after image
+     processing modifying the image size as lens correction or perspective
+     controls). The list is stored in a dictionary with name
+     ``historystep:XXX`` as key where XXX is the step index (from 1 to 999).
 
-     The step parameters are in a dictionary with parameter name as key. The
-     value type is set according to its explicit or implicit type.
+     The step parameters are in a dictionary with parameter name as key.
+     The value type is set according to its explicit or implicit type.
 
      Args:
          element: XML element containing the metadata.
@@ -1020,7 +1234,6 @@ class NikNXHistory(NikBaseAdjustment):
      Raises:
          NikAdjustmentError: Generic error, the :attr:`NikAdjustmentError.message`
              details the error.
-
      """
     def __init__(self, element: ElementTree.Element):
         super().__init__(element)
