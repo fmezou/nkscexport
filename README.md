@@ -40,7 +40,7 @@ See also
 * [Nikon Software](https://downloadcenter.nikonimglib.com/en/index.html)
 
 
-[logo]: https://raw.githubusercontent.com/fmezou/darkbridge/refs/heads/develop/docs/source/_static/darkbridge_assets/darkbridge-logo.svg
+[logo]: https://raw.githubusercontent.com/fmezou/darkbridge/refs/heads/develop/docs/source/assets/darkbridge/darkbridge-logo.svg
 [rtds]: https://app.readthedocs.org/projects/darkbridge/badge/?version=develop
 [rtdp]: https://darkbridge.readthedocs.io/en/develop/
 [lic]: https://img.shields.io/github/license/fmezou/darkbridge
