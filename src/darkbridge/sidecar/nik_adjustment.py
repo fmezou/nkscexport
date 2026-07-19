@@ -955,8 +955,8 @@ class NikPictureControl(NikBaseAdjustment):
     details parameters and especially ``Export`` parameter expressed as
     an obscure data.
 
-    This class override the :meth:`NikBaseAdjustment._set_param_export` method
-    to parse the 'Export' parameter.
+    This class override the :meth:`NikBaseAdjustment._set_param_export`
+    method to parse the 'Export' parameter.
 
     Args:
         element: XML element containing the metadata.
@@ -965,10 +965,11 @@ class NikPictureControl(NikBaseAdjustment):
         NikAdjustmentError: Generic error, the :attr:`NikAdjustmentError.message`
             details the error.
     """
-    #: Filter effect mapping. Names are used instead of value to have a human
-    #: readable structure, and these are the ones used by Nikon Studio.
+    #: Filter effect mapping. Names are used instead of value to have a
+    #: human-readable structure, and these are the ones used by Nikon
+    #: Studio.
     FILTER_EFFECT = {
-        0xff: "no value",
+        0xff: None,
         0x80: "none",
         0x81: "yellow",
         0x82: "orange",
@@ -978,7 +979,7 @@ class NikPictureControl(NikBaseAdjustment):
     #: Toning mapping. Names are used instead of value to have a human
     #: readable structure, and these are the ones used by Nikon Studio.
     TONING = {
-        0xff: "no value",
+        0xff: None,
         0x80: "B&W",
         0x81: "sepia",
         0x82: "cyanotype",
@@ -998,65 +999,70 @@ class NikPictureControl(NikBaseAdjustment):
         }
         self._doers.update(doers)
 
-        # Table of doers method for processing picture control dataset
+        # Table of doers methods for processing picture control dataset
         self._pc_doers = {
-            0x00000001: self._set_pc_camera,
-            0x00000100: self._set_pc_camera,
-            0x00000200: self._set_pc_camera,
-            0x00000300: self._set_pc_camera,
-            0x00000400: self._set_pc_camera,
-            0x00000500: self._set_pc_camera,
-            0x00000600: self._set_pc_camera,
-            0x00000700: self._set_pc_camera,
-            0x00000800: self._set_pc_camera,
-            0x00000900: self._set_pc_camera,
-            0x00000A00: self._set_pc_camera,
-            0x00000B00: self._set_pc_camera,
-            0x00000C00: self._set_pc_camera,
-            0x00000D00: self._set_pc_camera,
-            0x00000E00: self._set_pc_camera,
-            0x00000F00: self._set_pc_camera,
-            0x00001000: self._set_pc_camera,
-            0x00001100: self._set_pc_camera,
-            0x00001200: self._set_pc_camera,
-            0x00001300: self._set_pc_camera,
-            0x00001400: self._set_pc_camera,
-            0x00001500: self._set_pc_camera,
-            0x00001600: self._set_pc_camera,
-            0x00001700: self._set_pc_camera,
-            0x00001800: self._set_pc_camera,
-            0x00001900: self._set_pc_camera,
-            0x00001A00: self._set_pc_camera,
-            0x00001B00: self._set_pc_camera,
-            0x00001C00: self._set_pc_camera,
-            0x00001D00: self._set_pc_camera,
-            0x00001E00: self._set_pc_camera,
-            0x00001F00: self._set_pc_camera,
-            0x00002000: self._set_pc_camera,
-            0x00010100: self._set_pc_camera,
-            "_default": self._set_pc_camera
+            0x00000001: self._parse_camera_compatible,
+            0x00000100: self._set_version,
+            0x00000200: self._set_control_name,
+            0x00000300: self._set_undefined,
+            0x00000400: self._set_undefined,
+            0x00000500: self._set_undefined,
+            0x00000600: self._set_sharpening,
+            0x00000700: self._set_clarity,
+            0x00000800: self._set_contrast,
+            0x00000900: self._set_brightness,
+            0x00000A00: self._set_saturation,
+            0x00000B00: self._set_hue,
+            0x00000C00: self._set_filter_effect,
+            0x00000D00: self._set_toning,
+            0x00000E00: self._set_adjust_saturation,
+            0x00000F00: self._set_auto_sharpening,
+            0x00001000: self._set_auto_clarity,
+            0x00001100: self._set_auto_contrast,
+            0x00001200: self._set_auto_saturation,
+            0x00001300: self._set_auto_mid_range_sharpening,
+            0x00001400: self._set_undefined,
+            0x00001500: self._set_undefined,
+            0x00001600: self._set_mid_range_sharpening,
+            0x00001700: self._set_undefined,
+            0x00001800: self._set_undefined,
+            0x00001900: self._set_fc_contrast,
+            0x00001A00: self._set_highlights,
+            0x00001B00: self._set_shadows,
+            0x00001C00: self._set_white_level,
+            0x00001D00: self._set_black_level,
+            0x00001E00: self._set_fc_saturation,
+            0x00001F00: self._set_color_blender,
+            0x00002000: self._set_color_grading,
+            0x00010100: self._set_comment,
+            "_default": self._set_undefined
         }
-        # Layout of the camera compatible dataset (id: 0x00000001). The layout
-        # is a tupple: offset, length, handler.
+        # Layout of the camera compatible dataset (id: 0x00000001). The
+        # layout is a tuple: offset, length, handler.
         self._pccc_layout = [
-            (0, 4, self._set_pccc_version),
-            (4, 20, self._set_pccc_name),
-            (24, 2, self._set_pccc_id),
-            (26, 1, self._set_pccc_custom),
-            (27, 1, self._set_pccc_quick_adjust),
-            (28, 1, self._set_pccc_sharpening),
-            (29, 1, self._set_pccc_contrast),
-            (30, 1, self._set_pccc_brightness),
-            (31, 1, self._set_pccc_saturation),
-            (32, 1, self._set_pccc_hue),
-            (33, 1, self._set_pccc_filter_effect),
-            (34, 1, self._set_pccc_toning),
-            (35, 1, self._set_pccc_adjust_saturation)
+            (0, 4, self._set_version),
+            (4, 20, self._set_control_name),
+            (24, 2, self._set_control_id),
+            (26, 1, self._set_custom),
+            (27, 1, self._set_quick_adjust),
+            (28, 1, self._set_sharpening),
+            (29, 1, self._set_contrast),
+            (30, 1, self._set_brightness),
+            (31, 1, self._set_saturation),
+            (32, 1, self._set_hue),
+            (33, 1, self._set_filter_effect),
+            (34, 1, self._set_toning),
+            (35, 1, self._set_adjust_saturation)
         ]
         self._pc_params = {}
+        self._undefined  = 0
 
     def _set_param_export(self, element: ElementTree.Element):
         """Set export parameter.
+
+        Parses the 'Export' parameter and store the processed settings in
+        the dictionary :attr:`params`. The original 'Export' entry is
+        removed from dictionary :attr:`params`.
 
         Args:
             element: Element containing the parameter.
@@ -1067,41 +1073,83 @@ class NikPictureControl(NikBaseAdjustment):
         """
         super()._set_param_export(element)
         data = self.params["Export"]
+
+        # Check the record identifier
         record = str(data[0:4], encoding='ASCII').rstrip("\x00")
-        data = data[4:]
+        data = data[4:] # Remove processed field
         if record != 'NCP':
             raise NikAdjustmentError(f"Unsupported Picture control ({record})")
 
-        ds = int.from_bytes(data[0:4])
-        while ds != 0x00000000:
-            dl = int.from_bytes(data[4:8])
-            dv = data[8: 8+dl]
-            if ds not in self._pc_doers:
+        # Process datasets
+        dset = int.from_bytes(data[0:4])
+        while dset != 0x00000000:
+            dlen = int.from_bytes(data[4:8])
+            dval = data[8: 8+dlen]
+            if dset not in self._pc_doers:
                 _logger.warning(f"{self.__class__.__name__}: DataSet is not "
-                                f"known ({ds:8x}) - ignored")
+                                f"known ({dset:8x}) - ignored")
             else:
-                self._pc_doers[ds](dv)
-            data = data[8+dl:]
-            ds = int.from_bytes(data[0:4])
+                _logger.debug(f"{self.__class__.__name__} Processing "
+                              f"parameter {dset:08x}={dval} -> "
+                              f"{self._pc_doers[dset]}")
+                self._pc_doers[dset](dval)
+            # Remove processed dataset and retrieve the next one
+            data = data[8+dlen:]
+            dset = int.from_bytes(data[0:4])
 
         self.params.update(self._pc_params)
         for k, v in self._pc_params.items():
-            _logger.debug(f"{self.__class__.__name__} Picture control parameters {k}={v}")
+            _logger.debug(f"{self.__class__.__name__} Picture control "
+                          f"parameters {k}={v}")
 
-    def _set_pc_camera(self, data: bytes):
-        for l in self._pccc_layout:
-            l[2](data[l[0]: l[0]+l[1]])
+        # todo: Remove 'Export' entry after debug
+        # del self.params["Export"]
 
-    def _set_pccc_version(self, data: bytes):
-            self._pc_params["Version"] = str(data, encoding="ASCII")
+    def _parse_camera_compatible(self, data: bytes):
+        """Process 'camera compatible' dataset.
 
-    def _set_pccc_name(self, data: bytes):
-            self._pc_params["ControlName"] = str(data, encoding="ASCII").rstrip("\x00")
+        This method parses the 'Camera compatible' dataset (id: 0x00000001).
+        This dataset is a binary structure and parsing uses the layout
+        expressed in instance attribute '_pccc_layout'. See article named
+        ":ref:`background_papers/nikon_picturecontrol:Camera compatible`"
+        for more details.
 
-    def _set_pccc_id(self, data: bytes):
-            self._pc_params["ControlId"] = int.from_bytes(data)
+        Args:
+            data: Value of the dataset expressed as a binary string.
+        """
+        for offset, length, doer in self._pccc_layout:
+            doer(data[offset: offset+length])
 
-    def _set_pccc_custom(self, data: bytes):
+    def _set_version(self, data: bytes):
+        """Process version parameter.
+
+        Args:
+            data: Value of the parameter expressed as a binary string.
+        """
+        self._pc_params["Version"] = str(data, encoding="ASCII")
+
+    def _set_control_name(self, data: bytes):
+        """Process control name parameter.
+
+        Args:
+            data: Value of the parameter expressed as a binary string.
+        """
+        self._pc_params["Name"] = str(data, encoding="ASCII").rstrip("\x00")
+
+    def _set_control_id(self, data: bytes):
+        """Process control identifier parameter.
+
+        Args:
+            data: Value of the parameter expressed as a binary string.
+        """
+        self._pc_params["Id"] = int.from_bytes(data)
+
+    def _set_custom(self, data: bytes):
+        """Process customization level parameter.
+
+        Args:
+            data: Value of the parameter expressed as a binary string.
+        """
         v = int.from_bytes(data)
         match v:
             case 0x00:
@@ -1114,52 +1162,258 @@ class NikPictureControl(NikBaseAdjustment):
                 self._pc_params["Custom"]  = "Custom"
 
             case _:
-                raise NikAdjustmentError(f"Unsupported custom setting ({v})")
+                raise NikAdjustmentError(f"Unsupported custom parameter ({v})")
 
-    def _set_pccc_quick_adjust(self, data: bytes):
-            self._pc_params["QuickAdjust"] = self._set_pccc_biased(data)
+    def _set_quick_adjust(self, data: bytes):
+        """Process quick adjust parameter.
 
-    def _set_pccc_sharpening(self, data: bytes):
-            self._pc_params["Sharpening"] = self._set_pccc_biased(data)
+        Args:
+            data: Value of the parameter expressed as a binary string.
+        """
+        self._pc_params["QuickAdjust"] = self._get_value(data)
 
-    def _set_pccc_contrast(self, data: bytes):
-            self._pc_params["Contrast"] = self._set_pccc_biased(data)
+    def _set_sharpening(self, data: bytes):
+        """Process sharpening parameter.
 
-    def _set_pccc_brightness(self, data: bytes):
-            self._pc_params["Brightness"] = self._set_pccc_biased(data)
+        Args:
+            data: Value of the parameter expressed as a binary string.
+        """
+        self._pc_params["Sharpening"] = self._get_value(data)
 
-    def _set_pccc_saturation(self, data: bytes):
-            self._pc_params["Saturation"] = self._set_pccc_biased(data)
+    def _set_mid_range_sharpening(self, data: bytes):
+        """Process mid-range sharpening parameter.
 
-    def _set_pccc_hue(self, data: bytes):
-            self._pc_params["Hue"] = self._set_pccc_biased(data)
+        Args:
+            data: Value of the parameter expressed as a binary string.
+        """
+        self._pc_params["MidRangeSharpening"] = self._get_value(data)
 
-    def _set_pccc_filter_effect(self, data: bytes):
-            self._pc_params["FilterEffect"] = self.FILTER_EFFECT[int.from_bytes(data)]
+    def _set_clarity(self, data: bytes):
+        """Process clarity parameter.
 
-    def _set_pccc_toning(self, data: bytes):
-            self._pc_params["Toning"] = self.TONING[int.from_bytes(data)]
+        Args:
+            data: Value of the parameter expressed as a binary string.
+        """
+        self._pc_params["Clarity"] = self._get_value(data)
 
-    def _set_pccc_adjust_saturation(self, data: bytes):
-            self._pc_params["AdjustSaturation"] = self._set_pccc_biased(data)
+    def _set_contrast(self, data: bytes):
+        """Process contrast parameter.
 
-    def _set_pccc_biased(self, biased: bytes):
-        match biased:
-            case b'\xff':
-                v = None
+        Args:
+            data: Value of the parameter expressed as a binary string.
+        """
+        self._pc_params["Contrast"] = self._get_value(data)
 
-            case b'\x00':
-                v = "Auto"
+    def _set_brightness(self, data: bytes):
+        """Process brightness parameter.
+
+        Args:
+            data: Value of the parameter expressed as a binary string.
+        """
+        self._pc_params["Brightness"] = self._get_value(data)
+
+    def _set_saturation(self, data: bytes):
+        """Process saturation parameter.
+
+        Args:
+            data: Value of the parameter expressed as a binary string.
+        """
+        self._pc_params["Saturation"] = self._get_value(data)
+
+    def _set_hue(self, data: bytes):
+        """Process hue parameter.
+
+        Args:
+            data: Value of the parameter expressed as a binary string.
+        """
+        self._pc_params["Hue"] = self._get_value(data)
+
+    def _set_filter_effect(self, data: bytes):
+        """Process filter effect parameter.
+
+        Args:
+            data: Value of the parameter expressed as a binary string.
+        """
+        self._pc_params["FilterEffect"] = self.FILTER_EFFECT[int.from_bytes(data)]
+
+    def _set_toning(self, data: bytes):
+        """Process toning parameter.
+
+        Args:
+            data: Value of the parameter expressed as a binary string.
+        """
+        self._pc_params["Toning"] = self.TONING[int.from_bytes(data)]
+
+    def _set_adjust_saturation(self, data: bytes):
+        """Process adjust saturation parameter.
+
+        Args:
+            data: Value of the parameter expressed as a binary string.
+        """
+        self._pc_params["AdjustSaturation"] = self._get_value(data)
+
+    def _set_auto_sharpening(self, data: bytes):
+        """Process sharpening parameter.
+
+        Args:
+            data: Value of the parameter expressed as a binary string.
+        """
+        self._pc_params["AutoSharpening"] = self._get_value(data)
+
+    def _set_auto_mid_range_sharpening(self, data: bytes):
+        """Process mid-range sharpening parameter.
+
+        Args:
+            data: Value of the parameter expressed as a binary string.
+        """
+        self._pc_params["AutoMidRangeSharpening"] = self._get_value(data)
+
+    def _set_auto_clarity(self, data: bytes):
+        """Process clarity parameter.
+
+        Args:
+            data: Value of the parameter expressed as a binary string.
+        """
+        self._pc_params["AutoClarity"] = self._get_value(data)
+
+    def _set_auto_contrast(self, data: bytes):
+        """Process contrast parameter.
+
+        Args:
+            data: Value of the parameter expressed as a binary string.
+        """
+        self._pc_params["AutoContrast"] = self._get_value(data)
+
+    def _set_auto_saturation(self, data: bytes):
+        """Process saturation parameter.
+
+        Args:
+            data: Value of the parameter expressed as a binary string.
+        """
+        self._pc_params["AutoSaturation"] = self._get_value(data)
+
+    def _set_fc_contrast(self, data: bytes):
+        """Process flexible color contrast parameter.
+
+        Args:
+            data: Value of the parameter expressed as a binary string.
+        """
+        self._pc_params["FCContrast"] = self._get_value(data)
+
+    def _set_fc_saturation(self, data: bytes):
+        """Process flexible color saturation parameter.
+
+        Args:
+            data: Value of the parameter expressed as a binary string.
+        """
+        self._pc_params["FCSaturation"] = self._get_value(data)
+
+    def _set_highlights(self, data: bytes):
+        """Process highlights parameter.
+
+        Args:
+            data: Value of the parameter expressed as a binary string.
+        """
+        self._pc_params["Highlights"] = self._get_value(data)
+
+    def _set_shadows(self, data: bytes):
+        """Process shadows parameter.
+
+        Args:
+            data: Value of the parameter expressed as a binary string.
+        """
+        self._pc_params["Shadows"] = self._get_value(data)
+
+    def _set_white_level(self, data: bytes):
+        """Process white level parameter.
+
+        Args:
+            data: Value of the parameter expressed as a binary string.
+        """
+        self._pc_params["WhiteLevel"] = self._get_value(data)
+
+    def _set_black_level(self, data: bytes):
+        """Process black level parameter.
+
+        Args:
+            data: Value of the parameter expressed as a binary string.
+        """
+        self._pc_params["BlackLevel"] = self._get_value(data)
+
+    def _set_color_blender(self, data: bytes):
+        """Process color blender parameter.
+
+        Args:
+            data: Value of the parameter expressed as a binary string.
+        """
+        self._pc_params["ColorBlender"] = data
+
+    def _set_color_grading(self, data: bytes):
+        """Process color grading parameter.
+
+        Args:
+            data: Value of the parameter expressed as a binary string.
+        """
+        self._pc_params["ColorGrading"] = self._get_value(data)
+
+    def _set_comment(self, data: bytes):
+        """Process comment parameter.
+
+        Args:
+            data: Value of the parameter expressed as a binary string.
+        """
+        self._pc_params["Comment"] = str(data, encoding="ASCII").rstrip("\x00")
+
+    def _set_undefined(self, data: bytes):
+        """Process undefined parameter.
+
+        This method processes not yet identified parameter.
+
+        Args:
+            data: Value of the parameter expressed as a binary string.
+        """
+        k = f"Undefined#{self._undefined:02d}"
+        self._pc_params[k] = data
+        self._undefined += 1
+
+    def _get_value(self, data: bytes) -> None | str | float:
+        """Get parameter value.
+
+        Parameters values are encoded on one or two bytes and may be
+        expressed as an integer or a decimal number. See article named
+        ":ref:`background_papers/nikon_picturecontrol:Parameters encoding`"
+        for more details.
+
+        Args:
+            data: Value of the parameter expressed as a binary string.
+        """
+        value = None
+        bv = b'\xff'
+        match len(data):
+            case 1:
+                bv = data[0]
+                div = 1
+
+            case 2:
+                bv = data[0]
+                div = data[1]
 
             case _:
-                v = int.from_bytes(biased) - 0x80
-        return v
+                raise NikAdjustmentError(
+                    f"Unsupported length value: actual '{len(data)}', "
+                    f"expected <2")
 
+        match bv:
+            case 0xff:
+                value = None
 
-    def _get_cc_settings(self, param: str):
-        """Return the setting from camera compatible data set
+            case 0x00:
+                value = "Auto"
 
-        """
+            case _:
+                value = (bv - 0x80) / div
+
+        return value
 
 
 class NikQuickFixToneCurve(NikBaseAdjustment):

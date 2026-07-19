@@ -69,6 +69,28 @@ serialized in a record composed of several data sets as shown below.
 * **End Marker**: is the identifier of the end of the record (value set
   at 0).
 
+Parameters encoding
+-------------------
+
+Parameters values are encoded on one or two bytes and may be expressed as an
+integer or a decimal number.
+
+Integers are encoded on 1 byte, and decimal numbers are encoded on 2 bytes.
+
+* The first byte is the value offset from the actual value by the value bias
+  (here 0x80). Biasing is done because settings have to be signed values.
+* The second byte (optional) is the number of subdivision (i.e 4 for for a
+  value varying in increments of 0.25).
+
+The formula for getting the setting value is: :math:`value = (bv - 128) / div`
+where :math:`bv` is the biased value, :math:`div` is the divisor. Exemple:
+b'\\x7a\\x04' is -1.5.
+
+Two values have a special meaning: ``0xFF`` and ``0x00``.
+
+* ``0xFF`` indicates that the value is not set (similar to `None`).
+* ``0x00`` indicates that the parameter is set to 'Auto'.
+
 Camera compatible
 -----------------
 Tones are processed using the Picture Controls for the camera that took the
@@ -90,16 +112,12 @@ settings are linearized in a buffer.
 The below table exposes the layout of the picture control setting buffer
 starting at offset 0x0c.
 
-.. note:: Setting values are biased, the value stored is offset from the actual
-   value by the value bias (here 0x80). Biasing is done because settings have
-   to be signed values.
-
 +-------------------+----------+--------+-------------------------------------+
 | Setting           | Length   | Offset | Value                               |
 +===================+==========+========+=====================================+
-| Version           | 4 bytes  | 00     | Fixed string: '0100'                |
+| Version           | 4 bytes  | 00     | Fixed ASCII string: '0100'          |
 +-------------------+----------+--------+-------------------------------------+
-| ControlName       | 20 bytes | 04     | Null terminated string.             |
+| Name              | 20 bytes | 04     | Null terminated ASCII string.       |
 |                   |          |        |                                     |
 |                   |          |        | * SD: ``STANDARD``                  |
 |                   |          |        | * NL: ``NEUTRAL``                   |
@@ -108,46 +126,43 @@ starting at offset 0x0c.
 |                   |          |        | * PT: ``PORTRAIT``                  |
 |                   |          |        | * LS: ``LANDSCAPE``                 |
 +-------------------+----------+--------+-------------------------------------+
-| ControlId         | 2 bytes  | 23     | * SD: ``0x0001``                    |
+| Id                | 2 bytes  | 24     | * SD: ``0x0001``                    |
 |                   |          |        | * NL: ``0x03C2``                    |
 |                   |          |        | * VI: ``0x00C3``                    |
 |                   |          |        | * MC: ``0x064D``                    |
 |                   |          |        | * PT: ``0x0486``                    |
 |                   |          |        | * LS: ``0x04C7``                    |
 +-------------------+----------+--------+-------------------------------------+
-| Custom            | 1 byte   | 25     | Customization level.                |
+| Custom            | 1 byte   | 26     | Customization level.                |
 |                   |          |        |                                     |
 |                   |          |        | * ``0x00``: no customization        |
 |                   |          |        | * ``0x01``: Quick Adjust used       |
 |                   |          |        | * ``0x02``: Custom                  |
 +-------------------+----------+--------+-------------------------------------+
-| QuickAdjust       | 1 byte   | 26     | * biased (-2..2)                    |
+| QuickAdjust       | 1 byte   | 27     | * encoded (-2..2)                   |
 +-------------------+----------+--------+-------------------------------------+
-| Sharpening        | 1 byte   | 27     | * ``0x00``: auto                    |
-|                   |          |        | * biased (0..9)                     |
+| Sharpening        | 1 byte   | 28     | * encoded (auto, 0..9)              |
 +-------------------+----------+--------+-------------------------------------+
-| Contrast          | 1 byte   | 28     | * ``0x00``: auto                    |
-|                   |          |        | * biased (-3..3)                    |
+| Contrast          | 1 byte   | 29     | * encoded (auto, -3..3)             |
 +-------------------+----------+--------+-------------------------------------+
-| Brightness        | 1 byte   | 29     | * biased (-1..1)                    |
+| Brightness        | 1 byte   | 30     | * encoded (-1..1)                   |
 +-------------------+----------+--------+-------------------------------------+
-| Saturation        | 1 byte   | 30     | * ``0x00``: auto                    |
-|                   |          |        | * biased (-3..3)                    |
+| Saturation        | 1 byte   | 31     | * encoded (auto, -3..3)             |
 +-------------------+----------+--------+-------------------------------------+
-| Hue               | 1 byte   | 31     | * 0x7D..0x83: biased (-3..3)        |
+| Hue               | 1 byte   | 32     | * encoded (-3..3)                   |
 +-------------------+----------+--------+-------------------------------------+
-| FilterEffect      | 1 byte   | 32     | Color filters on B&W pictures.      |
+| FilterEffect      | 1 byte   | 33     | Color filters on B&W pictures.      |
 |                   |          |        |                                     |
-|                   |          |        | * ``0xff``: no value                |
+|                   |          |        | * ``0xff``: Not Defined (`None`)    |
 |                   |          |        | * ``0x80``: none                    |
 |                   |          |        | * ``0x81``: yellow                  |
 |                   |          |        | * ``0x82``: orange                  |
 |                   |          |        | * ``0x83``: red                     |
 |                   |          |        | * ``0x84``: green                   |
 +-------------------+----------+--------+-------------------------------------+
-| Toning            | 1 byte   | 33     | Tint for B&W pictures.              |
+| Toning            | 1 byte   | 34     | Tint for B&W pictures.              |
 |                   |          |        |                                     |
-|                   |          |        | * ``0xff``: no value                |
+|                   |          |        | * ``0xff``: Not Defined (`None`)    |
 |                   |          |        | * ``0x80``: B&W                     |
 |                   |          |        | * ``0x81``: sepia                   |
 |                   |          |        | * ``0x82``: cyanotype               |
@@ -159,10 +174,9 @@ starting at offset 0x0c.
 |                   |          |        | * ``0x88``: purple-blue             |
 |                   |          |        | * ``0x89``: reddish-purple          |
 +-------------------+----------+--------+-------------------------------------+
-| AdjustSaturation  | 1 byte   | 34     | Saturation of the tint (see Toning) |
+| AdjustSaturation  | 1 byte   | 35     | Saturation of the tint (see Toning) |
 |                   |          |        |                                     |
-|                   |          |        | * ``0xff``: no value (Toning=0x80)  |
-|                   |          |        | * biased (1..7)                     |
+|                   |          |        | * encoded (`None`, 1..7)            |
 +-------------------+----------+--------+-------------------------------------+
 
 .. figure:: /images/picturecontrol_MC.png
@@ -222,18 +236,12 @@ Contrary to the `background_papers/nikon_picturecontrol:Camera compatible`,
 parameters are not serialized in a unique dataset. Each parameters is a
 dataset. The below table exposes datasets used.
 
-.. note:: Value are encoded on two bytes: the first one is the biased value,
-   and the second is the multiplier. Multiplication is done because settings
-   have to be decimal values. The formula for getting the setting value is:
-   :math:`v = (bv - 128) / m` where :math:`bv` is the biased value, :math:`m`
-   is the multiplier. Exemple: b'\\x7a\\x04' is -1.5.
-
 +----------------------+-----------+----------------+------------------------------+
 | Setting              | Length    | DataSet        | Value                        |
 +======================+===========+================+==============================+
-| Version              | 4 bytes   | ``0x00000100`` | Fixed string: '0310'         |
+| Version              | 4 bytes   | ``0x00000100`` | Fixed ASCII string: '0310'   |
 +----------------------+-----------+----------------+------------------------------+
-| Control Name         | 20 bytes  | ``0x00000200`` | Null terminated string.      |
+| Name                 | 20 bytes  | ``0x00000200`` | Null terminated ASCII string.|
 |                      |           |                |                              |
 |                      |           |                | * A: ``AUTO``                |
 |                      |           |                | * SD: ``STANDARD``           |
@@ -291,40 +299,44 @@ dataset. The below table exposes datasets used.
 +----------------------+-----------+----------------+------------------------------+
 | Hue                  | 2 bytes   | ``0x00000B00`` | * encoded (-3..3, step: 0.25)|
 +----------------------+-----------+----------------+------------------------------+
-| Filter Effect        | 2 bytes   | ``0x00000C00`` | Same as *Filter Effect*.     |
-|                      |           |                |                              |
-|                      |           |                | See 'Camera compatible'      |
+| FilterEffect         | 2 bytes   | ``0x00000C00`` | See 'Camera compatible'      |
 |                      |           |                | section above.               |
 +----------------------+-----------+----------------+------------------------------+
-| Toning               | 2 bytes   | ``0x00000D00`` | Same as *Toning*.            |
-|                      |           |                |                              |
-|                      |           |                | See 'Camera compatible'      |
+| Toning               | 2 bytes   | ``0x00000D00`` | See 'Camera compatible'      |
 |                      |           |                | section above.               |
 +----------------------+-----------+----------------+------------------------------+
-| Adjust Saturation    | 2 bytes   | ``0x00000E00`` | * encoded (0..7, step: 0.25) |
+| Adjust Saturation    | 2 bytes   | ``0x00000E00`` | Saturation of the tint       |
+|                      |           |                | (see Toning)                 |
+|                      |           |                |                              |
+|                      |           |                | * encoded (0..7, step: 0.25) |
 +----------------------+-----------+----------------+------------------------------+
-| Sharpening [#A]_     | 2 bytes   | ``0x00000F00`` | Null terminated string.      |
+| Sharpening [#A]_     | 2 bytes   | ``0x00000F00`` | * encoded (-100..100,        |
+|                      |           |                |   step: 1)                   |
 +----------------------+-----------+----------------+------------------------------+
-| Clarity [#A]_        | 2 bytes   | ``0x00001000`` | Null terminated string.      |
+| Clarity [#A]_        | 2 bytes   | ``0x00001000`` | * encoded (-100..100,        |
+|                      |           |                |   step: 1)                   |
 +----------------------+-----------+----------------+------------------------------+
-| Contrast [#A]_       | 2 bytes   | ``0x00001100`` | Null terminated string.      |
+| Contrast [#A]_       | 2 bytes   | ``0x00001100`` | * encoded (-100..100,        |
+|                      |           |                |   step: 1)                   |
 +----------------------+-----------+----------------+------------------------------+
-| Saturation [#A]_     | 2 bytes   | ``0x00001200`` | Null terminated string.      |
+| Saturation [#A]_     | 2 bytes   | ``0x00001200`` | * encoded (-100..100,        |
+|                      |           |                |   step: 1)                   |
 +----------------------+-----------+----------------+------------------------------+
-| Mid-range sharpening | 2 bytes   | ``0x00001300`` | Null terminated string.      |
-| [#A]_                |           |                |                              |
+| Mid-range sharpening | 2 bytes   | ``0x00001300`` | * encoded (-100..100,        |
+| [#A]_                |           |                |   step: 1)                   |
 +----------------------+-----------+----------------+------------------------------+
 | *undefined*          | 2 bytes   | ``0x00001400`` | Fixed value: 0x8001          |
 +----------------------+-----------+----------------+------------------------------+
 | *undefined*          | 2 bytes   | ``0x00001500`` | Fixed value: 0xFF0A          |
 +----------------------+-----------+----------------+------------------------------+
-| Mid-range sharpening | 2 bytes   | ``0x00001600`` | * encoded (-5..5, step: 0.25)|
+| MidRangeSharpening   | 2 bytes   | ``0x00001600`` | * encoded (-5..5, step: 0.25)|
 +----------------------+-----------+----------------+------------------------------+
 | *undefined*          | 2 bytes   | ``0x00001700`` | Fixed value: 0xFF04          |
 +----------------------+-----------+----------------+------------------------------+
 | *undefined*          | 2 bytes   | ``0x00001800`` | Fixed value: 0xFF04          |
 +----------------------+-----------+----------------+------------------------------+
-| Contrast profile FC  | 2 bytes   | ``0x00001900`` | Null terminated string.      |
+| FCContrast           | 2 bytes   | ``0x00001900`` | * encoded (-100..100,        |
+|                      |           |                |   step: 1)                   |
 +----------------------+-----------+----------------+------------------------------+
 | Highlights           | 2 bytes   | ``0x00001A00`` | * encoded (-100..100,        |
 |                      |           |                |   step: 1)                   |
@@ -332,17 +344,18 @@ dataset. The below table exposes datasets used.
 | Shadows              | 2 bytes   | ``0x00001B00`` | * encoded (-100..100,        |
 |                      |           |                |   step: 1)                   |
 +----------------------+-----------+----------------+------------------------------+
-| White level          | 2 bytes   | ``0x00001C00`` | * encoded (-100..100,        |
+| WhiteLevel           | 2 bytes   | ``0x00001C00`` | * encoded (-100..100,        |
 |                      |           |                |   step: 1)                   |
 +----------------------+-----------+----------------+------------------------------+
 | Black level          | 2 bytes   | ``0x00001D00`` | * encoded (-100..100,        |
 |                      |           |                |   step: 1)                   |
 +----------------------+-----------+----------------+------------------------------+
-| Saturation [FC]      | 2 bytes   | ``0x00001E00`` | Null terminated string.      |
+| FCSaturation         | 2 bytes   | ``0x00001E00`` | * encoded (-100..100,        |
+|                      |           |                |   step: 1)                   |
 +----------------------+-----------+----------------+------------------------------+
-| Color Blender        | 40 bytes  | ``0x00001F00`` | Obscure data.                |
+| ColorBlender         | 40 bytes  | ``0x00001F00`` | Obscure data.                |
 +----------------------+-----------+----------------+------------------------------+
-| Color grading        | 32 bytes  | ``0x00002000`` | Obscure data.                |
+| ColorGrading         | 32 bytes  | ``0x00002000`` | Obscure data.                |
 +----------------------+-----------+----------------+------------------------------+
 | Comment              | 258 bytes | ``0x00010100`` | Null terminated string.      |
 |                      |           |                |                              |
