@@ -1412,7 +1412,7 @@ class NikonAsteroidProperties:
             t, r, d = buffer[0], buffer[1], buffer[2]
             l = int.from_bytes(buffer[3:5])
             iim_id = f"{r:}:{d:02}"
-            value = str(buffer[5:5 + l], encoding="ansi")
+            value = str(buffer[5:5 + l], encoding="iso8859-1")
             if iim_id in self._IPTC_XMP:
                 match iim_id:
                     case "2:25": # Keywords may be present one or more time.
