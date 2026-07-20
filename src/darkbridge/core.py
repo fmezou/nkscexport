@@ -806,9 +806,10 @@ class DefaultDisplay(BaseDisplay):
         """Dump an obscure data structure.
 
         This method returns a human-readable representation of an obscure
-        data (unknown or obfuscated data structure). The representation is
-        a common one based on standard hexacimal dump (left part with bytes
-        expressed in hexadecimal and right part as character if possible.
+        data (unknown or obfuscated data structure). The representation
+        is a common one based on standard hexadecimal dump (left part
+        with bytes expressed in hexadecimal and right part as character
+        if possible).
 
         Args:
             data: Obscure data expressed as binary array.
@@ -818,14 +819,17 @@ class DefaultDisplay(BaseDisplay):
         msgs = []
         buffer = data
         msgs.append(f"Obscure data ({len(data)} bytes)")
-        head = f"00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F"
-        msgs.append(f"{prefix}....| {head}")
+        head = f"00 01 02 03 04 05 06 07  08 09 0A 0B 0C 0D 0E 0F"
+        msgs.append(f"{prefix}....  {head}")
         i = 0
         while len(buffer) != 0:
-            line = buffer[0:16]
-            hexa = f"{line.hex(" ")}".ljust(len(head))
-            ascii = str(line.translate(self._data_trans), encoding='ascii')
-            msgs.append(f"{prefix}{i:04x}| {hexa} {ascii}")
+            lpart = buffer[0:8]
+            rpart = buffer[8:16]
+            hexa = f"{lpart.hex(" ")}  {rpart.hex(" ")}".ljust(len(head))
+            lascii = str(lpart.translate(self._data_trans), encoding='ascii')
+            rascii = str(rpart.translate(self._data_trans), encoding='ascii')
+            ascii = f"{lascii}{rascii}".ljust(16)
+            msgs.append(f"{prefix}{i:04x}  {hexa}  |{ascii}|")
             buffer = buffer[16:]
             i += 16
 
