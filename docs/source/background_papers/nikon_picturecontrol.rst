@@ -80,7 +80,7 @@ Integers are encoded on 1 byte, and decimal numbers are encoded on 2 bytes.
 * The first byte is the value offset from the actual value by the value bias
   (here 0x80). Biasing is done because settings have to be signed values.
 * The second byte (optional) is the number of subdivision (i.e 4 for for a
-  value varying in increments of 0.25).
+  value varying in increments of 0.25). 0 means no subdivision.
 
 The formula for getting the setting value is: :math:`value = (bv - 128) / div`
 where :math:`bv` is the biased value, :math:`div` is the divisor. Exemple:
@@ -126,58 +126,60 @@ starting at offset 0x0c.
 |                   |          |        | * PT: ``PORTRAIT``                  |
 |                   |          |        | * LS: ``LANDSCAPE``                 |
 +-------------------+----------+--------+-------------------------------------+
-| Id                | 2 bytes  | 24     | * SD: ``0x0001``                    |
-|                   |          |        | * NL: ``0x03C2``                    |
-|                   |          |        | * VI: ``0x00C3``                    |
-|                   |          |        | * MC: ``0x064D``                    |
-|                   |          |        | * PT: ``0x0486``                    |
-|                   |          |        | * LS: ``0x04C7``                    |
+| Id                | 2 bytes  | 24     | * SD: ``0x0001`` (1)                |
+|                   |          |        | * NL: ``0x03C2`` (962)              |
+|                   |          |        | * VI: ``0x00C3`` (195)              |
+|                   |          |        | * MC: ``0x064D`` (1613)             |
+|                   |          |        | * PT: ``0x0486`` (1158)             |
+|                   |          |        | * LS: ``0x04C7`` (1223)             |
 +-------------------+----------+--------+-------------------------------------+
-| Custom            | 1 byte   | 26     | Customization level.                |
+| Customization     | 1 byte   | 26     | Customization level.                |
 |                   |          |        |                                     |
-|                   |          |        | * ``0x00``: no customization        |
-|                   |          |        | * ``0x01``: Quick Adjust used       |
-|                   |          |        | * ``0x02``: Custom                  |
+|                   |          |        | * ``0x00``: Built-in                |
+|                   |          |        | * ``0x01``: Quick Adjust            |
+|                   |          |        | * ``0x02``: Advanced settings       |
 +-------------------+----------+--------+-------------------------------------+
-| QuickAdjust       | 1 byte   | 27     | * encoded (-2..2)                   |
+| QuickAdjust       | 1 byte   | 27     | Encoded (-2..2)                     |
 +-------------------+----------+--------+-------------------------------------+
-| Sharpening        | 1 byte   | 28     | * encoded (auto, 0..9)              |
+| Sharpening        | 1 byte   | 28     | Encoded (Auto, 0..9)                |
 +-------------------+----------+--------+-------------------------------------+
-| Contrast          | 1 byte   | 29     | * encoded (auto, -3..3)             |
+| Contrast          | 1 byte   | 29     | Encoded (Auto, -3..3)               |
 +-------------------+----------+--------+-------------------------------------+
-| Brightness        | 1 byte   | 30     | * encoded (-1..1)                   |
+| Brightness        | 1 byte   | 30     | Encoded (-1..1)                     |
 +-------------------+----------+--------+-------------------------------------+
-| Saturation        | 1 byte   | 31     | * encoded (auto, -3..3)             |
+| Saturation        | 1 byte   | 31     | Encoded (Auto, -3..3)               |
 +-------------------+----------+--------+-------------------------------------+
-| Hue               | 1 byte   | 32     | * encoded (-3..3)                   |
+| Hue               | 1 byte   | 32     | Encoded (-3..3)                     |
 +-------------------+----------+--------+-------------------------------------+
-| FilterEffect      | 1 byte   | 33     | Color filters on B&W pictures.      |
+| FilterEffect      | 1 byte   | 33     | Encoded color filters on B&W        |
+|                   |          |        | pictures.                           |
 |                   |          |        |                                     |
-|                   |          |        | * ``0xff``: Not Defined (`None`)    |
-|                   |          |        | * ``0x80``: none                    |
-|                   |          |        | * ``0x81``: yellow                  |
-|                   |          |        | * ``0x82``: orange                  |
-|                   |          |        | * ``0x83``: red                     |
-|                   |          |        | * ``0x84``: green                   |
+|                   |          |        | * 0: none                           |
+|                   |          |        | * 1: yellow                         |
+|                   |          |        | * 2: orange                         |
+|                   |          |        | * 3: red                            |
+|                   |          |        | * 4: green                          |
 +-------------------+----------+--------+-------------------------------------+
-| Toning            | 1 byte   | 34     | Tint for B&W pictures.              |
+| Toning            | 1 byte   | 34     | Encoded tint for B&W pictures.      |
 |                   |          |        |                                     |
-|                   |          |        | * ``0xff``: Not Defined (`None`)    |
-|                   |          |        | * ``0x80``: B&W                     |
-|                   |          |        | * ``0x81``: sepia                   |
-|                   |          |        | * ``0x82``: cyanotype               |
-|                   |          |        | * ``0x83``: red                     |
-|                   |          |        | * ``0x84``: yellow                  |
-|                   |          |        | * ``0x85``: green                   |
-|                   |          |        | * ``0x86``: blue-green              |
-|                   |          |        | * ``0x87``: blue                    |
-|                   |          |        | * ``0x88``: purple-blue             |
-|                   |          |        | * ``0x89``: reddish-purple          |
+|                   |          |        | * 0: B&W                            |
+|                   |          |        | * 1: sepia                          |
+|                   |          |        | * 2: cyanotype                      |
+|                   |          |        | * 3: red                            |
+|                   |          |        | * 4: yellow                         |
+|                   |          |        | * 5: green                          |
+|                   |          |        | * 6: blue-green                     |
+|                   |          |        | * 7: blue                           |
+|                   |          |        | * 8: purple-blue                    |
+|                   |          |        | * 9: reddish-purple                 |
 +-------------------+----------+--------+-------------------------------------+
 | AdjustSaturation  | 1 byte   | 35     | Saturation of the tint (see Toning) |
 |                   |          |        |                                     |
-|                   |          |        | * encoded (`None`, 1..7)            |
+|                   |          |        | Encoded (1..7)                      |
 +-------------------+----------+--------+-------------------------------------+
+
+.. note:: if a custom picture control is selected, parameters name Custom
+    occurred and it is a copy from the Export data.
 
 .. figure:: /images/picturecontrol_MC.png
    :name: background_papers/nikon_picturecontrol:PCMC
@@ -286,18 +288,18 @@ dataset. The below table exposes datasets used.
 +----------------------+-----------+----------------+------------------------------+
 |  *undefined*         | 2 bytes   | ``0x00000500`` | Fixed value: 0xFF01          |
 +----------------------+-----------+----------------+------------------------------+
-| Sharpening           | 2 bytes   | ``0x00000600`` | * encoded (-3..9, step: 0.25)|
+| Sharpening           | 2 bytes   | ``0x00000600`` | Encoded (-3..9, step: 0.25)  |
 +----------------------+-----------+----------------+------------------------------+
-| Clarity              | 2 bytes   | ``0x00000700`` | * encoded (-5..5, step: 0.25)|
+| Clarity              | 2 bytes   | ``0x00000700`` | Encoded (-5..5, step: 0.25)  |
 +----------------------+-----------+----------------+------------------------------+
-| Contrast             | 2 bytes   | ``0x00000800`` | * encoded (-3..3, step: 0.25)|
+| Contrast             | 2 bytes   | ``0x00000800`` | Encoded (-3..3, step: 0.25)  |
 +----------------------+-----------+----------------+------------------------------+
-| Brightness           | 2 bytes   | ``0x00000900`` | * encoded (-1.5..1.5, step:  |
-|                      |           |                |   0.25)                      |
+| Brightness           | 2 bytes   | ``0x00000900`` | Encoded (-1.5..1.5, step:    |
+|                      |           |                | 0.25)                        |
 +----------------------+-----------+----------------+------------------------------+
-| Saturation           | 2 bytes   | ``0x00000A00`` | * encoded (-3..3, step: 0.25)|
+| Saturation           | 2 bytes   | ``0x00000A00`` | Encoded (-3..3, step: 0.25)  |
 +----------------------+-----------+----------------+------------------------------+
-| Hue                  | 2 bytes   | ``0x00000B00`` | * encoded (-3..3, step: 0.25)|
+| Hue                  | 2 bytes   | ``0x00000B00`` | Encoded (-3..3, step: 0.25)  |
 +----------------------+-----------+----------------+------------------------------+
 | FilterEffect         | 2 bytes   | ``0x00000C00`` | See 'Camera compatible'      |
 |                      |           |                | section above.               |
@@ -308,50 +310,40 @@ dataset. The below table exposes datasets used.
 | Adjust Saturation    | 2 bytes   | ``0x00000E00`` | Saturation of the tint       |
 |                      |           |                | (see Toning)                 |
 |                      |           |                |                              |
-|                      |           |                | * encoded (0..7, step: 0.25) |
+|                      |           |                | Encoded (0..7, step: 0.25)   |
 +----------------------+-----------+----------------+------------------------------+
-| Sharpening [#A]_     | 2 bytes   | ``0x00000F00`` | * encoded (-100..100,        |
-|                      |           |                |   step: 1)                   |
+| Sharpening [#A]_     | 2 bytes   | ``0x00000F00`` | Encoded (-2..2, step: 1)     |
 +----------------------+-----------+----------------+------------------------------+
-| Clarity [#A]_        | 2 bytes   | ``0x00001000`` | * encoded (-100..100,        |
-|                      |           |                |   step: 1)                   |
+| Clarity [#A]_        | 2 bytes   | ``0x00001000`` | Encoded (-2..2, step: 1)     |
 +----------------------+-----------+----------------+------------------------------+
-| Contrast [#A]_       | 2 bytes   | ``0x00001100`` | * encoded (-100..100,        |
-|                      |           |                |   step: 1)                   |
+| Contrast [#A]_       | 2 bytes   | ``0x00001100`` | Encoded (-2..2, step: 1)     |
 +----------------------+-----------+----------------+------------------------------+
-| Saturation [#A]_     | 2 bytes   | ``0x00001200`` | * encoded (-100..100,        |
-|                      |           |                |   step: 1)                   |
+| Saturation [#A]_     | 2 bytes   | ``0x00001200`` | Encoded (-2..2, step: 1)     |
 +----------------------+-----------+----------------+------------------------------+
-| Mid-range sharpening | 2 bytes   | ``0x00001300`` | * encoded (-100..100,        |
-| [#A]_                |           |                |   step: 1)                   |
+| Mid-range sharpening | 2 bytes   | ``0x00001300`` | Encoded (-2..2, step: 1)     |
+| [#A]_                |           |                |                              |
 +----------------------+-----------+----------------+------------------------------+
 | *undefined*          | 2 bytes   | ``0x00001400`` | Fixed value: 0x8001          |
 +----------------------+-----------+----------------+------------------------------+
 | *undefined*          | 2 bytes   | ``0x00001500`` | Fixed value: 0xFF0A          |
 +----------------------+-----------+----------------+------------------------------+
-| MidRangeSharpening   | 2 bytes   | ``0x00001600`` | * encoded (-5..5, step: 0.25)|
+| MidRangeSharpening   | 2 bytes   | ``0x00001600`` | Encoded (-5..5, step: 0.25)  |
 +----------------------+-----------+----------------+------------------------------+
 | *undefined*          | 2 bytes   | ``0x00001700`` | Fixed value: 0xFF04          |
 +----------------------+-----------+----------------+------------------------------+
 | *undefined*          | 2 bytes   | ``0x00001800`` | Fixed value: 0xFF04          |
 +----------------------+-----------+----------------+------------------------------+
-| FCContrast           | 2 bytes   | ``0x00001900`` | * encoded (-100..100,        |
-|                      |           |                |   step: 1)                   |
+| FCContrast           | 2 bytes   | ``0x00001900`` | Encoded (-100..100, step: 1) |
 +----------------------+-----------+----------------+------------------------------+
-| Highlights           | 2 bytes   | ``0x00001A00`` | * encoded (-100..100,        |
-|                      |           |                |   step: 1)                   |
+| FCHighlights         | 2 bytes   | ``0x00001A00`` | Encoded (-100..100, step: 1) |
 +----------------------+-----------+----------------+------------------------------+
-| Shadows              | 2 bytes   | ``0x00001B00`` | * encoded (-100..100,        |
-|                      |           |                |   step: 1)                   |
+| FCShadows            | 2 bytes   | ``0x00001B00`` | Encoded (-100..100, step: 1) |
 +----------------------+-----------+----------------+------------------------------+
-| WhiteLevel           | 2 bytes   | ``0x00001C00`` | * encoded (-100..100,        |
-|                      |           |                |   step: 1)                   |
+| FCWhiteLevel         | 2 bytes   | ``0x00001C00`` | Encoded (-100..100, step: 1) |
 +----------------------+-----------+----------------+------------------------------+
-| Black level          | 2 bytes   | ``0x00001D00`` | * encoded (-100..100,        |
-|                      |           |                |   step: 1)                   |
+| FCBlack level        | 2 bytes   | ``0x00001D00`` | Encoded (-100..100, step: 1) |
 +----------------------+-----------+----------------+------------------------------+
-| FCSaturation         | 2 bytes   | ``0x00001E00`` | * encoded (-100..100,        |
-|                      |           |                |   step: 1)                   |
+| FCSaturation         | 2 bytes   | ``0x00001E00`` | Encoded (-100..100, step: 1) |
 +----------------------+-----------+----------------+------------------------------+
 | ColorBlender         | 40 bytes  | ``0x00001F00`` | Obscure data.                |
 +----------------------+-----------+----------------+------------------------------+

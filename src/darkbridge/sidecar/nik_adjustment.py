@@ -474,6 +474,7 @@ class NikBaseAdjustment:
             "double": self._set_param_double,
             "bool":self._set_param_bool,
             "Export": self._set_param_export,
+            "Custom": self._set_param_custom,
             "points": self._set_param_points,
             "point": self._set_param_point,
             "data": self._set_param_data,
@@ -799,6 +800,49 @@ class NikBaseAdjustment:
                     f"expected {data_size}")
             self.params["Export"] = data
 
+    def _set_param_custom(self, element: ElementTree.Element):
+        """Set custom parameter.
+
+        Custom parameter is a binary string expressed as a set of two elements:
+        ``CustomData`` and ``CustomDataSize``. ``CustomData`` is a binary
+        string encoded in Base64. ``CustomDataSize`` is the length of the
+        **encoded** string.
+
+        This parameter is similar to Export parameter.
+
+        Args:
+            element: Element containing the parameter.
+
+        Raises:
+            NikAdjustmentError: Generic error, the :attr:`NikAdjustmentError.message`
+                details the error.
+        """
+        data = None
+        data_size = 0
+        rawdata_size = 0
+        for child in element:
+            k, v = child.tag, child.text
+            match k:
+                case "CustomData":
+                    if v is not None:
+                        data = base64.b64decode(v)
+                        rawdata_size = len(v)
+
+                case "CustomDataSize":
+                    if v is not None:
+                        data_size = int(v)
+
+                case _:
+                    raise NikAdjustmentError(
+                        f"Unexpected tag for Custom parameter: {k}")
+
+        if data is not None:
+            if rawdata_size != data_size:
+                raise NikAdjustmentError(
+                    f"Custom Data have a wrong size: actual {len(data)}, "
+                    f"expected {data_size}")
+            self.params["Custom"] = data
+
     def _set_param_map(self, element: ElementTree.Element):
         """Set map parameter.
 
@@ -953,7 +997,9 @@ class NikPictureControl(NikBaseAdjustment):
     The article named
     ":ref:`background_papers/nikon_picturecontrol:Inside nikon::PictureControl`"
     details parameters and especially ``Export`` parameter expressed as
-    an obscure data.
+    an obscure data. To avoid parameters overwritten, the setting names are
+    prefixed with "PC." in the dictionary :attr:`params` (example: setting
+    named "Sharpening" have "PC.Sharpening" as key.
 
     This class override the :meth:`NikBaseAdjustment._set_param_export`
     method to parse the 'Export' parameter.
@@ -968,29 +1014,16 @@ class NikPictureControl(NikBaseAdjustment):
     #: Filter effect mapping. Names are used instead of value to have a
     #: human-readable structure, and these are the ones used by Nikon
     #: Studio.
-    FILTER_EFFECT = {
-        0xff: None,
-        0x80: "none",
-        0x81: "yellow",
-        0x82: "orange",
-        0x83: "red",
-        0x84: "green",
-    }
-    #: Toning mapping. Names are used instead of value to have a human
-    #: readable structure, and these are the ones used by Nikon Studio.
-    TONING = {
-        0xff: None,
-        0x80: "B&W",
-        0x81: "sepia",
-        0x82: "cyanotype",
-        0x83: "red",
-        0x84: "yellow",
-        0x85: "green",
-        0x86: "blue-green",
-        0x87: "blue",
-        0x88: "purple-blue",
-        0x89: "reddish-purple"
-    }
+    FILTER_EFFECT = ["none", "yellow", "orange", "red", "green"]
+    #: Toning mapping. Names are used instead of value to have a
+    #: human-readable structure, and these are the ones used by Nikon
+    #: Studio.
+    TONING = ["B&W", "sepia", "cyanotype", "red", "yellow", "green",
+              "blue-green", "blue", "purple-blue", "reddish-purple"]
+    #: Customization mapping. Names are used instead of value to have a
+    #: human-readable structure, and these are the ones used by Nikon
+    #: Studio.
+    CUSTOMIZATION = ["Built-in", "Quick Adjust", "Advanced settings"]
     def __init__(self, element: ElementTree.Element):
         super().__init__(element)
         # override the specific handler
@@ -1027,10 +1060,10 @@ class NikPictureControl(NikBaseAdjustment):
             0x00001700: self._set_undefined,
             0x00001800: self._set_undefined,
             0x00001900: self._set_fc_contrast,
-            0x00001A00: self._set_highlights,
-            0x00001B00: self._set_shadows,
-            0x00001C00: self._set_white_level,
-            0x00001D00: self._set_black_level,
+            0x00001A00: self._set_fc_highlights,
+            0x00001B00: self._set_fc_shadows,
+            0x00001C00: self._set_fc_white_level,
+            0x00001D00: self._set_fc_black_level,
             0x00001E00: self._set_fc_saturation,
             0x00001F00: self._set_color_blender,
             0x00002000: self._set_color_grading,
@@ -1043,7 +1076,7 @@ class NikPictureControl(NikBaseAdjustment):
             (0, 4, self._set_version),
             (4, 20, self._set_control_name),
             (24, 2, self._set_control_id),
-            (26, 1, self._set_custom),
+            (26, 1, self._set_customization),
             (27, 1, self._set_quick_adjust),
             (28, 1, self._set_sharpening),
             (29, 1, self._set_contrast),
@@ -1062,7 +1095,7 @@ class NikPictureControl(NikBaseAdjustment):
 
         Parses the 'Export' parameter and store the processed settings in
         the dictionary :attr:`params`. The original 'Export' entry is
-        removed from dictionary :attr:`params`.
+        removed from dictionary :attr:`NikBaseAdjustment.params`.
 
         Args:
             element: Element containing the parameter.
@@ -1089,19 +1122,18 @@ class NikPictureControl(NikBaseAdjustment):
                 _logger.warning(f"{self.__class__.__name__}: DataSet is not "
                                 f"known ({dset:8x}) - ignored")
             else:
-                _logger.debug(f"{self.__class__.__name__} Processing "
-                              f"parameter {dset:08x}={dval} -> "
-                              f"{self._pc_doers[dset]}")
                 self._pc_doers[dset](dval)
             # Remove processed dataset and retrieve the next one
             data = data[8+dlen:]
             dset = int.from_bytes(data[0:4])
 
-        self.params.update(self._pc_params)
         for k, v in self._pc_params.items():
             _logger.debug(f"{self.__class__.__name__} Picture control "
                           f"parameters {k}={v}")
+        self.params.update(self._pc_params)
 
+        # Clean-up
+        self._pc_params = None
         # todo: Remove 'Export' entry after debug
         # del self.params["Export"]
 
@@ -1118,7 +1150,8 @@ class NikPictureControl(NikBaseAdjustment):
             data: Value of the dataset expressed as a binary string.
         """
         for offset, length, doer in self._pccc_layout:
-            doer(data[offset: offset+length])
+            dval = data[offset: offset + length]
+            doer(dval)
 
     def _set_version(self, data: bytes):
         """Process version parameter.
@@ -1126,7 +1159,7 @@ class NikPictureControl(NikBaseAdjustment):
         Args:
             data: Value of the parameter expressed as a binary string.
         """
-        self._pc_params["Version"] = str(data, encoding="ASCII")
+        self._pc_params["PC.Version"] = str(data, encoding="ASCII")
 
     def _set_control_name(self, data: bytes):
         """Process control name parameter.
@@ -1134,7 +1167,7 @@ class NikPictureControl(NikBaseAdjustment):
         Args:
             data: Value of the parameter expressed as a binary string.
         """
-        self._pc_params["Name"] = str(data, encoding="ASCII").rstrip("\x00")
+        self._pc_params["PC.Name"] = str(data, encoding="ASCII").rstrip("\x00")
 
     def _set_control_id(self, data: bytes):
         """Process control identifier parameter.
@@ -1142,27 +1175,21 @@ class NikPictureControl(NikBaseAdjustment):
         Args:
             data: Value of the parameter expressed as a binary string.
         """
-        self._pc_params["Id"] = int.from_bytes(data)
+        self._pc_params["PC.Id"] = int.from_bytes(data)
 
-    def _set_custom(self, data: bytes):
+    def _set_customization(self, data: bytes):
         """Process customization level parameter.
 
         Args:
             data: Value of the parameter expressed as a binary string.
         """
         v = int.from_bytes(data)
-        match v:
-            case 0x00:
-                self._pc_params["Custom"] = "no customization"
-
-            case 0x01:
-                self._pc_params["Custom"]  = "Quick Adjust used"
-
-            case 0x02:
-                self._pc_params["Custom"]  = "Custom"
-
-            case _:
-                raise NikAdjustmentError(f"Unsupported custom parameter ({v})")
+        if v in range(len(self.CUSTOMIZATION)):
+            self._pc_params["PC.Customization"] = self.CUSTOMIZATION[v]
+        else:
+            raise NikAdjustmentError(
+                f"Unsupported customization: actual ({v}), "
+                f"expected <{len(self.CUSTOMIZATION)}")
 
     def _set_quick_adjust(self, data: bytes):
         """Process quick adjust parameter.
@@ -1170,7 +1197,7 @@ class NikPictureControl(NikBaseAdjustment):
         Args:
             data: Value of the parameter expressed as a binary string.
         """
-        self._pc_params["QuickAdjust"] = self._get_value(data)
+        self._pc_params["PC.QuickAdjust"] = self._get_value(data)
 
     def _set_sharpening(self, data: bytes):
         """Process sharpening parameter.
@@ -1178,7 +1205,7 @@ class NikPictureControl(NikBaseAdjustment):
         Args:
             data: Value of the parameter expressed as a binary string.
         """
-        self._pc_params["Sharpening"] = self._get_value(data)
+        self._pc_params["PC.Sharpening"] = self._get_value(data)
 
     def _set_mid_range_sharpening(self, data: bytes):
         """Process mid-range sharpening parameter.
@@ -1186,7 +1213,7 @@ class NikPictureControl(NikBaseAdjustment):
         Args:
             data: Value of the parameter expressed as a binary string.
         """
-        self._pc_params["MidRangeSharpening"] = self._get_value(data)
+        self._pc_params["PC.MidRangeSharpening"] = self._get_value(data)
 
     def _set_clarity(self, data: bytes):
         """Process clarity parameter.
@@ -1194,7 +1221,7 @@ class NikPictureControl(NikBaseAdjustment):
         Args:
             data: Value of the parameter expressed as a binary string.
         """
-        self._pc_params["Clarity"] = self._get_value(data)
+        self._pc_params["PC.Clarity"] = self._get_value(data)
 
     def _set_contrast(self, data: bytes):
         """Process contrast parameter.
@@ -1202,7 +1229,7 @@ class NikPictureControl(NikBaseAdjustment):
         Args:
             data: Value of the parameter expressed as a binary string.
         """
-        self._pc_params["Contrast"] = self._get_value(data)
+        self._pc_params["PC.Contrast"] = self._get_value(data)
 
     def _set_brightness(self, data: bytes):
         """Process brightness parameter.
@@ -1210,7 +1237,7 @@ class NikPictureControl(NikBaseAdjustment):
         Args:
             data: Value of the parameter expressed as a binary string.
         """
-        self._pc_params["Brightness"] = self._get_value(data)
+        self._pc_params["PC.Brightness"] = self._get_value(data)
 
     def _set_saturation(self, data: bytes):
         """Process saturation parameter.
@@ -1218,7 +1245,7 @@ class NikPictureControl(NikBaseAdjustment):
         Args:
             data: Value of the parameter expressed as a binary string.
         """
-        self._pc_params["Saturation"] = self._get_value(data)
+        self._pc_params["PC.Saturation"] = self._get_value(data)
 
     def _set_hue(self, data: bytes):
         """Process hue parameter.
@@ -1226,7 +1253,7 @@ class NikPictureControl(NikBaseAdjustment):
         Args:
             data: Value of the parameter expressed as a binary string.
         """
-        self._pc_params["Hue"] = self._get_value(data)
+        self._pc_params["PC.Hue"] = self._get_value(data)
 
     def _set_filter_effect(self, data: bytes):
         """Process filter effect parameter.
@@ -1234,7 +1261,16 @@ class NikPictureControl(NikBaseAdjustment):
         Args:
             data: Value of the parameter expressed as a binary string.
         """
-        self._pc_params["FilterEffect"] = self.FILTER_EFFECT[int.from_bytes(data)]
+        v = self._get_value(data)
+        if v is None:
+            self._pc_params["PC.FilterEffect"] = None
+        else:
+            if v in range(len(self.FILTER_EFFECT)):
+                self._pc_params["PC.FilterEffect"] = self.FILTER_EFFECT[v]
+            else:
+                raise NikAdjustmentError(
+                    f"Unsupported filter effect: actual ({v}), "
+                    f"expected <{len(self.FILTER_EFFECT)}")
 
     def _set_toning(self, data: bytes):
         """Process toning parameter.
@@ -1242,7 +1278,16 @@ class NikPictureControl(NikBaseAdjustment):
         Args:
             data: Value of the parameter expressed as a binary string.
         """
-        self._pc_params["Toning"] = self.TONING[int.from_bytes(data)]
+        v = self._get_value(data)
+        if v is None:
+            self._pc_params["PC.Toning"] = None
+        else:
+            if v in range(len(self.TONING)):
+                self._pc_params["PC.Toning"] = self.TONING[v]
+            else:
+                raise NikAdjustmentError(
+                    f"Unsupported toning: actual ({v}), "
+                    f"expected <{len(self.TONING)}")
 
     def _set_adjust_saturation(self, data: bytes):
         """Process adjust saturation parameter.
@@ -1250,7 +1295,7 @@ class NikPictureControl(NikBaseAdjustment):
         Args:
             data: Value of the parameter expressed as a binary string.
         """
-        self._pc_params["AdjustSaturation"] = self._get_value(data)
+        self._pc_params["PC.AdjustSaturation"] = self._get_value(data)
 
     def _set_auto_sharpening(self, data: bytes):
         """Process sharpening parameter.
@@ -1258,7 +1303,7 @@ class NikPictureControl(NikBaseAdjustment):
         Args:
             data: Value of the parameter expressed as a binary string.
         """
-        self._pc_params["AutoSharpening"] = self._get_value(data)
+        self._pc_params["PC.AutoSharpening"] = self._get_value(data)
 
     def _set_auto_mid_range_sharpening(self, data: bytes):
         """Process mid-range sharpening parameter.
@@ -1266,7 +1311,7 @@ class NikPictureControl(NikBaseAdjustment):
         Args:
             data: Value of the parameter expressed as a binary string.
         """
-        self._pc_params["AutoMidRangeSharpening"] = self._get_value(data)
+        self._pc_params["PC.AutoMidRangeSharpening"] = self._get_value(data)
 
     def _set_auto_clarity(self, data: bytes):
         """Process clarity parameter.
@@ -1274,7 +1319,7 @@ class NikPictureControl(NikBaseAdjustment):
         Args:
             data: Value of the parameter expressed as a binary string.
         """
-        self._pc_params["AutoClarity"] = self._get_value(data)
+        self._pc_params["PC.AutoClarity"] = self._get_value(data)
 
     def _set_auto_contrast(self, data: bytes):
         """Process contrast parameter.
@@ -1282,7 +1327,7 @@ class NikPictureControl(NikBaseAdjustment):
         Args:
             data: Value of the parameter expressed as a binary string.
         """
-        self._pc_params["AutoContrast"] = self._get_value(data)
+        self._pc_params["PC.AutoContrast"] = self._get_value(data)
 
     def _set_auto_saturation(self, data: bytes):
         """Process saturation parameter.
@@ -1290,7 +1335,7 @@ class NikPictureControl(NikBaseAdjustment):
         Args:
             data: Value of the parameter expressed as a binary string.
         """
-        self._pc_params["AutoSaturation"] = self._get_value(data)
+        self._pc_params["PC.AutoSaturation"] = self._get_value(data)
 
     def _set_fc_contrast(self, data: bytes):
         """Process flexible color contrast parameter.
@@ -1298,7 +1343,7 @@ class NikPictureControl(NikBaseAdjustment):
         Args:
             data: Value of the parameter expressed as a binary string.
         """
-        self._pc_params["FCContrast"] = self._get_value(data)
+        self._pc_params["PC.FCContrast"] = self._get_value(data)
 
     def _set_fc_saturation(self, data: bytes):
         """Process flexible color saturation parameter.
@@ -1306,39 +1351,39 @@ class NikPictureControl(NikBaseAdjustment):
         Args:
             data: Value of the parameter expressed as a binary string.
         """
-        self._pc_params["FCSaturation"] = self._get_value(data)
+        self._pc_params["PC.FCSaturation"] = self._get_value(data)
 
-    def _set_highlights(self, data: bytes):
-        """Process highlights parameter.
-
-        Args:
-            data: Value of the parameter expressed as a binary string.
-        """
-        self._pc_params["Highlights"] = self._get_value(data)
-
-    def _set_shadows(self, data: bytes):
-        """Process shadows parameter.
+    def _set_fc_highlights(self, data: bytes):
+        """Process flexible color highlights parameter.
 
         Args:
             data: Value of the parameter expressed as a binary string.
         """
-        self._pc_params["Shadows"] = self._get_value(data)
+        self._pc_params["PC.FCHighlights"] = self._get_value(data)
 
-    def _set_white_level(self, data: bytes):
-        """Process white level parameter.
-
-        Args:
-            data: Value of the parameter expressed as a binary string.
-        """
-        self._pc_params["WhiteLevel"] = self._get_value(data)
-
-    def _set_black_level(self, data: bytes):
-        """Process black level parameter.
+    def _set_fc_shadows(self, data: bytes):
+        """Process flexible color shadows parameter.
 
         Args:
             data: Value of the parameter expressed as a binary string.
         """
-        self._pc_params["BlackLevel"] = self._get_value(data)
+        self._pc_params["PC.FCShadows"] = self._get_value(data)
+
+    def _set_fc_white_level(self, data: bytes):
+        """Process flexible color white level parameter.
+
+        Args:
+            data: Value of the parameter expressed as a binary string.
+        """
+        self._pc_params["PC.FCWhiteLevel"] = self._get_value(data)
+
+    def _set_fc_black_level(self, data: bytes):
+        """Process flexible color black level parameter.
+
+        Args:
+            data: Value of the parameter expressed as a binary string.
+        """
+        self._pc_params["PC.FCBlackLevel"] = self._get_value(data)
 
     def _set_color_blender(self, data: bytes):
         """Process color blender parameter.
@@ -1346,7 +1391,7 @@ class NikPictureControl(NikBaseAdjustment):
         Args:
             data: Value of the parameter expressed as a binary string.
         """
-        self._pc_params["ColorBlender"] = data
+        self._pc_params["PC.ColorBlender"] = data
 
     def _set_color_grading(self, data: bytes):
         """Process color grading parameter.
@@ -1354,7 +1399,7 @@ class NikPictureControl(NikBaseAdjustment):
         Args:
             data: Value of the parameter expressed as a binary string.
         """
-        self._pc_params["ColorGrading"] = self._get_value(data)
+        self._pc_params["PC.ColorGrading"] = data
 
     def _set_comment(self, data: bytes):
         """Process comment parameter.
@@ -1362,7 +1407,7 @@ class NikPictureControl(NikBaseAdjustment):
         Args:
             data: Value of the parameter expressed as a binary string.
         """
-        self._pc_params["Comment"] = str(data, encoding="ASCII").rstrip("\x00")
+        self._pc_params["PC.Comment"] = str(data, encoding="ASCII").rstrip("\x00")
 
     def _set_undefined(self, data: bytes):
         """Process undefined parameter.
@@ -1388,11 +1433,11 @@ class NikPictureControl(NikBaseAdjustment):
             data: Value of the parameter expressed as a binary string.
         """
         value = None
-        bv = b'\xff'
+        bv = 0xff
         match len(data):
             case 1:
                 bv = data[0]
-                div = 1
+                div = 0
 
             case 2:
                 bv = data[0]
@@ -1411,7 +1456,9 @@ class NikPictureControl(NikBaseAdjustment):
                 value = "Auto"
 
             case _:
-                value = (bv - 0x80) / div
+                value = (bv - 0x80)
+                if div != 0: # Apply subdivision
+                    value = value / div
 
         return value
 
