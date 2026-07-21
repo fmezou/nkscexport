@@ -527,7 +527,7 @@ class NikBaseAdjustment:
     def _set_params(self, element: ElementTree.Element):
         """Set image's adjustment parameters.
 
-        This method parses an XML element as a image's adjustment
+        This method parses an XML element as an image's adjustment
         parameters block and store it in the parameters' dictionary
         :attr:`params` according to its explicit or implicit type. As
         image's adjustment parameters are not documented (Nikon
@@ -709,7 +709,7 @@ class NikBaseAdjustment:
 
         ``dateAndTime`` parameter is a date and a time expressed in a
         block with ``year``, ``month``, ``day``, ``hour``, ``minute``
-        and ``second`` xml tag. The date 1900-1-1 00:00:00 seems to be
+        and ``second`` XML tag. The date 1900-1-1 00:00:00 seems to be
         default value.
 
         Args:
@@ -921,7 +921,7 @@ class NikBaseAdjustment:
         """Set point parameter.
 
         Point parameter is a 2D coordinates (``x`` and ``y``). Please note
-        that data structure is not the same than points.
+        that data structure is not the same as points.
 
         Args:
             element: Element containing the parameter.
@@ -937,7 +937,6 @@ class NikBaseAdjustment:
                 "x": int(element.attrib["x"]),
                 "y": int(element.attrib["y"])
             }
-
         else:
             raise NikAdjustmentError(f"Unnamed parameters")
 
@@ -1225,10 +1224,10 @@ class NikPictureControl(NikBaseAdjustment):
         """
         self._pc_params[key] = None
         bv = 0xff
+        div = 0
         match len(data):
             case 1:
                 bv = data[0]
-                div = 0
 
             case 2:
                 bv = data[0]
@@ -1399,10 +1398,10 @@ class NikNXHistory(NikBaseAdjustment):
 
      NXHistory (Nikon::NXHistory) is not strictly an image adjustment, it
      is an ordered list whose entries are tagged with ``historystep``.
-     Each entry (aka. step) is an unitary image adjustment to apply to
+     Each entry (aka. step) is a unitary image adjustment to apply to
      the image. For example, cropping an image should be done after image
      processing modifying the image size as lens correction or perspective
-     controls). The list is stored in a dictionary with name
+     controls. The list is stored in a dictionary with name
      ``historystep:XXX`` as key where XXX is the step index (from 1 to 999).
 
      The step parameters are in a dictionary with parameter name as key.
