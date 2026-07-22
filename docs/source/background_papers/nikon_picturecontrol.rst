@@ -91,6 +91,20 @@ Two values have a special meaning: ``0xFF`` and ``0x00``.
 * ``0xFF`` indicates that the value is not set (similar to `None`).
 * ``0x00`` indicates that the parameter is set to 'Auto'.
 
+Parameters alternate encoding
+-----------------------------
+
+In the standard encoding, setting's integer value must be within the range
+[-127..126]. However, Hue value may be within the range [0..359]. In this case,
+setting values are encoded on two bytes with the less significant byte is at
+the end of the byte array.
+
+The setting value is offset from the actual value by the value bias
+(here 0x8000). Biasing is done because settings have to be signed values.
+
+The formula for getting the setting value is: :math:`value = bv - 32768`
+where :math:`bv` is the biased value. Exemple: b'\\x80\\x14' is 20.
+
 Camera compatible
 -----------------
 Tones are processed using the Picture Controls for the camera that took the
@@ -101,7 +115,6 @@ There is one fixed length data set (id: 1, length: 52 bytes). Picture control
 settings are linearized in a buffer.
 
 ..  code-block:: hexdump
-    :name: background_papers/nikon_picturecontrol:PCCCData
     :caption: Camera compatible ExportData sample
 
     0000  4e 43 50 00 00 00 00 01  00 00 00 24 30 31 30 30  |NCP........$0100|
@@ -203,7 +216,6 @@ The record (length: 392 bytes) contains several dataset (id fom 0x00000100 to
 0x00000200).
 
 ..  code-block:: hexdump
-    :name: background_papers/nikon_picturecontrol:PCLPCData
     :caption: Camera compatible ExportData sample
 
     0000  4e 43 50 00 00 00 01 00  00 00 00 04 30 33 31 30  |NCP.........0310|
@@ -406,45 +418,84 @@ dataset. The below table exposes datasets used.
 .. [#cpc] Creative Picture Control name have a decimal number as short name.
 .. [#A] Used when '[A] Auto' picture control selected.
 
-Color
-Red
-Orange
-Yellow
-Green
-Cyan
-Blue
-Purple
-Magenta
+Color Blender
+^^^^^^^^^^^^^^
 
-HUe de 1 à 8 dans l'odre (-100..100)
-Chroma de 16 à 23 dans l'odre (-100..100)
-Brightness de 32 à 39 dans l'ordre (-100..100)
-le 4 bloc semble constant
+Flexible Color picture control allows to adjust the tint for eight different
+colors in the image [nkfc]_. Flexible Color has 'Color Blender' and 'Color
+Grading' options in addition to the 'Advanced Settings' parameters, allowing
+you to finely adjust the tint.
+
+.. figure:: /images/picturecontrol_color_blender.png
+   :name: background_papers/nikon_picturecontrol:PCColorBlender
+   :scale: 66%
+   :align: center
+
+   Picture Control Color Blender settings pane (Flexible Color).
 
 ..  code-block:: hexdump
-    :name: background_papers/nikon_picturecontrol:PC.FCColorBlender
-    :caption: PC.FCColorBlender sample
+    :caption: Color Blender sample
 
     0000  81 90 a0 82 91 a1 83 92  a2 84 93 a3 85 94 a4 86  |................|
     0010  95 a5 87 96 a6 88 97 a7  01 01 01 00              |............    |
 
+Picture control settings are linearized in a buffer. The below table exposes
+the layout of the color blender setting buffer. The tuple Hue, Chroma,
+Brightness is repeated 8 times, one for each tint (red, orange, yellow, green,
+cyan, blue, purple, magenta in this order). The last 3 bytes is undefined at
+the time of writing this article.
+
++--------------------+----------+--------+-------------------------------------+
+| Setting            | Length   | Offset | Value                               |
++====================+==========+========+=====================================+
+| Hue                | 1 byte   | 0      | Encoded (-100..100)                 |
++--------------------+----------+--------+-------------------------------------+
+| Chroma             | 1 byte   | 1      | Encoded (-100..100)                 |
++--------------------+----------+--------+-------------------------------------+
+| Brightness         | 1 byte   | 2      | Encoded (-100..100)                 |
++--------------------+----------+--------+-------------------------------------+
+
+
 Color grading
-value : (-100..100) sauf hue 0..359
-=========== ==== ======= =========== ========= =======
-..          Hue  Chroma  Brightness  Blending  Balance
-=========== ==== ======= =========== ========= =======
-Highlights  1    2       3           4         5
-Mid-tone    16   17      18          x         x
-Shadows     32   33      34          x         x
-=========== ==== ======= =========== ========= =======
+^^^^^^^^^^^^^
+
+Flexible Color picture control allows to adjust the tint for eight different
+colors in the image [nkfc]_. Flexible Color has 'Color Blender' and 'Color
+Grading' options in addition to the 'Advanced Settings' parameters, allowing
+you to finely adjust the tint.
+
+.. figure:: /images/picturecontrol_color_grading.png
+   :name: background_papers/nikon_picturecontrol:PCColorGrading
+   :scale: 66%
+   :align: center
+
+   Picture Control Color Grading settings pane (Flexible Color).
 
 ..  code-block:: hexdump
-    :name: background_papers/nikon_picturecontrol:PC.FCColorGrading
-    :caption: PC.FCColorGrading sample
+    :caption: Color Grading sample
 
     0000  80 20 a1 a2 80 10 91 92  80 01 82 83 01 01 01 00  |. ..............|
     0010  84 01 85 01                                       |....            |
 
+Picture control settings are linearized in a buffer. The below table exposes
+the layout of the color blender setting buffer. The tuple Hue, Chroma,
+Brightness is repeated 3 times, one for shadows, mid-tone and Highlights.
+
++--------------------+----------+--------+-------------------------------------+
+| Setting            | Length   | Offset | Value                               |
++====================+==========+========+=====================================+
+| Hue                | 2 byte   | 0      | Encoded (0..359)                    |
++--------------------+----------+--------+-------------------------------------+
+| Chroma             | 1 byte   | 2      | Encoded (-100..100)                 |
++--------------------+----------+--------+-------------------------------------+
+| Brightness         | 1 byte   | 3      | Encoded (-100..100)                 |
++--------------------+----------+--------+-------------------------------------+
+| ...                |          |        |                                     |
++--------------------+----------+--------+-------------------------------------+
+| Blending           | 2 bytes  | 16     | Encoded (-100..100)                 |
++--------------------+----------+--------+-------------------------------------+
+| Balance            | 2 bytes  | 18     | Encoded (-100..100)                 |
++--------------------+----------+--------+-------------------------------------+
 
 
 Custom Tone Curve
@@ -457,3 +508,7 @@ This article details the internal structure of this parameters
 .. [nkpc] Nikon, `The Picture Controls Tool <https://nikonimglib.com/
    nxstdo/onlinehelp/en/the_picture_controls_tool_22.html>`_, Adjustments >
    Basic Edit Palettes > Picture Control
+.. [nkfc] Nikon, `The Picture Control (Flexible Color) Tool
+   <https://nikonimglib.com/nxstdo/onlinehelp/en/
+   the_picture_controls_flexible_color_23.html>`_, Adjustments >
+   Basic Edit Palettes > Picture Control ([FC] Flexible Color)

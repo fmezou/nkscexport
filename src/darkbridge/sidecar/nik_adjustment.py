@@ -1075,6 +1075,8 @@ class NikPictureControl(NikBaseAdjustment):
         self._doers.update(doers)
 
         # Table of doers methods for processing picture control dataset
+        # See :meth:`NikPictureControl._set_param_export` method for more
+        # details.
         self._pc_doers = {
             0x00000001: ("PC.CC", self._parse_camera_compatible),
             0x00000002: ("PC.CustomToneCurve", self._set_opaque),
@@ -1082,52 +1084,98 @@ class NikPictureControl(NikBaseAdjustment):
             0x00000200: ("PC.Name", self._set_string),
             0x00000300: ("PC.Id", self._set_id),
             0x00000400: ("PC.CustomizationLevel", self._set_customization),
-            0x00000500: ("PC.Undefined#0500", self._set_value),
-            0x00000600: ("PC.Sharpening", self._set_value),
-            0x00000700: ("PC.Clarity", self._set_value),
-            0x00000800: ("PC.Contrast", self._set_value),
-            0x00000900: ("PC.Brightness", self._set_value),
-            0x00000A00: ("PC.Saturation", self._set_value),
-            0x00000B00: ("PC.Hue", self._set_value),
+            0x00000500: ("PC.Undefined#0500", self._set_value8),
+            0x00000600: ("PC.Sharpening", self._set_value8),
+            0x00000700: ("PC.Clarity", self._set_value8),
+            0x00000800: ("PC.Contrast", self._set_value8),
+            0x00000900: ("PC.Brightness", self._set_value8),
+            0x00000A00: ("PC.Saturation", self._set_value8),
+            0x00000B00: ("PC.Hue", self._set_value8),
             0x00000C00: ("PC.FilterEffect", self._set_filter_effect),
             0x00000D00: ("PC.Toning", self._set_toning),
-            0x00000E00: ("PC.AdjustSaturation", self._set_value),
-            0x00000F00: ("PC.AutoSharpening", self._set_value),
-            0x00001000: ("PC.AutoClarity", self._set_value),
-            0x00001100: ("PC.AutoContrast", self._set_value),
-            0x00001200: ("PC.AutoSaturation", self._set_value),
-            0x00001300: ("PC.AutoMidRangeSharpening", self._set_value),
-            0x00001400: ("PC.QuickSharp", self._set_value),
-            0x00001500: ("PC.EffectLevel",  self._set_value),
-            0x00001600: ("PC.MidRangeSharpening",  self._set_value),
-            0x00001700: ("PC.Undefined#1700", self._set_value),
-            0x00001800: ("PC.Undefined#1800", self._set_value),
-            0x00001900: ("PC.FC.Contrast", self._set_value),
-            0x00001A00: ("PC.FC.Highlights",  self._set_value),
-            0x00001B00: ("PC.FC.Shadows ", self._set_value),
-            0x00001C00: ("PC.FC.WhiteLevel ",self._set_value),
-            0x00001D00: ("PC.FC.BlackLevel", self._set_value),
-            0x00001E00: ("PC.FC.Saturation", self._set_value),
-            0x00001F00: ("PC.FC.ColorBlender", self._set_opaque),
-            0x00002000: ("PC.FC.ColorGrading ", self._set_opaque),
+            0x00000E00: ("PC.AdjustSaturation", self._set_value8),
+            0x00000F00: ("PC.AutoSharpening", self._set_value8),
+            0x00001000: ("PC.AutoClarity", self._set_value8),
+            0x00001100: ("PC.AutoContrast", self._set_value8),
+            0x00001200: ("PC.AutoSaturation", self._set_value8),
+            0x00001300: ("PC.AutoMidRangeSharpening", self._set_value8),
+            0x00001400: ("PC.QuickSharp", self._set_value8),
+            0x00001500: ("PC.EffectLevel",  self._set_value8),
+            0x00001600: ("PC.MidRangeSharpening",  self._set_value8),
+            0x00001700: ("PC.Undefined#1700", self._set_value8),
+            0x00001800: ("PC.Undefined#1800", self._set_value8),
+            0x00001900: ("PC.FC.Contrast", self._set_value8),
+            0x00001A00: ("PC.FC.Highlights",  self._set_value8),
+            0x00001B00: ("PC.FC.Shadows ", self._set_value8),
+            0x00001C00: ("PC.FC.WhiteLevel ",self._set_value8),
+            0x00001D00: ("PC.FC.BlackLevel", self._set_value8),
+            0x00001E00: ("PC.FC.Saturation", self._set_value8),
+            0x00001F00: ("PC.FC.ColorBlender", self._parse_color_blender),
+            0x00002000: ("PC.FC.ColorGrading ", self._parse_color_grading),
             0x00010100: ("PC.Comment",  self._set_string)
         }
-        # Layout of the camera compatible dataset (id: 0x00000001). The
-        # layout is a tuple: offset, length, handler.
-        self._pccc_layout = [
-            ( 0,  4, ("PC.Version", self._set_version)),
-            ( 4, 20, ("PC.Name", self._set_string)),
+
+        # Layouts of opaque data structure. See
+        # :meth:`NikPictureControl._parse_opaque_data` method for more
+        # details.
+        # Layout of the camera compatible dataset (id: 0x00000001).
+        self._cc_layout = [
+            (0,  4, ("PC.Version", self._set_version)),
+            (4, 20, ("PC.Name", self._set_string)),
             (24,  2, ("PC.Id", self._set_id)),
             (26,  1, ("PC.CustomizationLevel", self._set_customization)),
-            (27,  1, ("PC.QuickAdjust", self._set_value)),
-            (28,  1, ("PC.Sharpening", self._set_value)),
-            (29,  1, ("PC.Contrast", self._set_value)),
-            (30,  1, ("PC.Brightness", self._set_value)),
-            (31,  1, ("PC.Saturation", self._set_value)),
-            (32,  1, ("PC.Hue", self._set_value)),
+            (27,  1, ("PC.QuickAdjust", self._set_value8)),
+            (28,  1, ("PC.Sharpening", self._set_value8)),
+            (29,  1, ("PC.Contrast", self._set_value8)),
+            (30,  1, ("PC.Brightness", self._set_value8)),
+            (31,  1, ("PC.Saturation", self._set_value8)),
+            (32,  1, ("PC.Hue", self._set_value8)),
             (33,  1, ("PC.FilterEffect", self._set_filter_effect)),
             (34,  1, ("PC.Toning", self._set_toning)),
-            (35,  1, ("PC.AdjustSaturation", self._set_value))
+            (35,  1, ("PC.AdjustSaturation", self._set_value8))
+        ]
+        # Layout of the color blender dataset (id: 0x00001F00).
+        self._color_blender_layout = [
+            (0, 1, ("PC.FC.ColorBlender.Red.Hue", self._set_value8)),
+            (1, 1, ("PC.FC.ColorBlender.Red.Chroma", self._set_value8)),
+            (2, 1, ("PC.FC.ColorBlender.Red.Brightness", self._set_value8)),
+            (3, 1, ("PC.FC.ColorBlender.Orange.Hue", self._set_value8)),
+            (4, 1, ("PC.FC.ColorBlender.Orange.Chroma", self._set_value8)),
+            (5, 1, ("PC.FC.ColorBlender.Orange.Brightness", self._set_value8)),
+            (6, 1, ("PC.FC.ColorBlender.Yellow.Hue", self._set_value8)),
+            (7, 1, ("PC.FC.ColorBlender.Yellow.Chroma", self._set_value8)),
+            (8, 1, ("PC.FC.ColorBlender.Yellow.Brightness", self._set_value8)),
+            (9, 1, ("PC.FC.ColorBlender.Green.Hue", self._set_value8)),
+            (10, 1, ("PC.FC.ColorBlender.Green.Chroma", self._set_value8)),
+            (11, 1, ("PC.FC.ColorBlender.Green.Brightness", self._set_value8)),
+            (12, 1, ("PC.FC.ColorBlender.Cyan.Hue", self._set_value8)),
+            (13, 1, ("PC.FC.ColorBlender.Cyan.Chroma", self._set_value8)),
+            (14, 1, ("PC.FC.ColorBlender.Cyan.Brightness", self._set_value8)),
+            (15, 1, ("PC.FC.ColorBlender.Blue.Hue", self._set_value8)),
+            (16, 1, ("PC.FC.ColorBlender.Blue.Chroma", self._set_value8)),
+            (17, 1, ("PC.FC.ColorBlender.Blue.Brightness", self._set_value8)),
+            (18, 1, ("PC.FC.ColorBlender.Purple.Hue", self._set_value8)),
+            (19, 1, ("PC.FC.ColorBlender.Purple.Chroma", self._set_value8)),
+            (20, 1, ("PC.FC.ColorBlender.Purple.Brightness", self._set_value8)),
+            (21, 1, ("PC.FC.ColorBlender.Magenta.Hue", self._set_value8)),
+            (22, 1, ("PC.FC.ColorBlender.Magenta.Chroma", self._set_value8)),
+            (23, 1, ("PC.FC.ColorBlender.Magenta.Brightness", self._set_value8)),
+            (24, 4, ("PC.FC.ColorGrading.undefined#18", self._set_opaque)),
+        ]
+        # Layout of the color blender dataset (id: 0x00001F00).
+        self._color_grading_layout = [
+            (0, 2, ("PC.FC.ColorGrading.Shadows.Hue", self._set_value16)),
+            (2, 1, ("PC.FC.ColorGrading.Shadows.Chroma", self._set_value8)),
+            (3, 1, ("PC.FC.ColorGrading.Shadows.Brightness", self._set_value8)),
+            (4, 2, ("PC.FC.ColorGrading.MidTone.Hue", self._set_value16)),
+            (6, 1, ("PC.FC.ColorGrading.MidTone.Chroma", self._set_value8)),
+            (7, 1, ("PC.FC.ColorGrading.MidTone.Brightness", self._set_value8)),
+            (8, 2, ("PC.FC.ColorGrading.Highlights.Hue", self._set_value16)),
+            (10, 1, ("PC.FC.ColorGrading.Highlights.Chroma", self._set_value8)),
+            (11, 1, ("PC.FC.ColorGrading.Highlights.Brightness", self._set_value8)),
+            (12, 4, ("PC.FC.ColorGrading.undefined#0C", self._set_opaque)),
+            (16, 2, ("PC.FC.ColorGrading.Highlights.Blending", self._set_value8)),
+            (18, 2, ("PC.FC.ColorGrading.Highlights.Balance", self._set_value8)),
         ]
         self._pc_params = {}
         self._undefined  = 0
@@ -1139,6 +1187,13 @@ class NikPictureControl(NikBaseAdjustment):
         the dictionary :attr:`params`. The original 'Export' entry is
         removed from dictionary :attr:`NikBaseAdjustment.params`.
 
+        Processing picture control dataset use a table where each entry
+        has the DataSet as key and a doer as a tuple.
+        Doers are a tuple composed of the fields: field name (str) and
+        handler (callable). A handler is a method with field name and
+        data (bytes) as parameter. See :meth:`NikPictureControl._set_value`
+        for more details.
+
         Args:
             element: Element containing the parameter.
 
@@ -1148,6 +1203,7 @@ class NikPictureControl(NikBaseAdjustment):
         """
         super()._set_param_export(element)
         data = self.params["Export"]
+        _logger.debug(f"{self.__class__.__name__}: Processing Export: {data}")
 
         # Check the record identifier
         record = str(data[0:4], encoding='ASCII').rstrip("\x00")
@@ -1173,31 +1229,73 @@ class NikPictureControl(NikBaseAdjustment):
             dset = int.from_bytes(data[0:4])
 
         self.params.update(self._pc_params)
-        # Clean-up
+        # Cleanup: obscure data are kept only for debug
         self._pc_params = None
-        # todo: Remove 'Export' entry after debug
-        # del self.params["Export"]
+        if not __debug__:
+            del self.params["Export"]
 
     def _parse_camera_compatible(self, key: str, data: bytes):
         """Process 'camera compatible' dataset.
 
         This method parses the 'Camera compatible' dataset (id: 0x00000001).
-        This dataset is a binary structure and parsing uses the layout
-        expressed in instance attribute '_pccc_layout'. See article named
+        See article named
         ":ref:`background_papers/nikon_picturecontrol:Camera compatible`"
         for more details.
 
         Args:
             key: Name of the parameter in :attr:`NikBaseAdjustment.params`
-                dictionary.
+                dictionary (not used).
             data: Value of the dataset expressed as a binary string.
         """
-        for offset, length, doer in self._pccc_layout:
-            dval = data[offset: offset + length]
+        self._parse_opaque_data(self._cc_layout, data)
+
+    def _parse_color_blender(self, key: str, data: bytes):
+        """Process 'color blender' dataset.
+
+        This method parses the 'color blender' dataset (id: 0x00001F00).
+        See article named
+        ":ref:`background_papers/nikon_picturecontrol:Color Blender`"
+        for more details.
+
+        Args:
+            key: Name of the parameter in :attr:`NikBaseAdjustment.params`
+                dictionary (not used).
+            data: Value of the dataset expressed as a binary string.
+        """
+        self._parse_opaque_data(self._color_blender_layout, data)
+
+    def _parse_color_grading(self, key: str, data: bytes):
+        """Process 'color grading' dataset.
+
+        This method parses the 'color grading' dataset (id: 0x00002000).
+        See article named
+        ":ref:`background_papers/nikon_picturecontrol:Color Grading`"
+        for more details.
+
+        Args:
+            key: Name of the parameter in :attr:`NikBaseAdjustment.params`
+                dictionary (not used).
+            data: Value of the dataset expressed as a binary string.
+        """
+        self._parse_opaque_data(self._color_grading_layout, data)
+
+    def _parse_opaque_data(self, layout: list[tuple], data: bytes):
+        """Process opaque dataset.
+
+        This dataset is a binary structure and parsing uses a layout.
+        Layouts are a tuple composed of the fields: the field offset
+        (int), the field length (int), and the doer (tuple).
+
+        Args:
+            layout: Layout of the data structure.
+            data: Value of the dataset expressed as a binary string.
+        """
+        for offset, length, doer in layout:
+            val = data[offset: offset + length]
             key, handler = doer
             _logger.debug(f"{self.__class__.__name__}: Processing "
-                          f"Field offset {offset:02d} ({key}): {dval}")
-            handler(key, dval)
+                          f"Field offset {offset:02d} ({key}): {val}")
+            handler(key, val)
 
     def _set_version(self, key: str, data: bytes):
         """Process version setting.
@@ -1209,7 +1307,7 @@ class NikPictureControl(NikBaseAdjustment):
         """
         self._pc_params[key] = str(data, encoding="ASCII")
 
-    def _set_value(self, key: str, data: bytes) -> None :
+    def _set_value8(self, key: str, data: bytes) -> None :
         """Process setting expressed as a value.
 
         Parameters values are encoded on one or two bytes and may be
@@ -1247,8 +1345,29 @@ class NikPictureControl(NikBaseAdjustment):
 
             case _:
                 self._pc_params[key] = (bv - 0x80)
-                if div != 0: # Apply subdivision
+                if div  not in [0, 1]: # Apply subdivision
                     self._pc_params[key] = self._pc_params[key] / div
+
+    def _set_value16(self, key: str, data: bytes) -> None :
+        """Process setting expressed as a value on a 16 bits word.
+
+        Setting values are encoded two bytes as an integer.
+        See article named
+        ":ref:`background_papers/nikon_picturecontrol:Parameters encoding`"
+        for more details.
+
+        Args:
+            key: Name of the parameter in :attr:`NikBaseAdjustment.params`
+                dictionary.
+            data: Value of the parameter expressed as a binary string.
+        """
+        if len(data) != 2:
+            raise NikAdjustmentError(
+                f"Unsupported length value: actual '{len(data)}', "
+                f"expected <2")
+
+        self._pc_params[key] = (int.from_bytes(data) - 0x8000)
+
 
     def _set_string(self, key: str, data: bytes) -> None :
         """Process setting expressed as a string.
@@ -1310,7 +1429,7 @@ class NikPictureControl(NikBaseAdjustment):
                 dictionary.
             data: Value of the parameter expressed as a binary string.
         """
-        self._set_value(key, data)
+        self._set_value8(key, data)
         v = self._pc_params[key]
         # Substitute the numeric value by a human-readable string
         if v is not None:
@@ -1329,7 +1448,7 @@ class NikPictureControl(NikBaseAdjustment):
                 dictionary.
             data: Value of the parameter expressed as a binary string.
         """
-        self._set_value(key, data)
+        self._set_value8(key, data)
         v = self._pc_params[key]
         # Substitute the numeric value by a human-readable string
         if v is not None:
