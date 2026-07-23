@@ -159,6 +159,7 @@ from xml.etree import ElementTree
 from darkbridge.library.ieee754 import IEEE754
 from darkbridge.library.namespace import NameSpace
 from darkbridge.sidecar.nik_adjustment import create_nine_edits
+from darkbridge.sidecar.nik_adjustment import NikBaseAdjustment
 
 
 __all__ = [
@@ -1667,7 +1668,6 @@ class NikonSideCar:
         self._element = ElementTree.parse(file).getroot()
         file.close()
 
-
     def parse(self):
         """Parse the :term:`XMP Packet`.
 
@@ -1710,6 +1710,58 @@ class NikonSideCar:
                     _logger.info(f"Processing property {k}={v}")
             else:
                 _logger.info(f"No processing in the image")
+
+    def search_meta(self, pattern: str) -> dict:
+        """Search a pattern in metadata
+
+        This method indicate if the pattern is found in metada.
+
+        Args:
+            pattern: Substring to find in metadata field names.
+
+        Returns:
+            A dictionary of metadata matching with the pattern with the
+            metadata name as keys, and its value.
+        """
+        findings = {}
+        for k, v in self.metadata.items():
+            if pattern in k and len(v) != 0:
+                findings[k] = v
+                _logger.info(f"Metadata '{k}' match with '{pattern}'")
+        return findings
+
+    def search_processing(self, pattern: str) -> dict:
+        """Search a pattern in processing
+
+        This method indicate if the pattern is found in active processing.
+
+        Args:
+            pattern: Substring to find in processing names.
+
+        Returns:
+            A dictionary of processing matching with the pattern with the
+            processing name as keys, and its value as `NikBaseAdjustment`
+            object instance.
+        """
+        findings = {}
+        # Search in the top level list
+        for k, v in self.processing.items():
+            if pattern in k and v.active:
+                findings[k] = v
+                _logger.info(f"Processing '{k}' match with '{pattern}'")
+
+        # Search the pattern in image adjustment stack from NXHistory
+        if "nikon::NXHistory" in self.processing:
+            nxh = self.processing["nikon::NXHistory"]
+            if nxh.active and len(nxh.params) != 0:
+                for step in nxh.params.values():
+                    for k, v in step.items():
+                        if (isinstance(v, NikBaseAdjustment) and pattern in k
+                                and v.active):
+                            findings[k] = v
+                            _logger.info(f"NXHistory Processing '{k}' "
+                                         f"match with '{pattern}'")
+        return findings
 
     def _set_sdc_attr(self, xmp_property: NikonXMPProperty):
         """Set the SDC attribute expressed as an XMP property.
