@@ -24,7 +24,7 @@ REC-rdf-syntax-grammar-20040210/>`_ [adxmp1]_.
 In a nutshell, a sidecar file is a XMP packet with the image metadata
 serialized as XMP properties. Each property have a name and a value. A value
 may a simple value as XML text element, or a structured value (named resource)
-with a type (``astype:Type``) and a value (``rad:value``)  .
+with a type (``astype:Type``) and a value (``rdf:value``).
 
 These properties are grouped per set identified by a namespace [adxmp1]_, a
 Nikon sidecar file contains the following sets:
@@ -40,8 +40,8 @@ Nikon sidecar file contains the following sets:
   photometadata/specification/IPTC-PhotoMetadata>`_.
 
   * **geolocation data**: are the geolocation data coming from a GPS receiver
-    or manually added. These data are in a set of separate data whose name begins
-    by ``GPS...``. Go to the article
+    or manually added. These data are in a set of separated data whose name
+    begins by ``GPS...``. Go to the article
     :ref:`background_papers/inside_geoloc:Inside Nikon GPS Information` for
     more details.
 
@@ -50,18 +50,19 @@ Nikon sidecar file contains the following sets:
     :ref:`XMP Properties <background_papers/inside_nksc:XMP properties in a nutshell>`
     and in :term:`IPTC IIM` records as
     :ref:`IIM properties <background_papers/inside_nksc:IIM properties in a nutshell>`.
-    These two parts are embedded as a structure valued XMP property encoded in Base64.
+    These two parts are embedded as a structure valued XMP property encoded
+    in Base64.
 
 * **nine** (``http://ns.nikon.com/nine/1.0/``): contains the image adjustments
   history in XML format with escaped characters (&lt;..). Theses image
   processing modules are proprietary and cannot be transferred in an other
   software except for format adjustment as cropping. The
-  `background_papers/inside_adjustment:Inside Nikon image adjustments` section details the
-  supported Nikon settings and indicates whether their parameters can be
-  converted into the equivalent module of Darktable.
+  `background_papers/inside_adjustment:Inside Nikon image adjustments` section
+  details the supported Nikon settings and indicates whether their parameters
+  can be converted into the equivalent module of Darktable.
 
 No public specifications are available from Nikon, so the attributes
-were discovered by reading ``.nsks`` files and the help of ExifTool
+were discovered by reading ``.nksc`` files and the help of ExifTool
 by Phil Harvey [phniktag]_.
 
 XMP properties in a nutshell
@@ -82,13 +83,14 @@ Image metadata are stored in an 'Application Record' (DataSets in the
 range 2:xx).
 
 .. table:: Layout of :term:`IPTC IIM` record
-    :name:background_papers/inside_nksc:Layout_IPTC_IIM
+    :name: background_papers/inside_nksc:Layout_IPTC_IIM
 
-    ======= ======= ======= ======= ==========
-    Byte #  1       2       3       4 - 5
-    ======= ======= ======= ======= ==========
-    Data    Tag     Record  DataSet Len [#bo]_
-    ======= ======= ======= ======= ==========
+    +----------+--------+---------+---------------+---------+
+    | 1 byte   | 1 byte | 1 byte  | 2 bytes       | n bytes |
+    +----------+--------+---------+---------------+---------+
+    | Tag      | Record | DataSet | Length [#bo]_ | Value   |
+    +----------+--------+---------+---------------+---------+
+
 
 Example ``Title`` field (alias XMP ``dc:title`` property)::
 
@@ -97,7 +99,7 @@ Example ``Title`` field (alias XMP ``dc:title`` property)::
 .. rubric:: Notes
 
 .. [#bo] Use Big Endian Byte Ordering (the left-most byte the most
-   significant bytes (see [IIMv4]_, p. 6.
+   significant bytes (see [IIMv4]_, p. 6.)
 
 
 .. rubric:: References

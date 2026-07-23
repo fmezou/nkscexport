@@ -463,9 +463,10 @@ class CLIDisplay(DefaultDisplay):
         """Dump an obscure data structure.
 
         This method returns a human-readable representation of an obscure
-        data (unknown or obfuscated data structure). The representation is
-        a common one based on standard hexacimal dump (left part with bytes
-        expressed in hexadecimal and right part as character if possible.
+        data (unknown or obfuscated data structure). The representation
+        is a common one based on standard hexadecimal dump (left part
+        with bytes expressed in hexadecimal and right part as character
+        if possible).
 
         Args:
             data: Obscure data expressed as binary array.
@@ -475,21 +476,24 @@ class CLIDisplay(DefaultDisplay):
         msgs = []
         buffer = data
         msgs.append(f"Obscure data ({len(data)} bytes)")
-        head = f"00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F"
+        head = f"00 01 02 03 04 05 06 07  08 09 0A 0B 0C 0D 0E 0F"
         msgs.append(colorama.Style.BRIGHT
                     + colorama.Fore.LIGHTBLACK_EX
-                    + f"{prefix}....| {head}"
+                    + f"{prefix}....  {head}"
                     + colorama.Style.RESET_ALL)
         i = 0
         while len(buffer) != 0:
-            line = buffer[0:16]
-            hexa = f"{line.hex(" ")}".ljust(len(head))
-            ascii = str(line.translate(self._data_trans), encoding='ascii')
+            lpart = buffer[0:8]
+            rpart = buffer[8:16]
+            hexa = f"{lpart.hex(" ")}  {rpart.hex(" ")}".ljust(len(head))
+            lascii = str(lpart.translate(self._data_trans), encoding='ascii')
+            rascii = str(rpart.translate(self._data_trans), encoding='ascii')
+            ascii = f"{lascii}{rascii}".ljust(16)
             msgs.append(colorama.Style.BRIGHT
                         + colorama.Fore.LIGHTBLACK_EX
-                        + f"{prefix}{i:04x}| "
+                        + f"{prefix}{i:04x}  "
                         + colorama.Style.NORMAL
-                        + f"{hexa} {ascii}"
+                        + f"{hexa}  |{ascii}|"
                         + colorama.Style.RESET_ALL)
             buffer = buffer[16:]
             i += 16

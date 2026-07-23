@@ -2,12 +2,12 @@
 
 The :mod:`sidecar.nik_adjustment` module implements handlers for the Nikon
 image adjustments stored in Nikon sidecar files.file. The article named
-":ref:`background_papers/inside_nksc:Inside Nikon Sidecar file`" details
-the data structure and tags used by Nikon.
+":ref:`background_papers/inside_adjustment:Inside Nikon image adjustments`"
+details the data structure and tags used by Nikon.
 
-Each image adjustments, as declarated in the observed sidecar file have
+Each image adjustments, as declared in the observed sidecar file have
 its own class to later implement the convert Nikon parameters to
-Darktable module parameters if it possible. Nevertheless, all these
+Darktable module parameters if it is possible. Nevertheless, all these
 classes are derived from the base class :class:`NikBaseAdjustment`. This
 base class offers the interface contract and a set of common methods for
 decoding parameters expressed as XMP properties.
@@ -474,6 +474,7 @@ class NikBaseAdjustment:
             "double": self._set_param_double,
             "bool":self._set_param_bool,
             "Export": self._set_param_export,
+            "Custom": self._set_param_custom,
             "points": self._set_param_points,
             "point": self._set_param_point,
             "data": self._set_param_data,
@@ -526,7 +527,7 @@ class NikBaseAdjustment:
     def _set_params(self, element: ElementTree.Element):
         """Set image's adjustment parameters.
 
-        This method parses an XML element as a image's adjustment
+        This method parses an XML element as an image's adjustment
         parameters block and store it in the parameters' dictionary
         :attr:`params` according to its explicit or implicit type. As
         image's adjustment parameters are not documented (Nikon
@@ -708,7 +709,7 @@ class NikBaseAdjustment:
 
         ``dateAndTime`` parameter is a date and a time expressed in a
         block with ``year``, ``month``, ``day``, ``hour``, ``minute``
-        and ``second`` xml tag. The date 1900-1-1 00:00:00 seems to be
+        and ``second`` XML tag. The date 1900-1-1 00:00:00 seems to be
         default value.
 
         Args:
@@ -799,6 +800,49 @@ class NikBaseAdjustment:
                     f"expected {data_size}")
             self.params["Export"] = data
 
+    def _set_param_custom(self, element: ElementTree.Element):
+        """Set custom parameter.
+
+        Custom parameter is a binary string expressed as a set of two elements:
+        ``CustomData`` and ``CustomDataSize``. ``CustomData`` is a binary
+        string encoded in Base64. ``CustomDataSize`` is the length of the
+        **encoded** string.
+
+        This parameter is similar to Export parameter.
+
+        Args:
+            element: Element containing the parameter.
+
+        Raises:
+            NikAdjustmentError: Generic error, the :attr:`NikAdjustmentError.message`
+                details the error.
+        """
+        data = None
+        data_size = 0
+        rawdata_size = 0
+        for child in element:
+            k, v = child.tag, child.text
+            match k:
+                case "CustomData":
+                    if v is not None:
+                        data = base64.b64decode(v)
+                        rawdata_size = len(v)
+
+                case "CustomDataSize":
+                    if v is not None:
+                        data_size = int(v)
+
+                case _:
+                    raise NikAdjustmentError(
+                        f"Unexpected tag for Custom parameter: {k}")
+
+        if data is not None:
+            if rawdata_size != data_size:
+                raise NikAdjustmentError(
+                    f"Custom Data have a wrong size: actual {len(data)}, "
+                    f"expected {data_size}")
+            self.params["Custom"] = data
+
     def _set_param_map(self, element: ElementTree.Element):
         """Set map parameter.
 
@@ -877,7 +921,7 @@ class NikBaseAdjustment:
         """Set point parameter.
 
         Point parameter is a 2D coordinates (``x`` and ``y``). Please note
-        that data structure is not the same than points.
+        that data structure is not the same as points.
 
         Args:
             element: Element containing the parameter.
@@ -893,7 +937,6 @@ class NikBaseAdjustment:
                 "x": int(element.attrib["x"]),
                 "y": int(element.attrib["y"])
             }
-
         else:
             raise NikAdjustmentError(f"Unnamed parameters")
 
@@ -945,8 +988,477 @@ class NikStraighten(NikBaseAdjustment):
     
 
 class NikPictureControl(NikBaseAdjustment):
-    pass
-    
+    """Picture control image's adjustment class
+
+    Picture control (nikon::PictureControl) adjusts the SDR tone range
+    of RAW pictures.
+
+    The article named
+    ":ref:`background_papers/nikon_picturecontrol:Inside nikon::PictureControl`"
+    details parameters and especially ``Export`` parameter expressed as
+    an obscure data. To avoid parameters overwritten, the setting names are
+    prefixed with "PC." in the dictionary :attr:`params` (example: setting
+    named "Sharpening" have "PC.Sharpening" as key.
+
+    This class override the :meth:`NikBaseAdjustment._set_param_export`
+    method to parse the 'Export' parameter.
+
+    Args:
+        element: XML element containing the metadata.
+
+    Raises:
+        NikAdjustmentError: Generic error, the :attr:`NikAdjustmentError.message`
+            details the error.
+    """
+    #: Filter effect mapping. Names are used instead of value to have a
+    #: human-readable structure, and these are the ones used by Nikon
+    #: Studio.
+    FILTER_EFFECT = ["none", "yellow", "orange", "red", "green"]
+    #: Toning mapping. Names are used instead of value to have a
+    #: human-readable structure, and these are the ones used by Nikon
+    #: Studio.
+    TONING = ["B&W", "sepia", "cyanotype", "red", "yellow", "green",
+              "blue-green", "blue", "purple-blue", "reddish-purple"]
+    #: Customization mapping. Names are used instead of value to have a
+    #: human-readable structure, and these are the ones used by Nikon
+    #: Studio.
+    CUSTOMIZATION = {
+        0x00: "Built-in",
+        0x01: "Quick Adjust",
+        0x02: "Advanced settings",
+        0x0100: "Advanced settings",
+        0x0200: "Sharpening settings"
+    }
+    #: Customization mapping. Names are used instead of value to have a
+    #: human-readable structure, and these are the ones used by Nikon
+    #: Studio.
+    PCID = {
+        0x0001: "SD", # STANDARD
+        0x03C2: "NL", # NEUTRAL
+        0x00C3: "VI", # VIVID
+        0x064D: "MC", # MONOCHROME
+        0x0486: "PT", # PORTRAIT
+        0x04C7: "LS", # LANDSCAPE
+        0x02CF: "A",  # AUTO
+        0x0654: "FM", # FLAT MONOCHROME
+        0x6655: "DM", # DEEPTONE MONOCHROME
+        0x0493: "RP", # RICH TONE PORTAIT
+        0x028E: "FL", # FLAT
+        0x0020: "FC", # FLEXIBLE COLOR
+        0x0801: "01", # [01] DREAM
+        0x0802: "02", # [02] MORNING
+        0x0803: "03", # [03] POP
+        0x0804: "04", # [04] SUNDAY
+        0x0805: "05", # [05]SOMBER
+        0x0806: "06", # [06] DRAMATIC
+        0x0807: "07", # [07] SILENCE
+        0x0808: "08", # [08] BLEACHED
+        0x0809: "09", # [09] MELANCHOLIC
+        0x080A: "10", # [10] PURE
+        0x080B: "11", # [11] DENIM
+        0x080C: "12", # [12] TOY
+        0x080D: "13", # [13] SEPIA
+        0x080E: "14", # [14] BLUE
+        0x080F: "15", # [15] RED
+        0x0810: "16", # [16] PINK
+        0x0811: "17", # [17] CHARCOAL
+        0x0812: "18", # [18] GRAPHITE
+        0x0813: "19", # [19] BINARY
+        0x0814: "20", # [20] CARBON
+    }
+    def __init__(self, element: ElementTree.Element):
+        super().__init__(element)
+        # override the specific handler
+        doers = {
+            "Export": self._set_param_export
+        }
+        self._doers.update(doers)
+
+        # Table of doers methods for processing picture control dataset
+        # See :meth:`NikPictureControl._set_param_export` method for more
+        # details.
+        self._pc_doers = {
+            0x00000001: ("PC.CC", self._parse_camera_compatible),
+            0x00000002: ("PC.CustomToneCurve", self._set_opaque),
+            0x00000100: ("PC.Version", self._set_version),
+            0x00000200: ("PC.Name", self._set_string),
+            0x00000300: ("PC.Id", self._set_id),
+            0x00000400: ("PC.CustomizationLevel", self._set_customization),
+            0x00000500: ("PC.Undefined#0500", self._set_value8),
+            0x00000600: ("PC.Sharpening", self._set_value8),
+            0x00000700: ("PC.Clarity", self._set_value8),
+            0x00000800: ("PC.Contrast", self._set_value8),
+            0x00000900: ("PC.Brightness", self._set_value8),
+            0x00000A00: ("PC.Saturation", self._set_value8),
+            0x00000B00: ("PC.Hue", self._set_value8),
+            0x00000C00: ("PC.FilterEffect", self._set_filter_effect),
+            0x00000D00: ("PC.Toning", self._set_toning),
+            0x00000E00: ("PC.AdjustSaturation", self._set_value8),
+            0x00000F00: ("PC.AutoSharpening", self._set_value8),
+            0x00001000: ("PC.AutoClarity", self._set_value8),
+            0x00001100: ("PC.AutoContrast", self._set_value8),
+            0x00001200: ("PC.AutoSaturation", self._set_value8),
+            0x00001300: ("PC.AutoMidRangeSharpening", self._set_value8),
+            0x00001400: ("PC.QuickSharp", self._set_value8),
+            0x00001500: ("PC.EffectLevel",  self._set_value8),
+            0x00001600: ("PC.MidRangeSharpening",  self._set_value8),
+            0x00001700: ("PC.Undefined#1700", self._set_value8),
+            0x00001800: ("PC.Undefined#1800", self._set_value8),
+            0x00001900: ("PC.FC.Contrast", self._set_value8),
+            0x00001A00: ("PC.FC.Highlights",  self._set_value8),
+            0x00001B00: ("PC.FC.Shadows ", self._set_value8),
+            0x00001C00: ("PC.FC.WhiteLevel ",self._set_value8),
+            0x00001D00: ("PC.FC.BlackLevel", self._set_value8),
+            0x00001E00: ("PC.FC.Saturation", self._set_value8),
+            0x00001F00: ("PC.FC.ColorBlender", self._parse_color_blender),
+            0x00002000: ("PC.FC.ColorGrading ", self._parse_color_grading),
+            0x00010100: ("PC.Comment",  self._set_string)
+        }
+
+        # Layouts of opaque data structure. See
+        # :meth:`NikPictureControl._parse_opaque_data` method for more
+        # details.
+        # Layout of the camera compatible dataset (id: 0x00000001).
+        self._cc_layout = [
+            (0,  4, ("PC.Version", self._set_version)),
+            (4, 20, ("PC.Name", self._set_string)),
+            (24,  2, ("PC.Id", self._set_id)),
+            (26,  1, ("PC.CustomizationLevel", self._set_customization)),
+            (27,  1, ("PC.QuickAdjust", self._set_value8)),
+            (28,  1, ("PC.Sharpening", self._set_value8)),
+            (29,  1, ("PC.Contrast", self._set_value8)),
+            (30,  1, ("PC.Brightness", self._set_value8)),
+            (31,  1, ("PC.Saturation", self._set_value8)),
+            (32,  1, ("PC.Hue", self._set_value8)),
+            (33,  1, ("PC.FilterEffect", self._set_filter_effect)),
+            (34,  1, ("PC.Toning", self._set_toning)),
+            (35,  1, ("PC.AdjustSaturation", self._set_value8))
+        ]
+        # Layout of the color blender dataset (id: 0x00001F00).
+        self._color_blender_layout = [
+            (0, 1, ("PC.FC.ColorBlender.Red.Hue", self._set_value8)),
+            (1, 1, ("PC.FC.ColorBlender.Red.Chroma", self._set_value8)),
+            (2, 1, ("PC.FC.ColorBlender.Red.Brightness", self._set_value8)),
+            (3, 1, ("PC.FC.ColorBlender.Orange.Hue", self._set_value8)),
+            (4, 1, ("PC.FC.ColorBlender.Orange.Chroma", self._set_value8)),
+            (5, 1, ("PC.FC.ColorBlender.Orange.Brightness", self._set_value8)),
+            (6, 1, ("PC.FC.ColorBlender.Yellow.Hue", self._set_value8)),
+            (7, 1, ("PC.FC.ColorBlender.Yellow.Chroma", self._set_value8)),
+            (8, 1, ("PC.FC.ColorBlender.Yellow.Brightness", self._set_value8)),
+            (9, 1, ("PC.FC.ColorBlender.Green.Hue", self._set_value8)),
+            (10, 1, ("PC.FC.ColorBlender.Green.Chroma", self._set_value8)),
+            (11, 1, ("PC.FC.ColorBlender.Green.Brightness", self._set_value8)),
+            (12, 1, ("PC.FC.ColorBlender.Cyan.Hue", self._set_value8)),
+            (13, 1, ("PC.FC.ColorBlender.Cyan.Chroma", self._set_value8)),
+            (14, 1, ("PC.FC.ColorBlender.Cyan.Brightness", self._set_value8)),
+            (15, 1, ("PC.FC.ColorBlender.Blue.Hue", self._set_value8)),
+            (16, 1, ("PC.FC.ColorBlender.Blue.Chroma", self._set_value8)),
+            (17, 1, ("PC.FC.ColorBlender.Blue.Brightness", self._set_value8)),
+            (18, 1, ("PC.FC.ColorBlender.Purple.Hue", self._set_value8)),
+            (19, 1, ("PC.FC.ColorBlender.Purple.Chroma", self._set_value8)),
+            (20, 1, ("PC.FC.ColorBlender.Purple.Brightness", self._set_value8)),
+            (21, 1, ("PC.FC.ColorBlender.Magenta.Hue", self._set_value8)),
+            (22, 1, ("PC.FC.ColorBlender.Magenta.Chroma", self._set_value8)),
+            (23, 1, ("PC.FC.ColorBlender.Magenta.Brightness", self._set_value8)),
+            (24, 4, ("PC.FC.ColorGrading.undefined#18", self._set_opaque)),
+        ]
+        # Layout of the color blender dataset (id: 0x00001F00).
+        self._color_grading_layout = [
+            (0, 2, ("PC.FC.ColorGrading.Shadows.Hue", self._set_value16)),
+            (2, 1, ("PC.FC.ColorGrading.Shadows.Chroma", self._set_value8)),
+            (3, 1, ("PC.FC.ColorGrading.Shadows.Brightness", self._set_value8)),
+            (4, 2, ("PC.FC.ColorGrading.MidTone.Hue", self._set_value16)),
+            (6, 1, ("PC.FC.ColorGrading.MidTone.Chroma", self._set_value8)),
+            (7, 1, ("PC.FC.ColorGrading.MidTone.Brightness", self._set_value8)),
+            (8, 2, ("PC.FC.ColorGrading.Highlights.Hue", self._set_value16)),
+            (10, 1, ("PC.FC.ColorGrading.Highlights.Chroma", self._set_value8)),
+            (11, 1, ("PC.FC.ColorGrading.Highlights.Brightness", self._set_value8)),
+            (12, 4, ("PC.FC.ColorGrading.undefined#0C", self._set_opaque)),
+            (16, 2, ("PC.FC.ColorGrading.Highlights.Blending", self._set_value8)),
+            (18, 2, ("PC.FC.ColorGrading.Highlights.Balance", self._set_value8)),
+        ]
+        self._pc_params = {}
+        self._undefined  = 0
+
+    def _set_param_export(self, element: ElementTree.Element):
+        """Set export parameter.
+
+        Parses the 'Export' parameter and store the processed settings in
+        the dictionary :attr:`params`. The original 'Export' entry is
+        removed from dictionary :attr:`NikBaseAdjustment.params`.
+
+        Processing picture control dataset use a table where each entry
+        has the DataSet as key and a doer as a tuple.
+        Doers are a tuple composed of the fields: field name (str) and
+        handler (callable). A handler is a method with field name and
+        data (bytes) as parameter. See :meth:`NikPictureControl._set_value`
+        for more details.
+
+        Args:
+            element: Element containing the parameter.
+
+        Raises:
+            NikAdjustmentError: Generic error, the :attr:`NikAdjustmentError.message`
+                details the error.
+        """
+        super()._set_param_export(element)
+        data = self.params["Export"]
+        _logger.debug(f"{self.__class__.__name__}: Processing Export: {data}")
+
+        # Check the record identifier
+        record = str(data[0:4], encoding='ASCII').rstrip("\x00")
+        data = data[4:] # Remove processed field
+        if record != 'NCP':
+            raise NikAdjustmentError(f"Unsupported Picture control ({record})")
+
+        # Process datasets
+        dset = int.from_bytes(data[0:4])
+        while dset != 0x00000000:
+            dlen = int.from_bytes(data[4:8])
+            dval = data[8: 8+dlen]
+            if dset not in self._pc_doers:
+                _logger.warning(f"{self.__class__.__name__}: DataSet is not "
+                                f"known ({dset:08x}) - ignored")
+            else:
+                key, handler = self._pc_doers[dset]
+                _logger.debug(f"{self.__class__.__name__}: Processing "
+                              f"DataSet {dset:08x} ({key}): {dval}")
+                handler(key, dval)
+            # Remove processed dataset and retrieve the next one
+            data = data[8+dlen:]
+            dset = int.from_bytes(data[0:4])
+
+        self.params.update(self._pc_params)
+        # Cleanup: obscure data are kept only for debug
+        self._pc_params = None
+        if not __debug__:
+            del self.params["Export"]
+
+    def _parse_camera_compatible(self, key: str, data: bytes):
+        """Process 'camera compatible' dataset.
+
+        This method parses the 'Camera compatible' dataset (id: 0x00000001).
+        See article named
+        ":ref:`background_papers/nikon_picturecontrol:Camera compatible`"
+        for more details.
+
+        Args:
+            key: Name of the parameter in :attr:`NikBaseAdjustment.params`
+                dictionary (not used).
+            data: Value of the dataset expressed as a binary string.
+        """
+        self._parse_opaque_data(self._cc_layout, data)
+
+    def _parse_color_blender(self, key: str, data: bytes):
+        """Process 'color blender' dataset.
+
+        This method parses the 'color blender' dataset (id: 0x00001F00).
+        See article named
+        ":ref:`background_papers/nikon_picturecontrol:Color Blender`"
+        for more details.
+
+        Args:
+            key: Name of the parameter in :attr:`NikBaseAdjustment.params`
+                dictionary (not used).
+            data: Value of the dataset expressed as a binary string.
+        """
+        self._parse_opaque_data(self._color_blender_layout, data)
+
+    def _parse_color_grading(self, key: str, data: bytes):
+        """Process 'color grading' dataset.
+
+        This method parses the 'color grading' dataset (id: 0x00002000).
+        See article named
+        ":ref:`background_papers/nikon_picturecontrol:Color Grading`"
+        for more details.
+
+        Args:
+            key: Name of the parameter in :attr:`NikBaseAdjustment.params`
+                dictionary (not used).
+            data: Value of the dataset expressed as a binary string.
+        """
+        self._parse_opaque_data(self._color_grading_layout, data)
+
+    def _parse_opaque_data(self, layout: list[tuple], data: bytes):
+        """Process opaque dataset.
+
+        This dataset is a binary structure and parsing uses a layout.
+        Layouts are a tuple composed of the fields: the field offset
+        (int), the field length (int), and the doer (tuple).
+
+        Args:
+            layout: Layout of the data structure.
+            data: Value of the dataset expressed as a binary string.
+        """
+        for offset, length, doer in layout:
+            val = data[offset: offset + length]
+            key, handler = doer
+            _logger.debug(f"{self.__class__.__name__}: Processing "
+                          f"Field offset {offset:02d} ({key}): {val}")
+            handler(key, val)
+
+    def _set_version(self, key: str, data: bytes):
+        """Process version setting.
+
+        Args:
+            key: Name of the parameter in :attr:`NikBaseAdjustment.params`
+                dictionary.
+            data: Value of the parameter expressed as a binary string.
+        """
+        self._pc_params[key] = str(data, encoding="ASCII")
+
+    def _set_value8(self, key: str, data: bytes) -> None :
+        """Process setting expressed as a value.
+
+        Parameters values are encoded on one or two bytes and may be
+        expressed as an integer or a decimal number. See article named
+        ":ref:`background_papers/nikon_picturecontrol:Parameters encoding`"
+        for more details.
+
+        Args:
+            key: Name of the parameter in :attr:`NikBaseAdjustment.params`
+                dictionary.
+            data: Value of the parameter expressed as a binary string.
+        """
+        self._pc_params[key] = None
+        bv = 0xff
+        div = 0
+        match len(data):
+            case 1:
+                bv = data[0]
+
+            case 2:
+                bv = data[0]
+                div = data[1]
+
+            case _:
+                raise NikAdjustmentError(
+                    f"Unsupported length value: actual '{len(data)}', "
+                    f"expected <2")
+
+        match bv:
+            case 0xff:
+                self._pc_params[key] = None
+
+            case 0x00:
+                self._pc_params[key] = "Auto"
+
+            case _:
+                self._pc_params[key] = (bv - 0x80)
+                if div  not in [0, 1]: # Apply subdivision
+                    self._pc_params[key] = self._pc_params[key] / div
+
+    def _set_value16(self, key: str, data: bytes) -> None :
+        """Process setting expressed as a value on a 16 bits word.
+
+        Setting values are encoded two bytes as an integer.
+        See article named
+        ":ref:`background_papers/nikon_picturecontrol:Parameters encoding`"
+        for more details.
+
+        Args:
+            key: Name of the parameter in :attr:`NikBaseAdjustment.params`
+                dictionary.
+            data: Value of the parameter expressed as a binary string.
+        """
+        if len(data) != 2:
+            raise NikAdjustmentError(
+                f"Unsupported length value: actual '{len(data)}', "
+                f"expected <2")
+
+        self._pc_params[key] = (int.from_bytes(data) - 0x8000)
+
+
+    def _set_string(self, key: str, data: bytes) -> None :
+        """Process setting expressed as a string.
+
+        String are null terminated ASCII string.
+
+        Args:
+            key: Name of the parameter in :attr:`NikBaseAdjustment.params`
+                dictionary.
+            data: Value of the parameter expressed as a binary string.
+        """
+        self._pc_params[key] = str(data, encoding="ASCII").rstrip("\x00")
+
+    def _set_opaque(self, key: str, data: bytes):
+        """Process setting expressed as an opaque data.
+
+        Args:
+            key: Name of the parameter in :attr:`NikBaseAdjustment.params`
+                dictionary.
+            data: Value of the parameter expressed as a binary string.
+        """
+        self._pc_params[key] = data
+
+    def _set_id(self, key: str, data: bytes) -> None :
+        """Process id setting.
+
+        Args:
+            key: Name of the parameter in :attr:`NikBaseAdjustment.params`
+                dictionary.
+            data: Value of the parameter expressed as a binary string.
+        """
+        v = int.from_bytes(data)
+        self._pc_params[key] = int.from_bytes(data)
+        if v in self.PCID:
+            self._pc_params[key] = self.PCID[v]
+        else:
+            raise NikAdjustmentError(f"Unsupported picture control Id: "
+                                     f"actual ({v})")
+
+    def _set_customization(self, key: str, data: bytes):
+        """Process customization level setting.
+
+        Args:
+            key: Name of the parameter in :attr:`NikBaseAdjustment.params`
+                dictionary.
+            data: Value of the parameter expressed as a binary string.
+        """
+        v = int.from_bytes(data)
+        if v in self.CUSTOMIZATION:
+            self._pc_params[key] = self.CUSTOMIZATION[v]
+        else:
+            raise NikAdjustmentError(f"Unsupported customization: actual ({v})")
+
+    def _set_filter_effect(self, key: str, data: bytes):
+        """Process filter effect setting.
+
+        Args:
+            key: Name of the parameter in :attr:`NikBaseAdjustment.params`
+                dictionary.
+            data: Value of the parameter expressed as a binary string.
+        """
+        self._set_value8(key, data)
+        v = self._pc_params[key]
+        # Substitute the numeric value by a human-readable string
+        if v is not None:
+            if v in range(len(self.FILTER_EFFECT)):
+                self._pc_params[key] = self.FILTER_EFFECT[v]
+            else:
+                raise NikAdjustmentError(
+                    f"Unsupported filter effect: actual ({v}), "
+                    f"expected <{len(self.FILTER_EFFECT)}")
+
+    def _set_toning(self, key: str, data: bytes):
+        """Process toning setting.
+
+        Args:
+            key: Name of the parameter in :attr:`NikBaseAdjustment.params`
+                dictionary.
+            data: Value of the parameter expressed as a binary string.
+        """
+        self._set_value8(key, data)
+        v = self._pc_params[key]
+        # Substitute the numeric value by a human-readable string
+        if v is not None:
+            if v in range(len(self.TONING)):
+                self._pc_params[key] = self.TONING[v]
+            else:
+                raise NikAdjustmentError(
+                    f"Unsupported toning: actual ({v}), "
+                    f"expected <{len(self.TONING)}")
+
 
 class NikQuickFixToneCurve(NikBaseAdjustment):
     pass
@@ -1001,18 +1513,18 @@ class NikColorBooster(NikBaseAdjustment):
     
 
 class NikNXHistory(NikBaseAdjustment):
-    """Nikon::NXHistory image's adjustment class
+    """NXHistory image's adjustment class
 
-     Nikon::NXHistory is not strictly an image adjustment, it is an ordered
-     list whose entries are tagged vith ``historystep``. Each entry (aka. step)
-     is an unitary image adjustment to apply to the image. For example,
-     cropping an image should be done after image processing modifying the
-     image size as lens correction or perspective controls). The list is stored
-     in a dictionary with name ``historystep:XXX`` as key where XX is the step
-     index (from 1 to 999).
+     NXHistory (Nikon::NXHistory) is not strictly an image adjustment, it
+     is an ordered list whose entries are tagged with ``historystep``.
+     Each entry (aka. step) is a unitary image adjustment to apply to
+     the image. For example, cropping an image should be done after image
+     processing modifying the image size as lens correction or perspective
+     controls. The list is stored in a dictionary with name
+     ``historystep:XXX`` as key where XXX is the step index (from 1 to 999).
 
-     The step parameters are in a dictionary with parameter name as key. The
-     value type is set according to its explicit or implicit type.
+     The step parameters are in a dictionary with parameter name as key.
+     The value type is set according to its explicit or implicit type.
 
      Args:
          element: XML element containing the metadata.
@@ -1020,7 +1532,6 @@ class NikNXHistory(NikBaseAdjustment):
      Raises:
          NikAdjustmentError: Generic error, the :attr:`NikAdjustmentError.message`
              details the error.
-
      """
     def __init__(self, element: ElementTree.Element):
         super().__init__(element)
