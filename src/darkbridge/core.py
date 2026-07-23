@@ -626,22 +626,19 @@ class DefaultDisplay(BaseDisplay):
         if nksc.is_tagged():
             msgs.append(" [T]")
 
-        if nksc.is_protected():
-            msgs.append(" [Lck]")
-
         if nksc.is_adjusted():
             msgs.append(" [F]")
 
         if nksc.is_exposure_comp():
             msgs.append(".[+/-]")
 
-        if nksc.is_bw():
+        if nksc.is_monochrome():
             msgs.append(".[BW]")
 
         if nksc.is_cropped():
             msgs.append(".[Crp]")
 
-        if nksc.is_perpective_adj():
+        if nksc.is_perspective_adj():
             msgs.append(".[H/V]")
 
         if nksc.is_denoised():

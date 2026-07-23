@@ -1861,47 +1861,28 @@ class NikonSideCar:
                 self.geolocation = self._ast.props["GPS"]
 
     def get_rating(self) -> int:
-        """Return the image rating.
-
-        detail the param
-        """
+        """Return the image rating."""
         if "xmp:Rating" in self.metadata:
             return int(self.metadata["xmp:Rating"])
         else:
             return 0
 
     def get_label(self) -> int:
-        """Return the image label.
-
-        detail the param
-        """
+        """Return the image label."""
         if "xmp:Label" in self.metadata:
             return self.metadata["xmp:Label"]
         else:
             return 0
 
-    def is_protected(self) -> bool:
-        """Return `True` if the image is protected.
-
-        detail the param
-        """
-        return False
-
     def is_geotagged(self) -> bool:
-        """Return `True` if the image have geolocation data.
-
-        detail the param
-        """
+        """Return `True` if the image have geolocation data. """
         is_geotagged = False
         if self.geolocation is not None:
             is_geotagged = self.geolocation.is_completed()
         return is_geotagged
 
     def is_tagged(self) -> bool:
-        """Return `True` if the image have keywords.
-
-        detail the param
-        """
+        """Return `True` if the image have keywords."""
         return "dc:subject" in self.metadata
 
     def is_adjusted(self) -> bool:
@@ -1923,35 +1904,94 @@ class NikonSideCar:
     def is_cropped(self) -> bool:
         """Return `True` if the image is cropped.
 
-        detail the param
-        """
-        return False
+        A cropped image have the "nik::Crop" image adjustment
+        present.
 
-    def is_perpective_adj(self) -> bool:
+        Returns:
+            `True` if the image is cropped.
+        """
+        proc_id = "nik::Crop"
+        is_adjusted = False
+        procs = self.search_processing(proc_id)
+        if len(procs):
+            is_adjusted = True
+        return is_adjusted
+
+    def is_perspective_adj(self) -> bool:
         """Return `True` if the image have perspective adjusted.
 
-        detail the param
-        """
-        return False
+        'nikon::Perspective' image adjustment defined the perspective
+        changes to apply to the image. The method checks that at least
+        one of the settings values are not 0.
 
-    def is_bw(self) -> bool:
-        """Return `True` if the image is monochrome (black and white).
-
-        detail the param
+        Returns:
+            `True` if the perspective is adjusted.
         """
-        return False
+        proc_id = "nikon::Perspective"
+        is_adjusted = False
+        procs = self.search_processing(proc_id)
+        if len(procs):
+            proc = procs[proc_id]
+            if (proc.params["horizontalAngle"] !=0
+                    or proc.params["verticalAngle"] !=0):
+                is_adjusted = True
+        return is_adjusted
+
+    def is_monochrome(self) -> bool:
+        """Return `True` if the image is monochrome.
+
+        A monochrome image have it picture control identifier set to:
+        'MC', 'FM', 'DM'. This method do not consider others ways to have
+        a monochrome image as 'Saturation' setting fixed to -100.
+
+        Returns:
+            `True` if the image is monochrome.
+        """
+        proc_id = "nikon::PictureControl"
+        is_adjusted = False
+        monochrome_ids = ["MC", "FM", "DM"]
+        procs = self.search_processing(proc_id)
+        if len(procs):
+            proc = procs[proc_id]
+            if proc.params["PC.Id"] in monochrome_ids:
+                is_adjusted = True
+        return is_adjusted
 
     def is_exposure_comp(self) -> bool:
         """Return `True` if the image have its exposure adjusted.
 
-        detail the param
+        'nikon::ExposureSettings' image adjustment defined the exposure
+        changes to apply to the image. The method checks if the gain is
+        not 0.
+
+        Returns:
+            `True` if the exposure is adjusted.
         """
-        return False
+        proc_id = "nikon::ExposureSettings"
+        is_adjusted = False
+        procs = self.search_processing(proc_id)
+        if len(procs):
+            proc = procs[proc_id]
+            if proc.params["ApplyGain"] == "true":
+                is_adjusted = True
+        return is_adjusted
 
     def is_denoised(self) -> bool:
         """Return `True` if the image have noise reduction.
 
-        detail the param
-        """
-        return False
+        'nikon::NoiseReduction' image adjustment defined the noise
+        reduction changes to apply to the image. The method checks
+        if the enableColorNoiseReduction setting is not 0. Please
+        note that the image adjustment active flag is always True.
 
+        Returns:
+            `True` if the exposure is adjusted.
+        """
+        proc_id = "nikon::NoiseReduction"
+        is_adjusted = False
+        procs = self.search_processing(proc_id)
+        if len(procs):
+            proc = procs[proc_id]
+            if proc.params["NoiseReduction.enableColorNoiseReduction"] != 0:
+                is_adjusted = True
+        return is_adjusted

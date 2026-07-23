@@ -250,34 +250,49 @@ class CLIDisplay(DefaultDisplay):
 
         label = nksc.get_label()
         if label != -1:
-            msgs.append(f" [{label}]")
+            msgs.append(f" [{label}]".ljust(13))
+        else:
+            msgs.append(" "*13)
 
         if nksc.is_geotagged():
             msgs.append(" [G]")
+        else:
+            msgs.append(" "*4)
 
         if nksc.is_tagged():
             msgs.append(" [T]")
-
-        if nksc.is_protected():
-            msgs.append(" [Lck]")
+        else:
+            msgs.append(" "*4)
 
         if nksc.is_adjusted():
             msgs.append(" [F]")
+        else:
+            msgs.append(" " * 4)
 
         if nksc.is_exposure_comp():
             msgs.append(".[+/-]")
+        else:
+            msgs.append(" " * 6)
 
-        if nksc.is_bw():
+        if nksc.is_monochrome():
             msgs.append(".[BW]")
+        else:
+            msgs.append(" " * 5)
 
         if nksc.is_cropped():
             msgs.append(".[Crp]")
+        else:
+            msgs.append(" " * 6)
 
-        if nksc.is_perpective_adj():
+        if nksc.is_perspective_adj():
             msgs.append(".[H/V]")
+        else:
+            msgs.append(" " * 6)
 
         if nksc.is_denoised():
             msgs.append(".[NR]")
+        else:
+            msgs.append(" " * 4)
 
         print(colorama.Fore.GREEN
               + colorama.Style.BRIGHT
