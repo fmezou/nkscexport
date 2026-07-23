@@ -22,7 +22,7 @@ version = f"{release.split(".")[0]}.{release.split(".")[1]}"
 
 # General configuration --------------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
-needs_sphinx = '3.0' # min version for 'sphinx.ext.autodoc'
+needs_sphinx = '6.0' # min version for 'sphinx_rtd_theme'
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.autosectionlabel",
