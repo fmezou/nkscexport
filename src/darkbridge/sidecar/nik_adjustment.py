@@ -481,6 +481,7 @@ class NikBaseAdjustment:
             "binary": self._set_param_binary,
             "map": self._set_param_map,
             "dateAndTime": self._set_param_dtstamp,
+            "stringarray": self._set_param_string_array,
             "_default": self._set_default
         }
         self._element = element
@@ -897,15 +898,13 @@ class NikBaseAdjustment:
             NikAdjustmentError: Generic error, the :attr:`NikAdjustmentError.message`
                 details the error.
         """
-        points = None
+        points = []
         if "name" in element.attrib:
             name = element.attrib["name"]
             for child in element:
                 k, v = child.tag, child.attrib
                 match k:
                     case "pointOfPoints":
-                        if points is None:
-                            points = []
                         point = {"x": int(v["x"]), "y": int(v["y"])}
                         points.append(point)
 
@@ -915,7 +914,10 @@ class NikBaseAdjustment:
         else:
             raise NikAdjustmentError(f"Unnamed parameters")
 
-        self.params[name] = points
+        if len(points) != 0:
+            self.params[name] = points
+        else:
+            self.params[name] = None
 
     def _set_param_point(self, element: ElementTree.Element):
         """Set point parameter.
@@ -941,6 +943,36 @@ class NikBaseAdjustment:
             raise NikAdjustmentError(f"Unnamed parameters")
 
         self.params[name] = point
+
+    def _set_param_string_array(self, element: ElementTree.Element):
+        """Set string array parameter.
+
+        Args:
+            element: Element containing the parameter.
+
+        Raises:
+            NikAdjustmentError: Generic error, the :attr:`NikAdjustmentError.message`
+                details the error.
+        """
+        strings = []
+        if "name" in element.attrib:
+            name = element.attrib["name"]
+            for child in element:
+                k, v = child.tag, child.text
+                match k:
+                    case "entry":
+                        strings.append(v)
+
+                    case _:
+                        raise NikAdjustmentError(
+                            f"Unexpected tag for string array parameter: {k}")
+        else:
+            raise NikAdjustmentError(f"Unnamed parameters")
+
+        if len(strings) != 0:
+            self.params[name] = strings
+        else:
+            self.params[name] = None
 
     def __repr__(self):
         """Return a printable string representation.
