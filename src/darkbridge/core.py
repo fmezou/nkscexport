@@ -959,10 +959,12 @@ class DarkBridge:
         """
         numfiles = self._build_filelist()
         index = 0
-        self._display.start_list(self._pathname, self._recursive, self._verbosity, numfiles)
+        self._display.start_list(self._pathname, self._recursive,
+                                 self._verbosity, numfiles)
         for path in self._paths:
             index += 1
-            _logger.info(f"[{index}/{numfiles}] Parsing of '{path[1].name}'...")
+            _logger.log(60, f"[{index}/{numfiles}] Parsing of"
+                            f" '{str(path[1])}'...")
             self._nksc = NikonSideCar(path[1])
             if self._nksc is not None:
                 self._nksc.parse()
@@ -992,7 +994,8 @@ class DarkBridge:
         for path in self._paths:
             index += 1
             found = False
-            _logger.info(f"[{index}/{numfiles}] Parsing of '{path[1].name}'...")
+            _logger.log(60,f"[{index}/{numfiles}] Parsing of"
+                           f" '{str(path[1])}'...")
             self._nksc = NikonSideCar(path[1])
             if self._nksc is not None:
                 self._nksc.parse()
@@ -1026,7 +1029,8 @@ class DarkBridge:
         for path in self._paths:
             index += 1
             found = False
-            _logger.info(f"[{index}/{numfiles}] Parsing of '{path[1].name}'...")
+            _logger.log(60, f"[{index}/{numfiles}] Parsing of"
+                            f" '{str(path[1])}'...")
             self._nksc = NikonSideCar(path[1])
             if self._nksc is not None:
                 self._nksc.parse()
