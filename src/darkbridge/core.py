@@ -898,8 +898,7 @@ class DarkBridge:
                 f"Not a file. '{path.name}' ignored")
 
     def _build_filelist(self) -> int:
-        """ Build the images files list based on patterns as defined in
-        `glob.glob` function.
+        """ Build the images files list based on patterns.
 
         The method returns a list of unique image files. If the selection
         pattern covers the same directory, the files are included only

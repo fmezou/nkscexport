@@ -551,7 +551,7 @@ def main() -> int:
     # Positional arguments
     convert_parser.add_argument(
         "filename",
-        default = "./*",
+        default = ["./*"],
         nargs = "*",
         type = str, #pathlib.Path,
         help = "Files or directories to parse. For each item that name a "
@@ -577,7 +577,7 @@ def main() -> int:
     # Positional arguments
     list.add_argument(
         "filename",
-        default = "./*",
+        default = ["./*"],
         nargs = "*",
         type = str, #pathlib.Path,
         help = "Files or directories to parse. For each item that name a "
@@ -619,7 +619,7 @@ def main() -> int:
     # Positional arguments
     search.add_argument(
         "filename",
-        default = "./*",
+        default = ["./*"],
         nargs = "*",
         type = str, #pathlib.Path,
         help = "Files or directories to parse. For each item that name a "
