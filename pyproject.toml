@@ -44,7 +44,7 @@ documentation = "https://darkbridge.readthedocs.io/en/develop/"
 issues = "https://github.com/fmezou/darkbridge/issues"
 
 [project.scripts]
-darkbridge = "darkbridge.main_cli:main"
+darkbridge = "darkbridge.__main__:main"
 
 [tool.hatch.version]
 source = "code"
