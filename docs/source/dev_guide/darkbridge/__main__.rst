@@ -5,8 +5,8 @@
 .. default-role:: any
 
 **************************************
-``main_cli`` -- Command line interface
+``__main__`` -- Command line interface
 **************************************
-.. automodule:: darkbridge.main_cli
+.. automodule:: darkbridge.__main__
     :platform: all
     :synopsis: Command line interface

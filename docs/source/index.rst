@@ -82,7 +82,7 @@ similar topics.
    :caption: Users Guide
    :name: users_toc
 
-   user_guide/main_cli
+   user_guide/darkbridge
 
 .. toctree::
    :maxdepth: 1

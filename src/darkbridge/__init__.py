@@ -7,6 +7,7 @@ functions to convert the Nikon sidecar files.
     :name: darkbridge_toc
     :maxdepth: 1
 
+    __main__
     core
     version
 """
