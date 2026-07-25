@@ -1366,7 +1366,9 @@ class NikonAsteroidProperties:
         Args:
             xmp_property: Nikon XMP property containing data.
         """
-        element = ElementTree.fromstring(xmp_property.value)
+        # Warning, the value may be terminated with a null char wich is
+        # considered as an invalid character by ElementTree.
+        element = ElementTree.fromstring(xmp_property.value.rstrip(b"\x00"))
         metadata = {}
 
         xmp_descr = NikonXMPDescriptions(element)
@@ -1435,8 +1437,10 @@ class NikonAsteroidProperties:
                         subject_code.append(f"{value}")
 
                     case _:
-                        raise ValueError(
-                            f"IPTC Unsupported IIMid ({iim_id})")
+                        # As only a subset of IPTC properties is recognized,
+                        # others datasets are simply ignored.
+                        _logger.warning(f"IPTC IIMid '{iim_id}' is not known"
+                                        f" - ignored")
             buffer = buffer[5 + l:]
 
         # Adding keywords
@@ -1992,6 +1996,13 @@ class NikonSideCar:
         procs = self.search_processing(proc_id)
         if len(procs):
             proc = procs[proc_id]
-            if proc.params["NoiseReduction.enableColorNoiseReduction"] != 0:
-                is_adjusted = True
+            # NX Studio use enableColorNoiseReduction setting, but previous
+            # version uses enableNoiseReduction (Capture NX-D)
+            if "NoiseReduction.enableColorNoiseReduction" not in proc.params:
+                if proc.params["NoiseReduction.enableNoiseReduction"] != 0:
+                    is_adjusted = True
+            else:
+                if proc.params["NoiseReduction.enableColorNoiseReduction"] != 0:
+                    is_adjusted = True
+
         return is_adjusted

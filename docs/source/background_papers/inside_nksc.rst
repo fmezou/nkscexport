@@ -80,7 +80,9 @@ IIM properties in a nutshell
 
 The Information Interchange Model consists of a number of records [IIMv4]_.
 Image metadata are stored in an 'Application Record' (DataSets in the
-range 2:xx).
+range 2:xx). As only a subset of IPTC properties is recognized, others
+datasets are simply ignored (see [IIMv4]_, p. 16).
+
 
 .. table:: Layout of :term:`IPTC IIM` record
     :name: background_papers/inside_nksc:Layout_IPTC_IIM
