@@ -1698,8 +1698,51 @@ class NikLevelsCurves(NikBaseAdjustment):
     
 
 class NikRedEye(NikBaseAdjustment):
-    pass
-    
+    """RedEye image's adjustment class
+
+    NO more information on parameters espacially for AutoLists and
+    OneClickLists (type redeyelists).
+
+    Args:
+        element: XML element containing the metadata.
+
+    Raises:
+        NikAdjustmentError: Generic error, the :attr:`NikAdjustmentError.message`
+            details the error.
+     """
+    def __init__(self, element: ElementTree.Element):
+        super().__init__(element)
+        # Add the specific handler
+        doers = {
+            "redeyelists": self._set_param_redeye_lists
+        }
+        self._doers.update(doers)
+
+    def _set_param_redeye_lists(self, element: ElementTree.Element):
+        """Set 'redeye lists' parameter.
+
+        Args:
+            element: Element containing the parameter.
+
+        Raises:
+            NikAdjustmentError: Generic error, the :attr:`NikAdjustmentError.message`
+                details the error.
+        """
+        lists = []
+        if "name" in element.attrib:
+            name = element.attrib["name"]
+            for child in element:
+                k, v = child.tag, child.text
+                _logger.warning(f"{self.__class__.__name__}: redeye "
+                                f"parameter ({k}={v})")
+                lists.append(v)
+        else:
+            raise NikAdjustmentError(f"Unnamed parameters")
+
+        if len(lists) != 0:
+            self.params[name] = lists
+        else:
+            self.params[name] = None
 
 class NikDiffraction(NikBaseAdjustment):
     pass
