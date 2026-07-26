@@ -223,5 +223,5 @@ __marimo__/
 
 # Project's specific ignored files or folders
 /*.lnk
-/*.cmd
 /*.reg
+/src/list-adjustments.cmd

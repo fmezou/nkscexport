@@ -8,10 +8,8 @@ packages and moved toward their own PyPI project.
     :name: library_toc
     :maxdepth: 1
 
-    ieee754
     namespace
 """
 __all__ = [
-    "ieee754",
     "namespace"
 ]

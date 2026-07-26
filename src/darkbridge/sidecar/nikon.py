@@ -155,8 +155,8 @@ import logging
 import datetime as dt
 from pathlib import Path
 from xml.etree import ElementTree
+from array import array
 
-from darkbridge.library.ieee754 import IEEE754
 from darkbridge.library.namespace import NameSpace
 from darkbridge.sidecar.nik_adjustment import create_nine_edits
 from darkbridge.sidecar.nik_adjustment import NikBaseAdjustment
@@ -421,16 +421,13 @@ class NikonXMPProperty:
                 string encoded in base64 .
         """
         buffer = base64.b64decode(value)
-        vm = len(buffer) // 8
-        if vm == 1:
-            self.value = IEEE754(buffer).value
+        floats = array("d", buffer)
+        if len(floats) == 1:
+            self.value = floats(0)
             _logger.debug(f"XMP property (Double):"
                           f" {self.name}={self.value}")
         else:
-            self.value = []
-            for i in range(len(buffer) // 8):
-                self.value.append(
-                    IEEE754(buffer[i * 8: (i + 1) * 8]).value)
+            self.value = floats
             _logger.debug(f"XMP property (n*Double):"
                           f" {self.name}={self.value}")
 
