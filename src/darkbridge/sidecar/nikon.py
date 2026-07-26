@@ -1644,27 +1644,21 @@ class NikonSideCar:
         self._doers = {}
         self._path = path
         self._element = None
-        self._sdc = None
-        self._ast = None
-        self._nine = None
+        self._sdc = NikonSDCProperties()
+        self._ast = NikonAsteroidProperties()
+        self._nine = NikonNineProperties()
         self.metadata = {}
         self.processing = {}
-        self.geolocation = None
+        self.geolocation = NikonGPSProperties()
 
         # Build the doers list based on elementary containers
-        c = NikonSDCProperties()
-        for k in c.get_xmp_props():
+        for k in self._sdc.get_xmp_props():
             self._doers[k] = self._set_sdc_attr
-
-        c = NikonAsteroidProperties()
-        for k in c.get_xmp_props():
+        for k in self._ast.get_xmp_props():
             self._doers[k] = self._set_ast_attr
-        c = NikonGPSProperties()
-        for k in c.get_xmp_props():
+        for k in self.geolocation.get_xmp_props():
             self._doers[k] = self._set_ast_attr
-
-        c = NikonNineProperties()
-        for k in c.get_xmp_props():
+        for k in self._nine.get_xmp_props():
             self._doers[k] = self._set_nine_attr
 
         # Parses the sidecar file into an element tree for further analysis
@@ -1718,7 +1712,7 @@ class NikonSideCar:
     def search_meta(self, pattern: str) -> dict:
         """Search a pattern in metadata
 
-        This method indicate if the pattern is found in metada.
+        This method indicate if the pattern is found in metadata or GPS data.
 
         Args:
             pattern: Substring to find in metadata field names.
@@ -1732,6 +1726,11 @@ class NikonSideCar:
             if pattern in k and len(v) != 0:
                 findings[k] = v
                 _logger.info(f"Metadata '{k}' match with '{pattern}'")
+
+        for k, v in self.geolocation.props.items():
+            if pattern in k:
+                findings[k] = v
+                _logger.info(f"GPSData '{k}' match with '{pattern}'")
         return findings
 
     def search_processing(self, pattern: str) -> dict:
@@ -1777,8 +1776,6 @@ class NikonSideCar:
             ValueError: Inappropriate value, the :attr:`ValueError.message`
                 details the error.
         """
-        if self._sdc is None:
-            self._sdc = NikonSDCProperties()
         self._sdc.set_attr(xmp_property)
 
     def _set_ast_attr(self, xmp_property: NikonXMPProperty):
@@ -1791,8 +1788,6 @@ class NikonSideCar:
             ValueError: Inappropriate value, the :attr:`ValueError.message`
                 details the error.
         """
-        if self._ast is None:
-            self._ast = NikonAsteroidProperties()
         self._ast.set_attr(xmp_property)
 
     def _set_nine_attr(self, xmp_property: NikonXMPProperty):
@@ -1805,8 +1800,6 @@ class NikonSideCar:
             ValueError: Inappropriate value, the :attr:`ValueError.message`
                 details the error.
         """
-        if self._nine is None:
-            self._nine = NikonNineProperties()
         self._nine.set_attr(xmp_property)
 
     def _merge_metadata(self):
@@ -1832,26 +1825,25 @@ class NikonSideCar:
         self.metadata["xmp:Label"] = NIKON_LABEL_MAP[self._nine.props["Label"]]
 
         # Copy the XMP set and overwrite with IPTC set.
-        if self._ast is not None:
-            if "XMLPackets" in self._ast.props:
-                for k, v in self._ast.props["XMLPackets"].items():
-                    if k in self.metadata:
-                        _logger.info(f"Overwrite metadata {k}:"
-                                     f" {self.metadata[k]} -> {v}")
-                    self.metadata[k] = v
-            if "IPTC" in self._ast.props:
-                for k, v in self._ast.props["IPTC"].items():
-                    if k in self.metadata:
-                        _logger.info(f"Overwrite metadata {k}:"
-                                     f" {self.metadata[k]} -> {v}")
-                    self.metadata[k] = v
+        if "XMLPackets" in self._ast.props:
+            for k, v in self._ast.props["XMLPackets"].items():
+                if k in self.metadata:
+                    _logger.info(f"Overwrite metadata {k}:"
+                                 f" {self.metadata[k]} -> {v}")
+                self.metadata[k] = v
+        if "IPTC" in self._ast.props:
+            for k, v in self._ast.props["IPTC"].items():
+                if k in self.metadata:
+                    _logger.info(f"Overwrite metadata {k}:"
+                                 f" {self.metadata[k]} -> {v}")
+                self.metadata[k] = v
 
     def _set_processing(self):
         """Set the image adjustments.
 
         This method simply copy image adjustments in :attr:`processing`.
         """
-        if self._nine is not None and "NineEdits" in self._nine.props:
+        if "NineEdits" in self._nine.props:
             for k, v in self._nine.props["NineEdits"].items():
                 self.processing[k] = v
 
@@ -1860,9 +1852,8 @@ class NikonSideCar:
 
         This method simply copy GPS data in :attr:`geolocation`.
         """
-        if self._ast is not None:
-            if "GPS" in self._ast.props:
-                self.geolocation = self._ast.props["GPS"]
+        if "GPS" in self._ast.props:
+            self.geolocation = self._ast.props["GPS"]
 
     def get_rating(self) -> int:
         """Return the image rating."""
@@ -1880,10 +1871,7 @@ class NikonSideCar:
 
     def is_geotagged(self) -> bool:
         """Return `True` if the image have geolocation data. """
-        is_geotagged = False
-        if self.geolocation is not None:
-            is_geotagged = self.geolocation.is_completed()
-        return is_geotagged
+        return self.geolocation.is_completed()
 
     def is_tagged(self) -> bool:
         """Return `True` if the image have keywords."""
