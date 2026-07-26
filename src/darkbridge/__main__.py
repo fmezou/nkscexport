@@ -1,3 +1,20 @@
+###############################################################################
+# This file is a part of DarkBridge, to convert Nikon sidecars to Darktable.
+# Copyright (C) 2026 DarkBridge developper
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+###############################################################################
 """Converts Nikon sidecar files into Darktable sidecars.
 
 The :mod:`darkbridge.__main__` module is the command line interface entry
@@ -502,7 +519,7 @@ def main() -> int:
         prog = "darkbridge",
         formatter_class = argparse.RawDescriptionHelpFormatter,
         description = "%(prog)s version " + version + "\n"
-            "converts Nikon sidecar files into Darktable sidecars.",
+            "Converts Nikon sidecar files into Darktable sidecars.\n",
         epilog = "%(prog)s ignores files that not matching following "
             "criteria:\n"
             "* a Nikon sidecar file is in a 'NKSC_PARAM' folder\n"
@@ -513,7 +530,14 @@ def main() -> int:
             "\n"
             "The script only supports image files supported by NX "
             "Studio: .nef, .nrw, .jpg, .jpeg, .tif, .tiff, .hif, .nefx "
-            ".mpo."
+            ".mpo.\n\n"
+            "Copyright (C) 2026 Darktable developpers.\n"
+            "This program comes with ABSOLUTELY NO WARRANTY.\n"
+            "This is free software, and you are welcome to redistribute it, "
+            "under certain conditions.\n"
+            "You should have received a copy of the GNU General Public License"
+            " along with this program.\n"
+            "If not, see <https://www.gnu.org/licenses/>"
     )
     # Sub commands
     subparsers = parser.add_subparsers(
