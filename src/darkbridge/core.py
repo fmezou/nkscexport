@@ -659,19 +659,17 @@ class DefaultDisplay(BaseDisplay):
         """
         msgs = []
         print(f"[{index}/{self._total}] Image {path.name:30}")
-        if nksc.metadata is not None:
-            msgs.append(f"    Metadata")
-            for k, v in nksc.metadata.items():
-                if len(v) != 0:
-                    msgs.append(f"      * {k}")
-        else:
-            msgs.append("    No Metadata present")
+        msgs.append(f"    Metadata")
+        for k, v in nksc.metadata.items():
+            if len(v) != 0:
+                msgs.append(f"      * {k}")
+        if nksc.is_geotagged():
+            msgs.append(f"      * GPS")
 
-        if nksc.processing is not None:
-            msgs.append(f"    Adjustment")
-            for k, v in nksc.processing.items():
-                    if v.active:
-                        msgs.append(f"      * {k} ")
+        msgs.append(f"    Adjustment")
+        for k, v in nksc.processing.items():
+            if v.active:
+                msgs.append(f"      * {k} ")
 
         print("\n".join(msgs))
 
@@ -687,25 +685,23 @@ class DefaultDisplay(BaseDisplay):
         """
         msgs = []
         print(f"[{index}/{self._total}] Image {path.name:30}")
-        if nksc.metadata is not None:
-            msgs.append(f"    Metadata")
-            for k, v in nksc.metadata.items():
-                if len(v) != 0:
-                    msgs.append(f"      * {k}: {v}")
-        else:
-            msgs.append("    No Metadata present")
+        msgs.append(f"    Metadata")
+        for k, v in nksc.metadata.items():
+            if len(v) != 0:
+                msgs.append(f"      * {k}: {v}")
+        if nksc.is_geotagged():
+            msgs.append(f"      * GPS: {nksc.geolocation}")
 
-        if nksc.processing is not None:
-            msgs.append(f"    Adjustment")
-            for k, v in nksc.processing.items():
-                if v.active:
-                    msgs.append(f"      * {k} ")
-                    for n, p in v.params.items():
-                        if isinstance(p, bytes):
-                            dump = self._dump_data(p, "            " )
-                            msgs.append(f"          * {n}: {dump}")
-                        else:
-                            msgs.append(f"          * {n}: {p} ")
+        msgs.append(f"    Adjustment")
+        for k, v in nksc.processing.items():
+            if v.active:
+                msgs.append(f"      * {k} ")
+                for n, p in v.params.items():
+                    if isinstance(p, bytes):
+                        dump = self._dump_data(p, "            " )
+                        msgs.append(f"          * {n}: {dump}")
+                    else:
+                        msgs.append(f"          * {n}: {p} ")
 
         print("\n".join(msgs))
 
@@ -721,26 +717,24 @@ class DefaultDisplay(BaseDisplay):
         """
         msgs = []
         print(f"[{index}/{self._total}] Image {path.name:30}")
-        if nksc.metadata is not None:
-            msgs.append(f"    Metadata")
-            for k, v in nksc.metadata.items():
-                msgs.append(f"      * {k}: {v}")
-        else:
-            msgs.append("    No Metadata present")
+        msgs.append(f"    Metadata")
+        for k, v in nksc.metadata.items():
+            msgs.append(f"      * {k}: {v}")
+        for k, v in nksc.geolocation.props.items():
+            msgs.append(f"      * {k}: {v}")
 
-        if nksc.processing is not None:
-            msgs.append(f"    Adjustment")
-            for k, v in nksc.processing.items():
-                if v.active:
-                    msgs.append(f"      * [X] {k} ")
+        msgs.append(f"    Adjustment")
+        for k, v in nksc.processing.items():
+            if v.active:
+                msgs.append(f"      * [X] {k} ")
+            else:
+                msgs.append(f"      * [ ] {k} ")
+            for n, p in v.params.items():
+                if isinstance(p, bytes):
+                    dump = self._dump_data(p, "            ")
+                    msgs.append(f"          * {n}: {dump}")
                 else:
-                    msgs.append(f"      * [ ] {k} ")
-                for n, p in v.params.items():
-                    if isinstance(p, bytes):
-                        dump = self._dump_data(p, "            ")
-                        msgs.append(f"          * {n}: {dump}")
-                    else:
-                        msgs.append(f"          * {n}: {p} ")
+                    msgs.append(f"          * {n}: {p} ")
 
         print("\n".join(msgs))
 

@@ -179,33 +179,31 @@ class CLIDisplay(DefaultDisplay):
               + f"[{index}/{self._total}] Image {path.name:30}"
               + colorama.Style.RESET_ALL)
 
-        if nksc.metadata is not None:
+        msgs.append(colorama.Style.BRIGHT
+                    + colorama.Fore.LIGHTBLUE_EX
+                    + f"    Metadata"
+                    + colorama.Style.RESET_ALL)
+        for k, v in nksc.metadata.items():
+            if len(v) != 0:
+                msgs.append(colorama.Style.BRIGHT
+                            + colorama.Fore.LIGHTBLUE_EX
+                            + f"      * {k}"
+                            + colorama.Style.RESET_ALL)
+        if nksc.is_geotagged():
             msgs.append(colorama.Style.BRIGHT
                         + colorama.Fore.LIGHTBLUE_EX
-                        + f"    Metadata"
-                        + colorama.Style.RESET_ALL)
-            for k, v in nksc.metadata.items():
-                if len(v) != 0:
-                    msgs.append(colorama.Style.BRIGHT
-                                + colorama.Fore.LIGHTBLUE_EX
-                                + f"      * {k}"
-                                + colorama.Style.RESET_ALL)
-        else:
-            msgs.append(colorama.Style.BRIGHT
-                        + colorama.Fore.LIGHTRED_EX
-                        + "    No Metadata present"
+                        + f"      * GPS"
                         + colorama.Style.RESET_ALL)
 
-        if nksc.processing is not None:
-            msgs.append(colorama.Style.BRIGHT
-                        + colorama.Fore.LIGHTMAGENTA_EX
-                        + f"    Adjustment"
-                        + colorama.Style.RESET_ALL)
-            for k, v in nksc.processing.items():
-                if v.active:
-                    msgs.append(colorama.Style.BRIGHT
-                                + f"      * {k}"
-                                + colorama.Style.RESET_ALL)
+        msgs.append(colorama.Style.BRIGHT
+                    + colorama.Fore.LIGHTMAGENTA_EX
+                    + f"    Adjustment"
+                    + colorama.Style.RESET_ALL)
+        for k, v in nksc.processing.items():
+            if v.active:
+                msgs.append(colorama.Style.BRIGHT
+                            + f"      * {k}"
+                            + colorama.Style.RESET_ALL)
 
         print("\n".join(msgs))
 
@@ -225,42 +223,42 @@ class CLIDisplay(DefaultDisplay):
               + f"[{index}/{self._total}] Image {path.name:30}"
               + colorama.Style.RESET_ALL)
 
-        if nksc.metadata is not None:
+        msgs.append(colorama.Style.BRIGHT
+                    + colorama.Fore.LIGHTBLUE_EX
+                    + f"    Metadata"
+                    + colorama.Style.RESET_ALL)
+        for k, v in nksc.metadata.items():
+            if len(v) != 0:
+                msgs.append(colorama.Style.BRIGHT
+                            + colorama.Fore.LIGHTBLUE_EX
+                            + f"      * {k}"
+                            + colorama.Fore.BLACK
+                            + f": {v}"
+                            + colorama.Style.RESET_ALL)
+        if nksc.is_geotagged():
             msgs.append(colorama.Style.BRIGHT
                         + colorama.Fore.LIGHTBLUE_EX
-                        + f"    Metadata"
-                        + colorama.Style.RESET_ALL)
-            for k, v in nksc.metadata.items():
-                if len(v) != 0:
-                    msgs.append(colorama.Style.BRIGHT
-                                + colorama.Fore.LIGHTBLUE_EX
-                                + f"      * {k}"
-                                + colorama.Fore.BLACK
-                                + f": {v}"
-                                + colorama.Style.RESET_ALL)
-        else:
-            msgs.append(colorama.Style.BRIGHT
-                        + colorama.Fore.LIGHTRED_EX
-                        + "    No Metadata present"
+                        + f"      * GPS"
+                        + colorama.Fore.BLACK
+                        + f": {nksc.geolocation}"
                         + colorama.Style.RESET_ALL)
 
-        if nksc.processing is not None:
-            msgs.append(colorama.Style.BRIGHT
-                        + colorama.Fore.LIGHTMAGENTA_EX
-                        + f"    Adjustment"
-                        + colorama.Style.RESET_ALL)
-            for k, v in nksc.processing.items():
-                if v.active:
-                    msgs.append(colorama.Style.BRIGHT
-                                + colorama.Fore.LIGHTMAGENTA_EX
-                                + f"      * {k}"
-                                + colorama.Style.RESET_ALL)
-                    for n, p in v.params.items():
-                        if isinstance(p, bytes):
-                            dump = self._dump_data(p, "            " )
-                            msgs.append(f"          * {n}: {dump}")
-                        else:
-                            msgs.append(f"          * {n}: {p} ")
+        msgs.append(colorama.Style.BRIGHT
+                    + colorama.Fore.LIGHTMAGENTA_EX
+                    + f"    Adjustment"
+                    + colorama.Style.RESET_ALL)
+        for k, v in nksc.processing.items():
+            if v.active:
+                msgs.append(colorama.Style.BRIGHT
+                            + colorama.Fore.LIGHTMAGENTA_EX
+                            + f"      * {k}"
+                            + colorama.Style.RESET_ALL)
+                for n, p in v.params.items():
+                    if isinstance(p, bytes):
+                        dump = self._dump_data(p, "            " )
+                        msgs.append(f"          * {n}: {dump}")
+                    else:
+                        msgs.append(f"          * {n}: {p} ")
 
         print("\n".join(msgs))
 
@@ -280,56 +278,56 @@ class CLIDisplay(DefaultDisplay):
               + f"[{index}/{self._total}] Image {path.name:30}"
               + colorama.Style.RESET_ALL)
 
-        if nksc.metadata is not None:
+        msgs.append(colorama.Style.BRIGHT
+                    + colorama.Fore.LIGHTBLUE_EX
+                    + f"    Metadata"
+                    + colorama.Style.RESET_ALL)
+        for k, v in nksc.metadata.items():
             msgs.append(colorama.Style.BRIGHT
                         + colorama.Fore.LIGHTBLUE_EX
-                        + f"    Metadata"
+                        + f"      * {k}"
+                        + colorama.Fore.BLACK
+                        + f": {v}"
                         + colorama.Style.RESET_ALL)
-            for k, v in nksc.metadata.items():
-                msgs.append(colorama.Style.BRIGHT
-                            + colorama.Fore.LIGHTBLUE_EX
-                            + f"      * {k}"
-                            + colorama.Fore.BLACK
-                            + f": {v}"
-                            + colorama.Style.RESET_ALL)
-        else:
+        for k, v in nksc.geolocation.props.items():
             msgs.append(colorama.Style.BRIGHT
-                        + colorama.Fore.LIGHTRED_EX
-                        + "    No Metadata present"
+                        + colorama.Fore.LIGHTBLUE_EX
+                        + f"      * {k}"
+                        + colorama.Fore.BLACK
+                        + f": {v}"
                         + colorama.Style.RESET_ALL)
 
-        if nksc.processing is not None:
-            msgs.append(colorama.Style.BRIGHT
-                        + colorama.Fore.LIGHTMAGENTA_EX
-                        + f"    Adjustment"
-                        + colorama.Style.RESET_ALL)
-            for k, v in nksc.processing.items():
-                if v.active:
-                    msgs.append(colorama.Style.BRIGHT
-                                + colorama.Fore.LIGHTMAGENTA_EX
-                                + f"      * [X] {k}"
-                                + colorama.Style.RESET_ALL)
-                    for n, p in v.params.items():
-                        if isinstance(p, bytes):
-                            dump = self._dump_data(p, "            " )
-                            msgs.append(f"          * {n}: {dump}")
-                        else:
-                            msgs.append(f"          * {n}: {p} ")
-                else:
-                    msgs.append(colorama.Style.DIM
-                                + colorama.Fore.LIGHTMAGENTA_EX
-                                + f"      * [ ] {k}"
-                                + colorama.Style.RESET_ALL)
-                    for n, p in v.params.items():
-                        if isinstance(p, bytes):
-                            dump = self._dump_data(p, "            " )
-                            msgs.append(colorama.Style.DIM
-                                        + f"          * {n}: {dump}"
-                                        + colorama.Style.RESET_ALL)
-                        else:
-                            msgs.append(colorama.Style.DIM
-                                        + f"          * {n}: {p} "
-                                        + colorama.Style.RESET_ALL)
+        msgs.append(colorama.Style.BRIGHT
+                    + colorama.Fore.LIGHTMAGENTA_EX
+                    + f"    Adjustment"
+                    + colorama.Style.RESET_ALL)
+        for k, v in nksc.processing.items():
+            if v.active:
+                msgs.append(colorama.Style.BRIGHT
+                            + colorama.Fore.LIGHTMAGENTA_EX
+                            + f"      * [X] {k}"
+                            + colorama.Style.RESET_ALL)
+                for n, p in v.params.items():
+                    if isinstance(p, bytes):
+                        dump = self._dump_data(p, "            " )
+                        msgs.append(f"          * {n}: {dump}")
+                    else:
+                        msgs.append(f"          * {n}: {p} ")
+            else:
+                msgs.append(colorama.Style.DIM
+                            + colorama.Fore.LIGHTMAGENTA_EX
+                            + f"      * [ ] {k}"
+                            + colorama.Style.RESET_ALL)
+                for n, p in v.params.items():
+                    if isinstance(p, bytes):
+                        dump = self._dump_data(p, "            " )
+                        msgs.append(colorama.Style.DIM
+                                    + f"          * {n}: {dump}"
+                                    + colorama.Style.RESET_ALL)
+                    else:
+                        msgs.append(colorama.Style.DIM
+                                    + f"          * {n}: {p} "
+                                    + colorama.Style.RESET_ALL)
 
         print("\n".join(msgs))
 
