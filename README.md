@@ -8,10 +8,10 @@ DarkBridge
 ==========
 **Bridge Nikon sidecars to Darktable, seamlessly.**
 
-**DarkBridge** is a utility that converts Nikon NX Studio `.nksc` sidecar 
-files into sidecar files compatible with Darktable.It helps photographers 
-migrate adjustment data from Nikon’s workflow to Darktable without manually 
-recreating edits. Furthermore, **DarkBridge** displays the sidecar content in a
+**DarkBridge** is a utility that converts Nikon NX Studio `.nksc` sidecar files 
+into sidecar files compatible with Darktable.It helps photographers migrate 
+adjustment data from Nikon’s workflow to Darktable without manually recreating 
+edits. Furthermore, **DarkBridge** displays the sidecar content in a 
 'human-readable' way, and allows to search a metadata or image adjustment by
 name in a file tree structure.
 
@@ -30,10 +30,19 @@ metadata, and other data in addition to image adjustments.
 
 For this project, the image samples have been shot with a Nikon D70s camera
 and a Nikon D7100 camera using NEF format (Lossless Compressed RAW (14-bit), 
-Adobe RGB). NX Studio v1.10.1 has been used to develop and edit the samples 
-images.  
+Adobe RGB). For processing images, Capture NX-D, ViewNX-i and NX Studio has 
+been used.
 
-Adobe RGB
+**DarkBridge** is still in development phase: the transfer to darktable is
+not yet implemented and the user experience is still in command line . 
+Nevertheless, **DarkBridge** allow you to:
+* *list* the metadata (including geolocation) and images ajustement including 
+  the picture control from an image or a folder.
+* *search* a specific metadata based on its name or a specific image ajustement.
+  The search function only returns non empty metadata or active image ajustement.
+
+The [user manual][man] expose the command line options with some usage example.
+
 See also
 --------
 * [NX Studio Help](https://nikonimglib.com/nxstdo/onlinehelp/en/save_80.html)
@@ -51,3 +60,4 @@ See also
 [pyst]: https://img.shields.io/pypi/status/darkbridge
 [pyt]: https://pypi.org/project/darkbridge/
 [nxst]: https://downloadcenter.nikonimglib.com/en/products/564/NX_Studio.html
+[man]: https://darkbridge.readthedocs.io/en/develop/user_guide/darkbridge.html

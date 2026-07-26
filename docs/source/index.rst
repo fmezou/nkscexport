@@ -32,8 +32,22 @@ other data in addition to image adjustments.
 
 For this project, the image samples have been shot with a Nikon D70s camera
 and a Nikon D7100 camera using NEF format (Lossless Compressed RAW (14-bit),
-Adobe RGB). NX Studio v1.10.1 has been used to develop and edit the samples
-images.
+Adobe RGB). For processing images, Capture NX-D, ViewNX-i and NX Studio has
+been used.
+
+**DarkBridge** is still in development phase: the transfer to darktable is
+not yet implemented and the user experience is still in command line.
+
+Nevertheless, **DarkBridge** allow you to:
+
+* *list* the metadata (including geolocation) and images ajustement including
+  the picture control from an image or a folder.
+
+* *search* a specific metadata based on its name or a specific image ajustement.
+  The search function only returns non empty metadata or active image ajustement.
+
+The `user manual <https://darkbridge.readthedocs.io/en/develop/user_guide/
+darkbridge.html>`_ expose the command line options with some usage example.
 
 DarkBridge is written in Python and delivered a Python package named
 `DarkBridge <https://pypi.org/project/DarkBridge/>`_ including a command line
